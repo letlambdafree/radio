@@ -10,7 +10,7 @@ mpv $(grep -i $radio $0 | awk -F http '{print FS$2}')
 
 
 
-# my some radio_urls
+# some radio_urls
 #
 # Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
