@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# mpv radio
+## mpv radio
 
 radio="$1"
 
-if (( $(grep -ic "\b$radio" $0) > 1 )) ; then
-    urls=$(grep -i "\b$radio" $0 | awk -F http '{print $1}')
+if (( $(grep -ic "^# .*\b$radio" $0) > 1 )) ; then
+    urls=$(grep -i "^# .*\b$radio" $0 | awk -F http '{print $1}')
     readarray -t arr <<< "$urls"
     PS3="Choose : "
     select radio_url in "${arr[@]}" ; do
@@ -16,18 +16,18 @@ if (( $(grep -ic "\b$radio" $0) > 1 )) ; then
     grep -i "$select_url" $0 | awk -F http '{print $1}'
     printf "\n"
     mpv $(grep -i "$select_url" $0 | awk -F http '{print FS$2}')
-elif (( $(grep -ic "\b$radio" $0) == 1 )) ; then
+elif (( $(grep -ic "^# .*\b$radio" $0) == 1 )) ; then
     printf "\n"
-    grep -i "\b$radio" $0 | awk -F http '{print $1}'
+    grep -i "^# .*\b$radio" $0 | awk -F http '{print $1}'
     printf "\n"
-    mpv $(grep -i "\b$radio" $0 | awk -F http '{print FS$2}')
+    mpv $(grep -i "^# .*\b$radio" $0 | awk -F http '{print FS$2}')
 else
     printf "\nNo match radio url.\n"
 fi
 
 
 
-# some radio_urls
+## some radio_urls
 #
 # Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
