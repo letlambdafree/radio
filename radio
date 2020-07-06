@@ -3,10 +3,24 @@
 # mpv radio
 
 radio="$1"
-printf "\n"
-grep -i $radio $0 | awk -F http '{print $1}'
-printf "\n"
-mpv $(grep -i $radio $0 | awk -F http '{print FS$2}')
+
+if (( $(grep -ic "\b$radio" $0) > 1 )) ; then
+    urls=$(grep -i "\b$radio" $0 | awk -F http '{print $1}')
+    readarray -t arr <<< "$urls"
+    select radio_url in "${arr[@]}" ; do
+        select_url=$radio_url
+        break
+    done
+    printf "\n"
+    grep -i "$select_url" $0 | awk -F http '{print $1}'
+    printf "\n"
+    mpv $(grep -i "$select_url" $0 | awk -F http '{print FS$2}')
+else
+    printf "\n"
+    grep -i "\b$radio" $0 | awk -F http '{print $1}'
+    printf "\n"
+    mpv $(grep -i "\b$radio" $0 | awk -F http '{print FS$2}')
+fi
 
 
 
