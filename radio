@@ -2,27 +2,27 @@
 
 ## mpv radio
 
-radio="$1"
-player="mpv"
-grepcount=$(grep -ic "^# .*\b$radio" $0)
+input="$1"
+PLAYER="mpv"
+PS3="Choose : "
+grepcount=$(grep -ic "^# .*\b$input" $0)
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    grep -i "^# .*\b$radio" $0 | awk -F http '{print $1}' | sed 's/# / /'
+    grep -i "^# .*\b$input" $0 | awk -F http '{print $1}' | sed 's/# / /'
     printf "\n"
-    $player $(grep -i "^# .*\b$radio" $0 | awk -F http '{print FS$2}')
+    $PLAYER $(grep -i "^# .*\b$input" $0 | awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    urls=$(grep -i "^# .*\b$radio" $0 | awk -F http '{print $1}'| sed 's/# //')
+    urls=$(grep -i "^# .*\b$input" $0 | awk -F http '{print $1}'| sed 's/# //')
     readarray -t arr_urls <<< "$urls"
-    PS3="Choose : "
     select url in "${arr_urls[@]}" ; do
-        select_url="$url"
+        selected_url="$url"
         break
     done
     printf "\n"
-    printf " $select_url\n"
+    printf " $selected_url\n"
     printf "\n"
-    $player $(grep -i "$select_url" $0 | awk -F http '{print FS$2}')
+    $PLAYER $(grep -i "$selected_url" $0 | awk -F http '{print FS$2}')
 else
     printf "\nNo match radio url.\n"
 fi
