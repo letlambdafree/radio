@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## mpv radio
+## simple mpv radio
 
 input="$1"
 PLAYER="mpv"
