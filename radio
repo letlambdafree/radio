@@ -24,8 +24,6 @@ radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 
-
-
 if (( $grepcount == 1 )) ; then
     printf "\n"
     grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /'
@@ -34,16 +32,16 @@ if (( $grepcount == 1 )) ; then
     $PLAYER $(grep -i "$theradioname" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    urls=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# //')
-    readarray -t arr_urls <<< "$urls"
-    select url in "${arr_urls[@]}" ; do
-        selected_url="$url"
+    radionames=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# //')
+    readarray -t arr_radionames <<< "$radionames"
+    select radio in "${arr_radionames[@]}" ; do
+        selectedradio="$radio"
         break
     done
     printf "\n"
-    printf " $selected_url\n"
+    printf " $selectedradio\n"
     printf "\n"
-    $PLAYER $(grep -i "$selected_url" <<< "$radiolist" | \
+    $PLAYER $(grep -i "$selectedradio" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 else
     printf "\nNo match radio url.\n"
