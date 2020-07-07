@@ -6,10 +6,13 @@
 #
 # for all radio urls -> $ radio .
 
+## TODO:
+# fail -1 or succeed +1, delete radio_url at hitting -10 point
+# score=0
+
 input="$1"
 PLAYER="mpv"
 PS3="Choose : "
-score=0
 x=0
 STARTLINE="### radio_urls"
 
