@@ -4,7 +4,7 @@
 #
 ## $ radio fuji
 #
-## for all radio url -> $ radio .
+## for all radio urls -> $ radio .
 
 input="$1"
 PLAYER="mpv"
@@ -13,11 +13,16 @@ grepcount=$(grep -ic "^# .*\b$input" $0)
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    grep -i "^# .*\b$input" $0 | awk -F http '{print $1}' | sed 's/# / /'
+    grep -i "^# .*\b$input" $0 | \
+        awk -F http '{print $1}' | \
+        sed 's/# / /'
     printf "\n"
-    $PLAYER $(grep -i "^# .*\b$input" $0 | awk -F http '{print FS$2}')
+    $PLAYER $(grep -i "^# .*\b$input" $0 | \
+                  awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    urls=$(grep -i "^# .*\b$input" $0 | awk -F http '{print $1}'| sed 's/# //')
+    urls=$(grep -i "^# .*\b$input" $0 | \
+               awk -F http '{print $1}'| \
+               sed 's/# //')
     readarray -t arr_urls <<< "$urls"
     select url in "${arr_urls[@]}" ; do
         selected_url="$url"
@@ -26,7 +31,8 @@ elif (( $grepcount > 1 )) ; then
     printf "\n"
     printf " $selected_url\n"
     printf "\n"
-    $PLAYER $(grep -i "$selected_url" $0 | awk -F http '{print FS$2}')
+    $PLAYER $(grep -i "$selected_url" $0 | \
+                  awk -F http '{print FS$2}')
 else
     printf "\nNo match radio url.\n"
 fi
