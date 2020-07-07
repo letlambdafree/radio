@@ -38,9 +38,7 @@ elif (( $grepcount > 1 )) ; then
         selectedradio="$radio"
         break
     done
-    printf "\n"
-    printf " $selectedradio\n"
-    printf "\n"
+    printf "\n $selectedradio\n\n"
     $PLAYER $(grep -i "$selectedradio" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 else
