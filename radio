@@ -1,6 +1,10 @@
 #!/bin/bash
 
 ## simple mpv radio
+#
+## $ radio fuji
+#
+## for all radio url -> $ radio .
 
 input="$1"
 PLAYER="mpv"
