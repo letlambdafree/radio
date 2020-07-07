@@ -9,6 +9,7 @@
 input="$1"
 PLAYER="mpv"
 PS3="Choose : "
+score=0
 x=0
 STARTLINE="### radio_urls"
 
