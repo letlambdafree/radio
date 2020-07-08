@@ -2,13 +2,15 @@
 
 ### simple mpv radio
 #
-# $ radio fuji
+# $ radio url
 #
 # for random url -> $ radio
 #
-# for test urls -> $ radio TEST
+# for rotation time -> $ radio ,
 #
 # for all radio urls -> $ radio .
+#
+# for test urls -> $ radio TEST
 
 input="$1"
 PLAYER="mpv"
@@ -16,6 +18,7 @@ PS3="Choose : "
 x=0
 STARTLINE="### radio_urls"
 TESTTIME=5
+ROTATIONTIME=3600
 
 while read -r line ; do
     (( x++ ))
@@ -25,18 +28,34 @@ while read -r line ; do
 done < "$0"
 
 radiolist=$(tail -n +"$(( x + 2 ))" "$0")
+linesnumber=$(echo "$radiolist"| wc -l)
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 
 if [[ -z $input ]] ; then
-    linesnumber=$(echo "$radiolist"| wc -l)
     randomnumber=$(shuf -i 1-$linesnumber -n 1)
     randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
     printf "\n\n"
     awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
     printf "\n\n"
     $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio")
+    exit 0
+fi
+
+if [[ $input == "," ]] ; then
+    while true ; do
+        randomnumber=$(shuf -i 1-$linesnumber -n 1)
+        randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
+        printf "\n\n"
+        awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
+        printf "\n\n"
+        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
+        lastbgpid=$!
+        sleep $ROTATIONTIME
+        kill $lastbgpid
+        sleep 1
+    done
     exit 0
 fi
 
