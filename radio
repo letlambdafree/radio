@@ -28,6 +28,31 @@ radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 
+
+
+if [[ $input == "TEST" ]] ; then
+    cat > report <<< "### TEST REPORT ###"
+    while read -r line ; do
+        printf "\n\n"
+        echo "$line" | awk -F http '{print $1}'| sed 's/# / /'
+        printf "\n\n"
+        $PLAYER $(echo "$line" | awk -F http '{print FS$2}') &
+        lastbgpid=$!
+        sleep 5
+        if (( ! $(ps | grep -c $lastbgpid) )) ; then
+            echo "Fail: $line" >> report
+        fi
+        kill $lastbgpid
+        sleep 1
+    done <<< "$radiolist"
+    printf "\n\n"
+    cat report
+    printf "\n\n"
+    exit 0
+fi
+
+
+
 if (( $grepcount == 1 )) ; then
     printf "\n"
     grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /'
@@ -46,7 +71,7 @@ elif (( $grepcount > 1 )) ; then
     $PLAYER $(grep -i "$selectedradio" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 else
-    printf "\nNo match radio url.\n"
+    printf "\n Sorry, the \"$1\" does not match.\n"
 fi
 
 
