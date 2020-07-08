@@ -15,6 +15,7 @@ PLAYER="mpv"
 PS3="Choose : "
 x=0
 STARTLINE="### radio_urls"
+TESTTIME=5
 
 while read -r line ; do
     (( x++ ))
@@ -28,6 +29,17 @@ radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 
+if [[ -z $input ]] ; then
+    linesnumber=$(echo "$radiolist"| wc -l)
+    randomnumber=$(shuf -i 1-$linesnumber -n 1)
+    randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
+    printf "\n\n"
+    awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
+    printf "\n\n"
+    $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio")
+    exit 0
+fi
+
 if [[ $input == "TEST" ]] ; then
     cat > report <<< "### TEST REPORT ###"
     while read -r line ; do
@@ -36,7 +48,7 @@ if [[ $input == "TEST" ]] ; then
         printf "\n\n"
         $PLAYER $(echo "$line" | awk -F http '{print FS$2}') &
         lastbgpid=$!
-        sleep 5
+        sleep $TESTTIME
         if (( ! $(ps | grep -c $lastbgpid) )) ; then
             echo "Fail: $line" >> report
         fi
@@ -46,17 +58,6 @@ if [[ $input == "TEST" ]] ; then
     printf "\n\n"
     cat report
     printf "\n\n"
-    exit 0
-fi
-
-if [[ -z $input ]] ; then
-    linesnumber=$(echo "$radiolist"| wc -l)
-    random=$(shuf -i 1-29 -n 1)
-    randomradio=$(head -"$random" <<< "$radiolist" | tail -1)
-    printf "\n\n"
-    awk -F http '{print $1}' <<< $randomradio | sed 's/# / /'
-    printf "\n\n"
-    $PLAYER $(awk -F http '{print FS$2}' <<< $randomradio)
     exit 0
 fi
 
