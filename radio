@@ -4,11 +4,11 @@
 #
 # $ radio fuji
 #
+# for random url -> $ radio
+#
+# for test urls -> $ radio TEST
+#
 # for all radio urls -> $ radio .
-
-## TODO:
-# fail -1 or succeed +1, delete radio_url at hitting -10 point
-# score=0
 
 input="$1"
 PLAYER="mpv"
@@ -27,8 +27,6 @@ radiolist=$(tail -n +"$(( x + 2 ))" "$0")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
-
-
 
 if [[ $input == "TEST" ]] ; then
     cat > report <<< "### TEST REPORT ###"
@@ -51,7 +49,16 @@ if [[ $input == "TEST" ]] ; then
     exit 0
 fi
 
-
+if [[ -z $input ]] ; then
+    linesnumber=$(echo "$radiolist"| wc -l)
+    random=$(shuf -i 1-29 -n 1)
+    randomradio=$(head -"$random" <<< "$radiolist" | tail -1)
+    printf "\n\n"
+    awk -F http '{print $1}' <<< $randomradio | sed 's/# / /'
+    printf "\n\n"
+    $PLAYER $(awk -F http '{print FS$2}' <<< $randomradio)
+    exit 0
+fi
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
