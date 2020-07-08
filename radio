@@ -18,7 +18,7 @@ PS3="Choose : "
 x=0
 STARTLINE="### radio_urls"
 TESTTIME=5
-ROTATIONTIME=3600
+ROTATIONTIME=10
 
 while read -r line ; do
     (( x++ ))
@@ -34,12 +34,21 @@ radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 
 if [[ -z $input ]] ; then
-    randomnumber=$(shuf -i 1-$linesnumber -n 1)
-    randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-    printf "\n\n"
-    awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
-    printf "\n\n"
-    $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio")
+    while true ; do
+        randomnumber=$(shuf -i 1-$linesnumber -n 1)
+        randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
+        printf "\n\n"
+        awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
+        printf "\n\n"
+        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
+        lastbgpid=$!
+        sleep $TESTTIME
+        if (( ! $(ps | grep -c $lastbgpid) )) ; then
+            echo "Fail: $line" >> report
+            continue
+        fi
+        sleep 1
+    done
     exit 0
 fi
 
@@ -52,6 +61,11 @@ if [[ $input == "," ]] ; then
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
+        sleep $TESTTIME
+        if (( ! $(ps | grep -c $lastbgpid) )) ; then
+            echo "Fail: $line" >> report
+            continue
+        fi
         sleep $ROTATIONTIME
         kill $lastbgpid
         sleep 1
@@ -70,8 +84,9 @@ if [[ $input == "TEST" ]] ; then
         sleep $TESTTIME
         if (( ! $(ps | grep -c $lastbgpid) )) ; then
             echo "Fail: $line" >> report
+        else
+            kill $lastbgpid
         fi
-        kill $lastbgpid
         sleep 1
     done <<< "$radiolist"
     printf "\n\n"
