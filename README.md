@@ -4,14 +4,14 @@ simple mpv radio
 
 Usage: radio [option] or radio [url]
 
-       radio fuji --> play fujiyama radio.
+       radio      --> random a radio and press 'q' next random radio.
 
-       radio      --> random url and press 'q' next random url.
+       radio ,    --> rotate a radio in a specific time.
 
-       radio ,    --> rotate url in a specific time.
+       radio .    --> display all radios and choose a wanted radio number.
 
-       radio .    --> display all urls and choose a wanted url number.
-
-       radio TEST --> test url whether works or not.
+       radio TEST --> test radios whether work or not.
 
                       If failed, it logs on the file named report.
+
+       radio fuji --> play fujiyama radio.
