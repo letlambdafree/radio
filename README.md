@@ -4,7 +4,7 @@ simple mpv radio
 
 Usage: radio [option] or radio [url]
 
-       radio      --> random a radio and press 'q' next random radio.
+       radio      --> random a radio and press 'q' next a random radio.
 
        radio ,    --> rotate a radio in a specific time.
 
