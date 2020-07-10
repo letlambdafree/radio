@@ -24,12 +24,12 @@
 input="$1"
 PLAYER="mpv"
 PS3="Choose : "
-STARTLINE="### RADIO_URLS ###"
+STARTLINE="### MY FAVORITE RADIO URLS ###"
 REPORTFIRSTLINE="### FAIL RADIO URL REPORT ###"
 TESTTIME=5
 ROTATIONTIME=600
-
 x=0
+
 while read -r line ; do
     (( x++ ))
     if [[ "$line" == "$STARTLINE" ]]; then
@@ -139,7 +139,7 @@ fi
 
 
 
-### RADIO_URLS ###
+### MY FAVORITE RADIO URLS ###
 #
 # write a symptom without any space after # for error log
 #
@@ -180,6 +180,6 @@ fi
 # WNPR 90.5 Connecticut Public Radio - Meriden, CT http://16113.live.streamtheworld.com/WNPRFM_SC
 # 90.5 WESA Pittsburgh's NPR New Station https://17273.live.streamtheworld.com:443/WESAFM.mp3
 #
-## English radio
+## UK radio
 #
 # BBC Radio London 94.9 FM http://bbcmedia.ic.llnwd.net/stream/bbcmedia_lrldn_mf_p
