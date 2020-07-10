@@ -4,7 +4,7 @@ simple mpv radio
 
 Usage: radio [option] or radio [url]
 
-       radio fuji    --> play fujiyama radio.
+       radio fuji --> play fujiyama radio.
 
        radio      --> random url and press 'q' next random url.
 
