@@ -4,6 +4,8 @@ simple mpv radio
 
 Usage: radio [option] or radio [url]
 
+       radio fuji    --> play fujiyama radio.
+
        radio      --> random url and press 'q' next random url.
 
        radio ,    --> rotate url in a specific time.
@@ -12,4 +14,4 @@ Usage: radio [option] or radio [url]
 
        radio TEST --> test url whether works or not.
 
-                      If failed, it logs the file named report.
+                      If failed, it logs on the file named report.
