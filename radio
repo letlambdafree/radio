@@ -28,7 +28,7 @@ while read -r line ; do
     fi
 done < "$0"
 
-radiolist=$(tail -n +"$(( x + 2 ))" "$0")
+radiolist=$(tail -n +"$(( x + 4 ))" "$0")
 linesnumber=$(echo "$radiolist"| wc -l)
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
@@ -38,7 +38,7 @@ if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # error radio filter
+        # filter for vary errors
         if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
             continue
         fi
@@ -50,6 +50,7 @@ if [[ -z $input ]] ; then
         wait $lastbgpid
         # printf "lastbgpid is $lastbgpid"
         sleep $TESTTIME
+        # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
             echo "Fail: $randomradio" >> report
             continue
@@ -62,7 +63,7 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # error radio filter
+        # filter for vary errors
         if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
             continue
         fi
@@ -72,6 +73,7 @@ if [[ $input == "," ]] ; then
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
+        # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
             echo "Fail: $randomradioe" >> report
             continue
@@ -129,6 +131,8 @@ fi
 
 
 ### radio_urls ###
+#
+# write a symptom without any space after # for error log
 #
 #error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
