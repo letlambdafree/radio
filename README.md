@@ -8,7 +8,7 @@ Usage: radio [option] or radio [url]
 
        radio ,    --> rotate url in a specific time.
 
-       radio .    --> all urls and choose a wanted url number.
+       radio .    --> display all urls and choose a wanted url number.
 
        radio TEST --> test url whether works or not.
 
