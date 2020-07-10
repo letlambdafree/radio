@@ -2,15 +2,15 @@
 
 ### simple mpv radio
 #
-# Usage: radio [option] or radio [url]
+# Usage: radio [option] or radio [radio]
 #
-#        radio      --> random a url and press 'q' to play a next random url.
+#        radio      --> random a radio and press 'q' to play a next random url.
 #
-#        radio ,    --> rotate a url in a specific time.
+#        radio ,    --> rotate a radio in a specific time.
 #
-#        radio .    --> all urls and choose a wanted url number.
+#        radio .    --> all radios and choose a wanted radio number.
 #
-#        radio TEST --> test a url whether works or not.
+#        radio TEST --> test a radio whether works or not.
 #                       If failed, it logs the file named report.
 #
 #        radio fuji --> play a fujiyama radio.
