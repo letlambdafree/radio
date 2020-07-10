@@ -14,4 +14,4 @@ Usage: radio [option] or radio [url]
 
                       If failed, it logs on the file named report.
 
-       radio fuji --> play fujiyama radio.
+       radio fuji --> play a fujiyama radio.
