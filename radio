@@ -4,19 +4,20 @@
 #
 # Usage: radio [option] or radio [url]
 #
-#        radio      --> random url and press q next random url
+#        radio      --> random url and press 'q' next random url.
 #
-#        radio ,    --> rotation time
+#        radio ,    --> rotate url in a specific time.
 #
-#        radio .    --> all urls and choose number
+#        radio .    --> all urls and choose a wanted url number.
 #
-#        radio TEST --> test urls
+#        radio TEST --> test url whether works or not.
+#                       If failed, it logs the file named report.
 
 input="$1"
 PLAYER="mpv"
 PS3="Choose : "
-STARTLINE="### radio_urls ###"
-REPORTSTARTLINE="### TEST REPORT ###"
+STARTLINE="### RADIO_URLS ###"
+REPORTFIRSTLINE="### FAIL RADIO URL REPORT ###"
 TESTTIME=5
 ROTATIONTIME=600
 
@@ -86,7 +87,7 @@ if [[ $input == "," ]] ; then
 fi
 
 if [[ $input == "TEST" ]] ; then
-    cat > report <<< $REPORTSTARTLINE
+    cat > report <<< $REPORTFIRSTLINE
     while read -r line ; do
         printf "\n\n"
         echo "$line" | awk -F http '{print $1}'| sed 's/# / /'
@@ -130,9 +131,18 @@ fi
 
 
 
-### radio_urls ###
+### RADIO_URLS ###
 #
 # write a symptom without any space after # for error log
+#
+## korea radio
+#
+# SBS 러브 FM-SBS 라디오 http://slive.ytn.co.kr:1935/live/fmlive_0624_1.sdp/playlist.m3u8
+# gukak http://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8
+# FM 95.1 TBS fm http://58.234.158.60:1935/fmlive/myStream/playlist.m3u8
+# KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
+#
+## japan radio
 #
 #error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
@@ -152,14 +162,16 @@ fi
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
 #mute FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
-# SBS 러브 FM-SBS 라디오 http://slive.ytn.co.kr:1935/live/fmlive_0624_1.sdp/playlist.m3u8
-# gukak http://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8
-# FM 95.1 TBS fm http://58.234.158.60:1935/fmlive/myStream/playlist.m3u8
-# KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
+#
+## usa radio
+#
 # NPR 24h Program Stream https://npr-ice.streamguys1.com/live.mp3
 # CNN HLN http://tunein.streamguys1.com/cnnhln
 # Fox News Radio https://streaming-ent.shoutcast.com/foxnews
 # KWSU 1250 Northwest Public Radio NPR News - Pullman, WA http://streams.nwpr.org:8000/NWPRNEWS
 # WNPR 90.5 Connecticut Public Radio - Meriden, CT http://16113.live.streamtheworld.com/WNPRFM_SC
 # 90.5 WESA Pittsburgh's NPR New Station https://17273.live.streamtheworld.com:443/WESAFM.mp3
+#
+## english radio
+#
 # BBC Radio London 94.9 FM http://bbcmedia.ic.llnwd.net/stream/bbcmedia_lrldn_mf_p
