@@ -2,7 +2,7 @@
 
 simple mpv radio
 
-Usage: radio [option] or radio [url]
+Usage: radio [option] or radio [a radio url]
 
        radio      --> random a radio and press 'q' next a random radio.
 
