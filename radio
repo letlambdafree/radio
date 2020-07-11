@@ -2,7 +2,7 @@
 
 ### simple mpv radio
 #
-# Usage: radio [option] or radio [radio]
+# Usage: radio [option] or radio [a radio url]
 #
 #        radio      --> random a radio and press 'q' to play a next random url.
 #
@@ -26,7 +26,7 @@ PLAYER="mpv"
 PS3="Choose : "
 STARTLINE="### MY FAVORITE RADIO URLS ###"
 REPORTFIRSTLINE="### FAIL RADIO URL's REPORT ###"
-TESTTIME=5
+TESTTIME=6
 ROTATIONTIME=600
 x=0
 
@@ -41,14 +41,19 @@ radiolist=$(tail -n +"$(( x + 4 ))" "$0")
 linesnumber=$(echo "$radiolist"| wc -l)
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
-grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
+grepcount=$(grep -ic "^# .+\b$input" <<< "$radioname")
 
 if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for vary errors
+        # filter for commented errors
         if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
+            printf "\n\n"
+            awk ' { $1="" ; print $0 }' <<< "$randomradio"
+            printf "\n\n"
+            awk '{ print $1 }' <<< "$randomradio"
+            printf "\n\n"
             continue
         fi
         printf "\n\n"
@@ -74,6 +79,11 @@ if [[ $input == "," ]] ; then
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
         # filter for vary errors
         if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
+            printf "\n\n"
+            awk ' { $1="" ; print $0 }' <<< "$randomradio"
+            printf "\n\n"
+            awk '{ print $1 }' <<< "$randomradio"
+            printf "\n\n"
             continue
         fi
         printf "\n\n"
@@ -118,13 +128,13 @@ fi
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /'
+    grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# / /'
     printf "\n"
-    theradioname=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /')
+    theradioname=$(grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# / /')
     $PLAYER $(grep -i "$theradioname" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    radionames=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# //')
+    radionames=$(grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# //')
     readarray -t arr_radionames <<< "$radionames"
     select radio in "${arr_radionames[@]}" ; do
         selectedradio="$radio"
