@@ -49,6 +49,9 @@ radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
 # printf "\n\ngrepcount is $grepcount\n\n"
+FILTER="^#\?$\|^##\+\|^#[^ ]"
+
+
 
 if [[ -z $input ]] ; then
     while true ; do
@@ -56,7 +59,7 @@ if [[ -z $input ]] ; then
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
-        if (( $(grep -c "^#\?$\|^##\+\|^#[^ ]" <<< "$randomradio") )) ; then
+        if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
             # printf "\n\n"
@@ -80,7 +83,7 @@ if [[ $input == "," ]] ; then
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
         # filter for comments, grep needs a option '-E' for '|'
-        if (( $(grep -c "^#\?$\|^##\+\|^#[^ ]" <<< "$randomradio") )) ; then
+        if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             continue
         fi
         printf "\n\n"
