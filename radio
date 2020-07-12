@@ -43,33 +43,37 @@ while read -r line ; do
         break
     fi
 done < "$0"
-printf "\n\nline is $line\n\n"
+# printf "\n\n line is $line \n\n"
+
 radiolist=$(tail -n +"$(( x + 4 ))" "$0")
 linesnumber=$(wc -l <<< "$radiolist")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepstring="^# .*\b$input"
 grepcount=$(grep -ic "$grepstring" <<< "$radioname")
-# printf "\n\ngrepcount is $grepcount\n\n"
+# printf "\n\n grepcount is $grepcount \n\n"
 
 
 
 if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
-        randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
+        randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
+                          tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
             # printf "\n\n"
-            # awk '{ print $1 }' <<< "$randomradio" | sed 's/^#*/ /'
+            # awk '{ print $1 }' <<< "$randomradio" | \
+            #   sed 's/^#*/ /'
             # printf "\n\n"
             continue
         fi
         printf "\n\n"
-        awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
+        awk -F http '{print $1}' <<< "$randomradio" | \
+            sed 's/# / /'
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -82,20 +86,21 @@ fi
 if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
-        randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for comments, grep needs a option '-E' for '|'
+        randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
+                          tail -1)
+        # filter for comments
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             continue
         fi
         printf "\n\n"
-        awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
+        awk -F http '{print $1}' <<< "$randomradio" | \
+            sed 's/# / /'
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
         # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $randomradio" >> "$REPORTPATH"
             continue
         fi
         sleep $ROTATIONTIME
@@ -109,7 +114,8 @@ if [[ $input == "TEST" ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         printf "\n\n"
-        awk -F http '{print $1}' <<< $line | sed 's/# / /'
+        awk -F http '{print $1}' <<< $line | \
+            sed 's/# / /'
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< $line)
         lastbgpid=$!
@@ -128,24 +134,26 @@ if [[ $input == "TEST" ]] ; then
 fi
 
 if (( $grepcount == 1 )) ; then
-    printf "\n"
+    printf "\n\n"
     grep -i "$grepstring" <<< "$radioname" | sed 's/# / /'
-    printf "\n"
-    theradioname=$(grep -i "$grepstring" <<< "$radioname" | sed 's/# / /')
+    printf "\n\n"
+    theradioname=$(grep -i "$grepstring" <<< "$radioname" | \
+                       sed 's/# / /')
     $PLAYER $(grep -i "$theradioname" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    radionames=$(grep -i "$grepstring" <<< "$radioname" | sed 's/# //')
+    radionames=$(grep -i "$grepstring" <<< "$radioname" | \
+                     sed 's/# //')
     readarray -t arr_radionames <<< "$radionames"
     select radio in "${arr_radionames[@]}" ; do
         selectedradio="$radio"
         break
     done
-    printf "\n $selectedradio\n\n"
+    printf "\n\n $selectedradio \n\n"
     $PLAYER $(grep -i "$selectedradio" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 else
-    printf "\n Sorry, the \"$1\" does not match.\n"
+    printf "\n\n Sorry, the \"$1\" does not match. \n\n"
 fi
 
 
