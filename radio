@@ -112,18 +112,17 @@ if [[ $1 == "g" ]] ; then
                 exit 1
         esac
     done <<< "$radiolist"
-    regionradiolist=$(tail -n +"$(( x + 2 ))" <<< "$radiolist")
+    grouplist=$(tail -n +"$(( x + 2 ))" <<< "$radiolist")
     y=0
     while read -r line ; do
         (( y++ ))
         if [[ "$line" =~ (^## .*) ]]; then
             break
         fi
-    done <<< "$regionradiolist"
-    regionradiolist=$(head -n "$(( y - 2 ))" <<< "$regionradiolist")
-    regionlinesnumber=$(wc -l <<< "$regionradiolist")
+    done <<< "$grouplist"
+    grouplist=$(head -n "$(( y - 2 ))" <<< "$grouplist")
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$regionradiolist")
+        randomradio=$(shuf -n 1 <<< "$grouplist")
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             continue
         fi
