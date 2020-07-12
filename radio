@@ -47,14 +47,16 @@ radiolist=$(tail -n +"$(( x + 4 ))" "$0")
 linesnumber=$(wc -l <<< "$radiolist")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
-grepcount=$(grep -ic "^# .+\b$input" <<< "$radioname")
+grepcount=$(grep -ic "^# .*\b$input" <<< "$radioname")
+# printf "\n\ngrepcount is $grepcount\n\n"
 
 if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for comments, grep needs a option '-E' for '|'
-        if (( $(grep -Ec "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
+        # filter for comments
+        # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
+        if (( $(grep -c "^#\(\?$\|#\+\|[^ ]\)" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
             # printf "\n\n"
@@ -65,7 +67,10 @@ if [[ -z $input ]] ; then
         printf "\n\n"
         awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
         printf "\n\n"
-        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio")
+        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
+        lastbgpid=$!
+        wait $lastbgpid
+        sleep 1
     done
     exit 0
 fi
@@ -74,7 +79,8 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        if (( $(grep -c "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
+        # filter for comments, grep needs a option '-E' for '|'
+        if (( $(grep -Ec "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
             continue
         fi
         printf "\n\n"
@@ -85,7 +91,7 @@ if [[ $input == "," ]] ; then
         sleep $TESTTIME
         # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $randomradioe" >> "$REPORTPATH"
+            echo "Fail: $randomradio" >> "$REPORTPATH"
             continue
         fi
         sleep $ROTATIONTIME
@@ -119,13 +125,13 @@ fi
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# / /'
+    grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /'
     printf "\n"
-    theradioname=$(grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# / /')
+    theradioname=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# / /')
     $PLAYER $(grep -i "$theradioname" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    radionames=$(grep -i "^# .+\b$input" <<< "$radioname" | sed 's/# //')
+    radionames=$(grep -i "^# .*\b$input" <<< "$radioname" | sed 's/# //')
     readarray -t arr_radionames <<< "$radionames"
     select radio in "${arr_radionames[@]}" ; do
         selectedradio="$radio"
