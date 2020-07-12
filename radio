@@ -25,8 +25,13 @@ input="$1"
 PLAYER="mpv"
 PS3="Choose : "
 STARTLINE="### MY FAVORITE RADIO URLS"
+REPORTDIR=$(dirname -- "$(readlink -f -- "$0")")
+printf "\n\nREPORTDIR is $REPORTDIR\n\n"
+REPORTFILENAME="report"
+REPORTPATH="$REPORTDIR/$REPORTFILENAME"
+printf "\n\nREPORTPATH is $REPORTPATH\n\n"
 REPORTFIRSTLINE="### FAIL RADIO URL's REPORT"
-TESTTIME=6
+TESTTIME=5
 ROTATIONTIME=600
 x=0
 
@@ -38,7 +43,7 @@ while read -r line ; do
 done < "$0"
 
 radiolist=$(tail -n +"$(( x + 4 ))" "$0")
-linesnumber=$(echo "$radiolist"| wc -l)
+linesnumber=$(wc -l <<< "$radiolist")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepcount=$(grep -ic "^# .+\b$input" <<< "$radioname")
@@ -47,7 +52,7 @@ if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for a commented line, grep needs a option '-E' for '|'
+        # filter for comments, grep needs a option '-E' for '|'
         if (( $(grep -Ec "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
@@ -66,7 +71,7 @@ if [[ -z $input ]] ; then
         sleep $TESTTIME
         # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $randomradio" >> report
+            echo "Fail: $randomradio" >> "$REPORTPATH"
             continue
         fi
     done
@@ -77,7 +82,7 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for a commented line, grep needs a option '-E' for '|'
+        # filter for comments, grep needs a option '-E' for '|'
         if (( $(grep -c "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
@@ -94,7 +99,7 @@ if [[ $input == "," ]] ; then
         sleep $TESTTIME
         # fail playing
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $randomradioe" >> report
+            echo "Fail: $randomradioe" >> "$REPORTPATH"
             continue
         fi
         sleep $ROTATIONTIME
@@ -105,23 +110,23 @@ if [[ $input == "," ]] ; then
 fi
 
 if [[ $input == "TEST" ]] ; then
-    cat > report <<< $REPORTFIRSTLINE
+    cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         printf "\n\n"
-        echo "$line" | awk -F http '{print $1}'| sed 's/# / /'
+        awk -F http '{print $1}' <<< $line | sed 's/# / /'
         printf "\n\n"
-        $PLAYER $(echo "$line" | awk -F http '{print FS$2}')
+        $PLAYER $(awk -F http '{print FS$2}' <<< $line)
         lastbgpid=$!
         sleep $TESTTIME
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $line" >> report
+            echo "Fail: $line" >> "$REPORTPATH"
         else
             kill -9 $lastbgpid
         fi
         sleep 1
     done <<< "$radiolist"
     printf "\n\n"
-    cat report
+    cat "$REPORTPATH"
     printf "\n\n"
     exit 0
 fi
@@ -175,7 +180,7 @@ fi
 #
 ## japan radio
 #
-#error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
+#loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
 # Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
 # FmHaro!76.1（エフエムハロー!） http://musicbird.leanstream.co/JCB034-MP3
@@ -187,7 +192,7 @@ fi
 # FM Yame (FM八女, JOZZ0BY-FM, 80.1 MHz, Yame, Fukuoka) http://musicbird.leanstream.co/JCB086-MP3
 # FM Hanako (JOZZ7AA-FM, 82.4 MHz, Moriguchi City, Osaka) http://musicbird.leanstream.co/JCB069-MP3
 # Kamakura FM 82.8 (かまくらFM, JOZZ3AF-FM, 82.8 MHz, Kamakura, Kanagawa) http://musicbird.leanstream.co/JCB016-MP3?args=tunein_02
-# Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
+#nosound Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
 # Humming FM Takarazuka (ハミングFM宝塚, JOZZ7AT-FM, 83.5 MHz, Takarazuka, Hyōgo) http://musicbird.leanstream.co/JCB071-MP3
 # 84.3 FM Edogawa (FMえどがわ, JOZZ3AS-FM, Edogawa City, Tokyo) http://musicbird.leanstream.co/JCB032-MP3
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
