@@ -56,7 +56,7 @@ if [[ -z $input ]] ; then
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
-        if (( $(grep -c "^#\(\?$\|#\+\|[^ ]\)" <<< "$randomradio") )) ; then
+        if (( $(grep -c "^#\?$\|^##\+\|^#[^ ]" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
             # printf "\n\n"
@@ -80,7 +80,7 @@ if [[ $input == "," ]] ; then
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
         # filter for comments, grep needs a option '-E' for '|'
-        if (( $(grep -Ec "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
+        if (( $(grep -c "^#\?$\|^##\+\|^#[^ ]" <<< "$randomradio") )) ; then
             continue
         fi
         printf "\n\n"
