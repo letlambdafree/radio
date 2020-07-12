@@ -47,7 +47,6 @@ done < "$0"
 
 # printf "\n\n startline's number is $x \n\n"
 radiolist=$(tail -n +"$(( x + 4 ))" "$0")
-linesnumber=$(wc -l <<< "$radiolist")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
 radiourl=$(awk -F http '{print FS$2}' <<< "$radiolist")
 grepstring="^# .*\b$1"
