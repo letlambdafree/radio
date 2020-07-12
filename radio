@@ -1,10 +1,15 @@
 #!/bin/bash
 
-### simple mpv radio
+### a command line radio player with mpv
 #
 # Usage: radio [option] or radio [a radio url]
 #
 #        radio      --> random a radio and
+#                       press 'q' to play a next random url.
+#                       this loops infinitely, press ctrl-c to exit.
+#
+#        radio n {jp|kr|usa|uk}
+#                   --> random a National radio and
 #                       press 'q' to play a next random url.
 #                       this loops infinitely, press ctrl-c to exit.
 #
@@ -20,8 +25,6 @@
 #        radio fuji --> play a fujiyama radio.
 
 ### TODO
-#
-# random: restrict region
 #
 # add more radio's urls
 
@@ -43,8 +46,7 @@ while read -r line ; do
     fi
 done < "$0"
 
-# printf "\n\n line is $line \n\n"
-
+# printf "\n\n startline's number is $x \n\n"
 radiolist=$(tail -n +"$(( x + 4 ))" "$0")
 linesnumber=$(wc -l <<< "$radiolist")
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
@@ -59,6 +61,90 @@ if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
+                          tail -1)
+        # filter for comments
+        # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
+        if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
+            # printf "\n\n"
+            # awk '{ $1="" ; print $0 }' <<< "$randomradio"
+            # printf "\n\n"
+            # awk '{ print $1 }' <<< "$randomradio" | \
+            #   sed 's/^#*/ /'
+            # printf "\n\n"
+            continue
+        fi
+        printf "\n\n"
+        awk -F http '{print $1}' <<< "$randomradio" | \
+            sed 's/# / /'
+        printf "\n\n"
+        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
+        lastbgpid=$!
+        wait $lastbgpid
+        sleep 1
+    done
+    exit 0
+fi
+
+if [[ "$1" == "n" ]] ; then
+    x=0
+    while read -r line ; do
+        (( x++ ))
+        # if [[ "$2" == "jp" ]] ; then
+        #    if [[ "$line" == "## Japan" ]] ; then
+        #        break
+        #    fi
+        # elif [[ "$2" == "kr" ]] ; then
+        #     if [[ "$line" == "## Korea" ]] ; then
+        #         break
+        #     fi
+        # elif [[ "$2" == "usa" ]] ; then
+        #     if [[ "$line" == "## USA" ]] ; then
+        #         break
+        #     fi
+        # elif [[ "$2" == "uk" ]] ; then
+        #     if [[ "$line" == "## UK" ]] ; then
+        #         break
+        #     fi
+        # fi
+        case "$2" in
+            jp)
+                if [[ "$line" == "## Japan" ]] ; then
+                    break
+                fi
+                ;;
+            kr)
+                if [[ "$line" == "## Korea" ]] ; then
+                    break
+                fi
+                ;;
+            usa)
+                if [[ "$line" == "## USA" ]] ; then
+                    break
+                fi
+                ;;
+            uk)
+                if [[ "$line" == "## UK" ]] ; then
+                    break
+                fi
+                ;;
+            *)
+                echo $"Usage: radio n {jp|kr|usa|uk}"
+                exit 1
+        esac
+    done <<< "$radiolist"
+    regionradiolist=$(tail -n +"$(( x + 2 ))" <<< "$radiolist")
+    y=0
+    while read -r line ; do
+        (( y++ ))
+        if [[ "$line" =~ (^## .*) ]]; then
+            break
+        fi
+    done <<< "$regionradiolist"
+    regionradiolist=$(head -n "$(( y - 2 ))" <<< "$regionradiolist")
+    regionlinesnumber=$(wc -l <<< "$regionradiolist")
+    while true ; do
+        randomnumber=$(shuf -i 1-$regionlinesnumber -n 1)
+        randomradio=$(head -"$randomnumber" <<< "$regionradiolist" | \
                           tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
@@ -162,11 +248,11 @@ fi
 #
 # write a symptom without any space after # for error log
 #
-## UK radio
+## UK
 #
 # BBC Radio London 94.9 FM http://bbcmedia.ic.llnwd.net/stream/bbcmedia_lrldn_mf_p
 #
-## USA radio
+## USA
 #
 # NPR 24h Program Stream https://npr-ice.streamguys1.com/live.mp3
 # CNN HLN http://tunein.streamguys1.com/cnnhln
@@ -175,14 +261,14 @@ fi
 # WNPR 90.5 Connecticut Public Radio - Meriden, CT http://16113.live.streamtheworld.com/WNPRFM_SC
 # 90.5 WESA Pittsburgh's NPR New Station https://17273.live.streamtheworld.com:443/WESAFM.mp3
 #
-## Korea radio
+## Korea
 #
 # SBS 러브 FM-SBS 라디오 http://slive.ytn.co.kr:1935/live/fmlive_0624_1.sdp/playlist.m3u8
 # gukak http://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8
 # FM 95.1 TBS fm http://58.234.158.60:1935/fmlive/myStream/playlist.m3u8
 # KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
 #
-## japan radio
+## Japan
 #
 #loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
@@ -202,3 +288,5 @@ fi
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
 # FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
+#
+## End
