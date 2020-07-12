@@ -47,12 +47,16 @@ if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for commented errors
-        if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
+        # filter for a commented line
+        if (( $(grep -c "^#?$" <<< "$randomradio") )) ; then
+            continue
+        elif (( $(grep -c "^##+" <<< "$randomradio") )) ; then
+            continue
+        elif (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
             printf "\n\n"
-            awk ' { $1="" ; print $0 }' <<< "$randomradio"
+            awk '{ $1="" ; print $0 }' <<< "$randomradio"
             printf "\n\n"
-            awk '{ print $1 }' <<< "$randomradio"
+            awk '{ print $1 }' <<< "$randomradio" | sed 's/#/ /'
             printf "\n\n"
             continue
         fi
@@ -77,13 +81,17 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for vary errors
-        if (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
-            printf "\n\n"
-            awk ' { $1="" ; print $0 }' <<< "$randomradio"
-            printf "\n\n"
-            awk '{ print $1 }' <<< "$randomradio"
-            printf "\n\n"
+        # filter for a commented line
+        if (( $(grep -c "^#?$" <<< "$randomradio") )) ; then
+            continue
+        elif (( $(grep -c "^##+" <<< "$randomradio") )) ; then
+            continue
+        elif (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
+            # printf "\n\n"
+            # awk '{ $1="" ; print $0 }' <<< "$randomradio"
+            # printf "\n\n"
+            # awk '{ print $1 }' <<< "$randomradio" | sed 's/#/ /'
+            # printf "\n\n"
             continue
         fi
         printf "\n\n"
@@ -187,7 +195,7 @@ fi
 # FM Yame (FM八女, JOZZ0BY-FM, 80.1 MHz, Yame, Fukuoka) http://musicbird.leanstream.co/JCB086-MP3
 # FM Hanako (JOZZ7AA-FM, 82.4 MHz, Moriguchi City, Osaka) http://musicbird.leanstream.co/JCB069-MP3
 # Kamakura FM 82.8 (かまくらFM, JOZZ3AF-FM, 82.8 MHz, Kamakura, Kanagawa) http://musicbird.leanstream.co/JCB016-MP3?args=tunein_02
-# Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
+#mute Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
 # Humming FM Takarazuka (ハミングFM宝塚, JOZZ7AT-FM, 83.5 MHz, Takarazuka, Hyōgo) http://musicbird.leanstream.co/JCB071-MP3
 # 84.3 FM Edogawa (FMえどがわ, JOZZ3AS-FM, Edogawa City, Tokyo) http://musicbird.leanstream.co/JCB032-MP3
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
