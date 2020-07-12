@@ -24,8 +24,8 @@
 input="$1"
 PLAYER="mpv"
 PS3="Choose : "
-STARTLINE="### MY FAVORITE RADIO URLS ###"
-REPORTFIRSTLINE="### FAIL RADIO URL's REPORT ###"
+STARTLINE="### MY FAVORITE RADIO URLS"
+REPORTFIRSTLINE="### FAIL RADIO URL's REPORT"
 TESTTIME=6
 ROTATIONTIME=600
 x=0
@@ -47,17 +47,13 @@ if [[ -z $input ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for a commented line
-        if (( $(grep -c "^#?$" <<< "$randomradio") )) ; then
-            continue
-        elif (( $(grep -c "^##+" <<< "$randomradio") )) ; then
-            continue
-        elif (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
-            printf "\n\n"
-            awk '{ $1="" ; print $0 }' <<< "$randomradio"
-            printf "\n\n"
-            awk '{ print $1 }' <<< "$randomradio" | sed 's/#/ /'
-            printf "\n\n"
+        # filter for a commented line, grep needs a option '-E' for '|'
+        if (( $(grep -Ec "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
+            # printf "\n\n"
+            # awk '{ $1="" ; print $0 }' <<< "$randomradio"
+            # printf "\n\n"
+            # awk '{ print $1 }' <<< "$randomradio" | sed 's/^#*/ /'
+            # printf "\n\n"
             continue
         fi
         printf "\n\n"
@@ -81,16 +77,12 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for a commented line
-        if (( $(grep -c "^#?$" <<< "$randomradio") )) ; then
-            continue
-        elif (( $(grep -c "^##+" <<< "$randomradio") )) ; then
-            continue
-        elif (( $(grep -c "^#[^ ]" <<< "$randomradio") )) ; then
+        # filter for a commented line, grep needs a option '-E' for '|'
+        if (( $(grep -c "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
             # printf "\n\n"
             # awk '{ $1="" ; print $0 }' <<< "$randomradio"
             # printf "\n\n"
-            # awk '{ print $1 }' <<< "$randomradio" | sed 's/#/ /'
+            # awk '{ print $1 }' <<< "$randomradio" | sed 's/^#*/ /'
             # printf "\n\n"
             continue
         fi
@@ -157,7 +149,7 @@ fi
 
 
 
-### MY FAVORITE RADIO URLS ###
+### MY FAVORITE RADIO URLS
 #
 # write a symptom without any space after # for error log
 #
@@ -195,9 +187,9 @@ fi
 # FM Yame (FM八女, JOZZ0BY-FM, 80.1 MHz, Yame, Fukuoka) http://musicbird.leanstream.co/JCB086-MP3
 # FM Hanako (JOZZ7AA-FM, 82.4 MHz, Moriguchi City, Osaka) http://musicbird.leanstream.co/JCB069-MP3
 # Kamakura FM 82.8 (かまくらFM, JOZZ3AF-FM, 82.8 MHz, Kamakura, Kanagawa) http://musicbird.leanstream.co/JCB016-MP3?args=tunein_02
-#mute Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
+# Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
 # Humming FM Takarazuka (ハミングFM宝塚, JOZZ7AT-FM, 83.5 MHz, Takarazuka, Hyōgo) http://musicbird.leanstream.co/JCB071-MP3
 # 84.3 FM Edogawa (FMえどがわ, JOZZ3AS-FM, Edogawa City, Tokyo) http://musicbird.leanstream.co/JCB032-MP3
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
-#mute FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
+# FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
