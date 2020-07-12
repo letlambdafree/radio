@@ -58,9 +58,10 @@ grepcount=$(grep -ic "$grepstring" <<< "$radioname")
 
 if [[ -z $1 ]] ; then
     while true ; do
-        randomnumber=$(shuf -i 1-$linesnumber -n 1)
-        randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
-                          tail -1)
+        randomradio=$(shuf -n 1 <<< "$radiolist")
+        # printf "$randomradio"
+        # randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
+        #                   tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
@@ -147,9 +148,9 @@ if [[ $1 == "g" ]] ; then
     regionradiolist=$(head -n "$(( y - 2 ))" <<< "$regionradiolist")
     regionlinesnumber=$(wc -l <<< "$regionradiolist")
     while true ; do
-        randomnumber=$(shuf -i 1-$regionlinesnumber -n 1)
-        randomradio=$(head -"$randomnumber" <<< "$regionradiolist" | \
-                          tail -1)
+        randomradio=$(shuf -n 1 <<< "$regionradiolist")
+        # randomradio=$(head -"$randomnumber" <<< "$regionradiolist" | \
+        #                   tail -1)
         # filter for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
@@ -175,9 +176,9 @@ fi
 
 if [[ $1 == "," ]] ; then
     while true ; do
-        randomnumber=$(shuf -i 1-$linesnumber -n 1)
-        randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
-                          tail -1)
+        randomradio=$(shuf -n 1 <<< "$radiolist")
+        # randomradio=$(head -"$randomnumber" <<< "$radiolist" | \
+        #                   tail -1)
         # filter for comments
         if (( $(grep -c "$FILTER" <<< "$randomradio") )) ; then
             continue
