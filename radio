@@ -4,11 +4,15 @@
 #
 # Usage: radio [option] or radio [a radio url]
 #
-#        radio      --> random a radio and press 'q' to play a next random url.
+#        radio      --> random a radio and
+#                       press 'q' to play a next random url.
+#                       this loops infinitely, press ctrl-c to exit.
 #
 #        radio ,    --> rotate a radio in a specific time.
+#                       this loops infinitely, press ctrl-c to exit.
 #
-#        radio .    --> display all radios and choose a wanted radio number.
+#        radio .    --> display all radios and
+#                       choose a wanted radio number.
 #
 #        radio TEST --> test radios whether work or not.
 #                       If failed, it logs the file named report.
@@ -25,11 +29,8 @@ input="$1"
 PLAYER="mpv"
 PS3="Choose : "
 STARTLINE="### MY FAVORITE RADIO URLS"
-REPORTDIR=$(dirname -- "$(readlink -f -- "$0")")
-printf "\n\nREPORTDIR is $REPORTDIR\n\n"
-REPORTFILENAME="report"
-REPORTPATH="$REPORTDIR/$REPORTFILENAME"
-printf "\n\nREPORTPATH is $REPORTPATH\n\n"
+SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
+REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### FAIL RADIO URL's REPORT"
 TESTTIME=5
 ROTATIONTIME=600
@@ -64,16 +65,7 @@ if [[ -z $input ]] ; then
         printf "\n\n"
         awk -F http '{print $1}' <<< "$randomradio" | sed 's/# / /'
         printf "\n\n"
-        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
-        lastbgpid=$!
-        wait $lastbgpid
-        # printf "lastbgpid is $lastbgpid"
-        sleep $TESTTIME
-        # fail playing
-        if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $randomradio" >> "$REPORTPATH"
-            continue
-        fi
+        $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio")
     done
     exit 0
 fi
@@ -82,13 +74,7 @@ if [[ $input == "," ]] ; then
     while true ; do
         randomnumber=$(shuf -i 1-$linesnumber -n 1)
         randomradio=$(head -"$randomnumber" <<< "$radiolist" | tail -1)
-        # filter for comments, grep needs a option '-E' for '|'
         if (( $(grep -c "^#(?$|#+|[^ ])" <<< "$randomradio") )) ; then
-            # printf "\n\n"
-            # awk '{ $1="" ; print $0 }' <<< "$randomradio"
-            # printf "\n\n"
-            # awk '{ print $1 }' <<< "$randomradio" | sed 's/^#*/ /'
-            # printf "\n\n"
             continue
         fi
         printf "\n\n"
