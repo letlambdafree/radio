@@ -1,28 +1,27 @@
 #!/bin/bash
 
-### a command line radio player with mpv
+### A command line radio player with mpv
 #
 # Usage: radio [option] or radio [a radio url]
 #
-#        radio      --> random a radio and
-#                       press 'q' to play a next random url.
-#                       this loops infinitely, press ctrl-c to exit.
+#        radio : random a radio, press 'q' to play a next random url.
+#                this loops infinitely, press ctrl-c to exit.
 #
-#        radio g {jp|kr|usa|uk}
-#                   --> random a National group and
-#                       press 'q' to play a next random url.
-#                       this loops infinitely, press ctrl-c to exit.
+#        radio g {jp|kr|us|uk} : random a National group,
+#                                press 'q' to play a next random url.
+#                                this loops infinitely, press ctrl-c to exit.
 #
-#        radio ,    --> rotate a radio in a specific time.
-#                       this loops infinitely, press ctrl-c to exit.
+#        radio , : rotate a radio in a specific time.
+#                  this loops infinitely, press ctrl-c to exit.
 #
-#        radio .    --> display all radios and
-#                       choose a wanted radio number.
+#        radio . : display all radios, choose a wanted radio number.
 #
-#        radio TEST --> test radios whether work or not.
-#                       If failed, it logs the file named report.
+#        radio TEST : test all radios whether work or not.
+#                     If failed, it logs the file named report.
 #
-#        radio fuji --> play a fujiyama radio.
+#        radio fuji : play a fujiyama radio.
+#
+#        radio {h|-h|--help} : print this help message.
 
 ### TODO
 #
@@ -30,10 +29,10 @@
 
 PLAYER="mpv"
 PS3="Choose : "
-STARTLINE="### MY FAVORITE RADIO URLS"
+STARTLINE="### MY RADIO URLS"
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
 REPORTPATH="$SCRIPTDIR/report"
-REPORTFIRSTLINE="### FAIL RADIO URL's REPORT"
+REPORTFIRSTLINE="### RADIO REPORT"
 TESTTIME=5
 ROTATIONTIME=600
 FILTER="^#\?$\|^##\+\|^#[^ ]"
@@ -95,7 +94,7 @@ if [[ $1 == "g" ]] ; then
                     break
                 fi
                 ;;
-            usa)
+            us)
                 if [[ "$line" == "## USA" ]] ; then
                     break
                 fi
@@ -184,9 +183,33 @@ if [[ $1 == "TEST" ]] ; then
     exit 0
 fi
 
+if [[ $1 =~ ^(h|-h|--help)$ ]] ; then
+    x=0
+    while read -r line ; do
+        (( x++ ))
+        if [[ "$line" =~ ^(# Usage) ]]; then
+            break
+        fi
+    done < "$0"
+    helplist=$(tail -n +$(( x - 2 )) "$0")
+    x=0
+    while read -r line ; do
+        (( x++ ))
+        if [[ "$line" =~ (^$) ]]; then
+            break
+        fi
+    done <<< "$helplist"
+    helplist=$(head -n $x <<< "$helplist")
+    printf "\n"
+    printf "$helplist" | sed 's/#\+//'
+    printf "\n"
+    exit 0
+fi
+
 if (( $grepcount == 1 )) ; then
     printf "\n\n"
-    grep -i "$grepstring" <<< "$radioname" | sed 's/# / /'
+    grep -i "$grepstring" <<< "$radioname" | \
+        sed 's/# / /'
     printf "\n\n"
     theradioname=$(grep -i "$grepstring" <<< "$radioname" | \
                        sed 's/# / /')
@@ -209,7 +232,7 @@ fi
 
 
 
-### MY FAVORITE RADIO URLS
+### MY RADIO URLS
 #
 # write a symptom without any space after # for error log
 #
