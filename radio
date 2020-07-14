@@ -2,26 +2,32 @@
 
 ### A command line radio player with mpv
 #
-# Usage: radio [option] or radio [a radio url]
+# Usage: radio [a radio] or radio option [arg ...]
 #
-#        radio : random a radio, press 'q' to play a next random url.
-#                this loops infinitely, press ctrl-c to exit.
+# radio fuji
+#       - play a fujiyama radio.
 #
-#        radio g {jp|kr|us|uk} : random a National group,
-#                                press 'q' to play a next random url.
-#                                this loops infinitely, press ctrl-c to exit.
+# radio
+#       - play a random radio, press 'q' to play the next.
+#         this loops infinitely, press ctrl-c to exit.
 #
-#        radio , : rotate a radio in a specific time.
-#                  this loops infinitely, press ctrl-c to exit.
+# radio {-r|--rotate}
+#       - rotate a radio in a specific time.
+#         this loops infinitely, press ctrl-c to exit.
 #
-#        radio . : display all radios, choose a wanted radio number.
+# radio {-a|--all}
+#       - display all radios, choose a radio number.
 #
-#        radio TEST : test all radios whether work or not.
-#                     If failed, it logs the file named report.
+# radio {-t|--test}
+#       - test all radios whether work or not.
+#         If failed, it logs the file named report.
 #
-#        radio fuji : play a fujiyama radio.
+# radio {-g|--group} {jp|kr|us|uk}
+#       - play a random National group, press 'q' to play the next.
+#         this loops infinitely, press ctrl-c to exit.
 #
-#        radio {h|-h|--help} : print this help message.
+# radio {-h|--help}
+#       - print this help.
 
 ### TODO
 #
@@ -37,6 +43,7 @@ TESTTIME=5
 ROTATIONTIME=600
 FILTER="^#\?$\|^##\+\|^#[^ ]"
 
+x=0
 while read -r line ; do
     (( x++ ))
     if [[ "$line" == "$STARTLINE" ]]; then
@@ -79,7 +86,7 @@ if [[ -z $1 ]] ; then
     exit 0
 fi
 
-if [[ $1 == "g" ]] ; then
+if [[ $1 =~ ^(-g|--group)$ ]] ; then
     x=0
     while read -r line ; do
         (( x++ ))
@@ -105,7 +112,7 @@ if [[ $1 == "g" ]] ; then
                 fi
                 ;;
             *)
-                printf "\n\n Usage: radio g {jp|kr|usa|uk} \n\n"
+                printf "\n\n Usage: radio g {jp|kr|us|uk} \n\n"
                 exit 1
         esac
     done <<< "$radiolist"
@@ -135,7 +142,11 @@ if [[ $1 == "g" ]] ; then
     exit 0
 fi
 
-if [[ $1 == "," ]] ; then
+if [[ $1 =~ ^(-a|--all)$ ]] ; then
+    radio .
+fi
+
+if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$radiolist")
         # filter for comments
@@ -160,7 +171,7 @@ if [[ $1 == "," ]] ; then
     exit 0
 fi
 
-if [[ $1 == "TEST" ]] ; then
+if [[ $1 =~ ^(-t|--test)$  ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         printf "\n\n"
@@ -183,7 +194,7 @@ if [[ $1 == "TEST" ]] ; then
     exit 0
 fi
 
-if [[ $1 =~ ^(h|-h|--help)$ ]] ; then
+if [[ $1 =~ ^(-h|--help)$ ]] ; then
     x=0
     while read -r line ; do
         (( x++ ))
@@ -192,16 +203,16 @@ if [[ $1 =~ ^(h|-h|--help)$ ]] ; then
         fi
     done < "$0"
     helplist=$(tail -n +$(( x - 2 )) "$0")
-    x=0
+    y=0
     while read -r line ; do
-        (( x++ ))
+        (( y++ ))
         if [[ "$line" =~ (^$) ]]; then
             break
         fi
     done <<< "$helplist"
-    helplist=$(head -n $x <<< "$helplist")
+    helplist=$(head -n $y <<< "$helplist")
     printf "\n"
-    printf "$helplist" | sed 's/#\+//'
+    printf "$helplist" | sed 's/#\+//' | sed 's/^ //'
     printf "\n"
     exit 0
 fi
