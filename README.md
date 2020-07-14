@@ -23,8 +23,7 @@
 > #####       If failed, it logs the file named report.
 
  #### radio {-g|--group} {jp|kr|us|uk}
-> #####       play a random National group,
-> #####       press 'q' to play the next.
+> #####       play a random National group, press 'q' to play the next.
 > #####       this loops infinitely, press ctrl-c to exit.
 
  #### radio {-h|--help}
