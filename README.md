@@ -1,24 +1,31 @@
 # radio
 
-A command line radio player with mpv
+## A command line radio player with mpv<br>
 
- Usage: radio [option] or radio [a radio url]
+### Usage: radio [a radio] or radio option [arg ...]<br>
 
-        radio : random a radio, press 'q' to play a next random url.
-                this loops infinitely, press ctrl-c to exit.
+- radio fuji<br>
+       play a fujiyama radio.<br>
 
-        radio g {jp|kr|us|uk} : random a National group,
-                                press 'q' to play a next random url.
-                                this loops infinitely, press ctrl-c to exit.
+- radio<br>
+       play a random radio, press 'q' to play the next.<br>
+       this loops infinitely, press ctrl-c to exit.<br>
 
-        radio , : rotate a radio in a specific time.
-                  this loops infinitely, press ctrl-c to exit.
+- radio {-r|--rotate}<br>
+       rotate a radio in a specific time.<br>
+       this loops infinitely, press ctrl-c to exit.<br>
 
-        radio . : display all radios, choose a wanted radio number.
+- radio {-a|--all}<br>
+       display all radios, choose a radio number.<br>
 
-        radio TEST : test radios whether work or not.
-                     If failed, it logs the file named report.
+- radio {-t|--test}<br>
+       test all radios whether work or not.<br>
+       If failed, it logs the file named report.<br>
 
-        radio fuji : play a fujiyama radio.
+- radio {-g|--group} {jp|kr|us|uk}<br>
+       play a random National group,<br>
+       press 'q' to play the next.<br>
+       this loops infinitely, press ctrl-c to exit.<br>
 
-        radio {h|H|-h|--help} : print this help message.
+- radio {-h|--help}<br>
+       print this help.<br>
