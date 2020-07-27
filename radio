@@ -22,7 +22,7 @@
 #       - test all radios whether work or not.
 #         If failed, it logs the file named report.
 #
-# radio {-g|--group} {jp|kr|us|uk}
+# radio {-g|--group} {jp|kr|us|uk|yt}
 #       - play a random National group, press 'q' to play the next.
 #         this loops infinitely, press ctrl-c to exit.
 #
@@ -111,8 +111,13 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
                     break
                 fi
                 ;;
+            yt)
+                if [[ "$line" == "## Youtube" ]] ; then
+                    break
+                fi
+                ;;
             *)
-                printf "\n\n Usage: radio g {jp|kr|us|uk} \n\n"
+                printf "\n\n Usage: radio g {jp|kr|us|uk|yt} \n\n"
                 exit 1
         esac
     done <<< "$radiolist"
@@ -287,5 +292,10 @@ fi
 # Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
 # FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
+#
+## Youtube
+#
+# 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
+# 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
 #
 ## End
