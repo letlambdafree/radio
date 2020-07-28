@@ -22,8 +22,8 @@
 #       - test all radios whether work or not.
 #         If failed, it logs the file named report.
 #
-# radio {-g|--group} {jp|kr|us|uk|yt}
-#       - play a random National group, press 'q' to play the next.
+# radio {-g|--group} {uk|us|kr|jp|yt}
+#       - play a random group, press 'q' to play the next.
 #         this loops infinitely, press ctrl-c to exit.
 #
 # radio {-h|--help}
@@ -31,14 +31,14 @@
 
 ### TODO
 #
-# add more radio's urls
+# add more urls
 
 PLAYER="mpv"
 PS3="Choose : "
-STARTLINE="### MY RADIO URLS"
+STARTLINE="### MY URLS"
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
 REPORTPATH="$SCRIPTDIR/report"
-REPORTFIRSTLINE="### RADIO REPORT"
+REPORTFIRSTLINE="### REPORT"
 TESTTIME=5
 ROTATIONTIME=600
 FILTER="^#\?$\|^##\+\|^#[^ ]"
@@ -76,7 +76,7 @@ if [[ -z $1 ]] ; then
         fi
         printf "\n\n"
         awk -F http '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /'
+            sed 's/# / /' | grep --color=auto .
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -91,33 +91,33 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while read -r line ; do
         (( x++ ))
         case "$2" in
-            jp)
-                if [[ "$line" == "## Japan" ]] ; then
-                    break
-                fi
-                ;;
-            kr)
-                if [[ "$line" == "## Korea" ]] ; then
+            uk)
+                if [[ "$line" =~ ^(## UK) ]] ; then
                     break
                 fi
                 ;;
             us)
-                if [[ "$line" == "## USA" ]] ; then
+                if [[ "$line" =~ ^(## USA) ]] ; then
                     break
                 fi
                 ;;
-            uk)
-                if [[ "$line" == "## UK" ]] ; then
+            kr)
+                if [[ "$line" =~ ^(## Korea) ]] ; then
+                    break
+                fi
+                ;;
+            jp)
+                if [[ "$line" =~ ^(## Japan) ]] ; then
                     break
                 fi
                 ;;
             yt)
-                if [[ "$line" == "## Youtube" ]] ; then
+                if [[ "$line" =~ ^(## Youtube) ]] ; then
                     break
                 fi
                 ;;
             *)
-                printf "\n\n Usage: radio g {jp|kr|us|uk|yt} \n\n"
+                printf "\n\n Usage: radio -g {jp|kr|us|uk|yt} \n\n"
                 exit 1
         esac
     done <<< "$radiolist"
@@ -137,7 +137,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
         fi
         printf "\n\n"
         awk -F http '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /'
+            sed 's/# / /' | grep --color=auto .
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -160,7 +160,7 @@ if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
         fi
         printf "\n\n"
         awk -F http '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /'
+            sed 's/# / /' | grep --color=auto .
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -181,7 +181,7 @@ if [[ $1 =~ ^(-t|--test)$  ]] ; then
     while read -r line ; do
         printf "\n\n"
         awk -F http '{print $1}' <<< $line | \
-            sed 's/# / /'
+            sed 's/# / /' | grep --color=auto .
         printf "\n\n"
         $PLAYER $(awk -F http '{print FS$2}' <<< $line)
         lastbgpid=$!
@@ -225,7 +225,7 @@ fi
 if (( $grepcount == 1 )) ; then
     printf "\n\n"
     grep -i "$grepstring" <<< "$radioname" | \
-        sed 's/# / /'
+        sed 's/# / /' | grep --color=auto .
     printf "\n\n"
     theradioname=$(grep -i "$grepstring" <<< "$radioname" | \
                        sed 's/# / /')
@@ -239,7 +239,9 @@ elif (( $grepcount > 1 )) ; then
         selectedradio="$radio"
         break
     done
-    printf "\n\n $selectedradio \n\n"
+    printf "\n\n"
+    printf "$selectedradio" | grep --color=auto .
+    printf "\n\n"
     $PLAYER $(grep -i "$selectedradio" <<< "$radiolist" | \
                   awk -F http '{print FS$2}')
 else
@@ -248,7 +250,7 @@ fi
 
 
 
-### MY RADIO URLS
+### MY URLS
 #
 # write a symptom without any space after # for error log
 #
@@ -274,7 +276,7 @@ fi
 #
 ## Japan
 #
-#loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
+# loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
 # Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
 # FmHaro!76.1（エフエムハロー!） http://musicbird.leanstream.co/JCB034-MP3
@@ -293,7 +295,7 @@ fi
 # FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
-## Youtube
+## Youtube - need a youtube-dl (gentoo: emerge youtube-dl)
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
 # 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
