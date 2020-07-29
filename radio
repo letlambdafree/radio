@@ -250,23 +250,19 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     exit 0
 fi
 
-grepstring="$1"
-grepcount=$(grep -ic "$grepstring" <<< "$urlname")
+grepcount=$(grep -ic "$1" <<< "$urlname")
 # printf "\n\n grepcount is $grepcount \n\n"
 
 if (( $grepcount == 1 )) ; then
     printf "\n\n"
-    grep -i "$grepstring" <<< "$urlname" | \
-        sed 's/# / /' | grep --color=auto .
+    grep -i "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
     printf "\n\n"
-    theurlname=$(grep -i "$grepstring" <<< "$urlname" | \
-                     sed 's/# / /')
+    theurlname=$(grep -i "$1" <<< "$urlname" | sed 's/# / /')
     # printf "\n\n theurlname is $theurlname \n\n"
     $PLAYER $(grep -i "$theurlname" <<< "$urllist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    urlnames=$(grep -i "$grepstring" <<< "$urlname" | \
-                     sed 's/^# //' | sed '/^#/d')
+    urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
         selectedurl="$url"
