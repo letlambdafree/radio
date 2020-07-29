@@ -68,8 +68,9 @@ done <<< "$urllist"
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 # printf "\n\n radiolist is $radiolist \n\n"
 urlname=$(awk -F http '{print $1}' <<< "$urllist")
+# printf "\n\n urlname is $urlname \n\n"
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
-grepstring="^# .*\b$1"
+grepstring="$1"
 grepcount=$(grep -ic "$grepstring" <<< "$urlname")
 # printf "\n\n grepcount is $grepcount \n\n"
 
@@ -254,7 +255,8 @@ if (( $grepcount == 1 )) ; then
         sed 's/# / /' | grep --color=auto .
     printf "\n\n"
     theurlname=$(grep -i "$grepstring" <<< "$urlname" | \
-                       sed 's/# / /')
+                     sed 's/# / /')
+    # printf "\n\n theurlname is $theurlname \n\n"
     $PLAYER $(grep -i "$theurlname" <<< "$urllist" | \
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
