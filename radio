@@ -70,10 +70,6 @@ radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 urlname=$(awk -F http '{print $1}' <<< "$urllist")
 # printf "\n\n urlname is $urlname \n\n"
 radioname=$(awk -F http '{print $1}' <<< "$radiolist")
-grepstring="$1"
-grepcount=$(grep -ic "$grepstring" <<< "$urlname")
-# printf "\n\n grepcount is $grepcount \n\n"
-
 
 
 if [[ -z $1 ]] ; then
@@ -113,17 +109,17 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
                 fi
                 ;;
             us)
-                if [[ "$line" =~ ^(## USA  Radio) ]] ; then
+                if [[ "$line" =~ ^(## USA Radio) ]] ; then
                     break
                 fi
                 ;;
             kr)
-                if [[ "$line" =~ ^(## Korea  Radio) ]] ; then
+                if [[ "$line" =~ ^(## Korea Radio) ]] ; then
                     break
                 fi
                 ;;
             jp)
-                if [[ "$line" =~ ^(## Japan  Radio) ]] ; then
+                if [[ "$line" =~ ^(## Japan Radio) ]] ; then
                     break
                 fi
                 ;;
@@ -142,8 +138,13 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
                     break
                 fi
                 ;;
+            pl)
+                if [[ "$line" =~ ^(## Play List) ]] ; then
+                    break
+                fi
+                ;;
             *)
-                printf "\n\n Usage: radio -g {jp|kr|us|uk|mv|ln|lc} \n\n"
+                printf "\n\n Usage: radio -g {jp|kr|us|uk|mv|ln|lc|pl} \n\n"
                 exit 1
         esac
     done <<< "$urllist"
@@ -249,6 +250,10 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     exit 0
 fi
 
+grepstring="$1"
+grepcount=$(grep -ic "$grepstring" <<< "$urlname")
+# printf "\n\n grepcount is $grepcount \n\n"
+
 if (( $grepcount == 1 )) ; then
     printf "\n\n"
     grep -i "$grepstring" <<< "$urlname" | \
@@ -261,7 +266,7 @@ if (( $grepcount == 1 )) ; then
                   awk -F http '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
     urlnames=$(grep -i "$grepstring" <<< "$urlname" | \
-                     sed 's/# //')
+                     sed 's/^# //' | sed '/^#/d')
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
         selectedurl="$url"
@@ -304,7 +309,7 @@ fi
 #
 ## Japan Radio
 #
-# loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
+#loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
 # Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
 # FmHaro!76.1（エフエムハロー!） http://musicbird.leanstream.co/JCB034-MP3
@@ -329,20 +334,24 @@ fi
 #
 ### MY YOUTUBE URLS - need a youtube-dl
 #
-## Music Vedio
+## Music Video
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
 # 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
 #
 ## Live News
 #
-# [YTN LIVE] 대한민국 24시간 뉴스채널 YTN https://www.youtube.com/watch?v=U_sYIKWhJvk
-# [생방송] 연합뉴스TV｜24시간 현장을 전합니다 https://www.youtube.com/watch?v=oul5ldEUbHk
+# YTN LIVE 대한민국 24시간 뉴스채널 https://www.youtube.com/watch?v=U_sYIKWhJvk
+# 연합뉴스TV 24시간 현장을 전합니다 https://www.youtube.com/watch?v=oul5ldEUbHk
 # ANNnewsCH https://www.youtube.com/watch?v=coYw-eVU0Ks
 # 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
 #
 ## Live Cam
 #
 # Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=wUOLcfnUKz0
+#
+## Play List
+#
+# [해피선데이] 1박 2일 - Two days and one night https://www.youtube.com/playlist\?list\=PL50Rj50nc_5tAxeMAwoAMs7CnBCqf5dVu
 #
 ### MY YOUTUBE URLS END
