@@ -264,6 +264,21 @@ elif (( $grepcount > 1 )) ; then
     urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
+        if [[ $REPLY == "*" ]] ; then
+            printf "\n\n You choose all items. \n"
+            printf "\n They'll be played randomly and infinitely. \n"
+            printf "\n To exit, Press Ctrl-c or Ctrl-d. \n\n"
+            while true ; do
+                randomurlname=$(shuf -n 1 <<< "$urlnames")
+                printf "\n\n"
+                printf  "$randomurlname" | grep --color=auto .
+                printf "\n\n"
+                randomurlline=$(grep -i "$randomurlname" <<< "$urllist")
+                $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomurlline")
+                sleep 1
+            done
+            exit 0
+        fi
         selectedurl="$url"
         break
     done
