@@ -134,7 +134,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
                 fi
                 ;;
             lc)
-                if [[ "$line" =~ ^(## Live Cam) ]] ; then
+                if [[ "$line" =~ ^(## Live Camera) ]] ; then
                     break
                 fi
                 ;;
@@ -334,6 +334,11 @@ fi
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
 # 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
+# Sia - Chandelier (Official Music Video) https://www.youtube.com/watch?v=2vjPBrBU-TM
+# Sia - Elastic Heart feat. Shia LaBeouf & Maddie Ziegler (Official Video) https://www.youtube.com/watch?v=KWZGAExj-es
+# LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
+# LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
+# LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
 #
 ## Live News
 #
@@ -342,12 +347,22 @@ fi
 # ANNnewsCH https://www.youtube.com/watch?v=coYw-eVU0Ks
 # 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
 #
-## Live Cam
+## Live Camera
 #
 # Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=wUOLcfnUKz0
+# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=NnNoL7shdjg
+# 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
+# Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
+# [LIVE]大阪 道頓堀 ライブカメラ　osaka Dotonbori LiveCamera https://www.youtube.com/watch?v=JZ61olPaaSQ
+# EarthCam Live: Times Square in 4K https://www.youtube.com/watch?v=mRe-514tGMg
+# Times Square: 1560 Broadway View Live https://www.youtube.com/watch?v=4qyZLflp-sI
+# WATCH NASA: Earth Viewing cameras - Earth From Space ISS feed https://www.youtube.com/watch?v=DDU-rZs-Ic4
+# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
+# Lamai Walking Street Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=17Deeq8N2e4
+# Sweet Soul Cafe Cam 2, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=C1LlLCsWdcg
+# Sweet Soul Cafe Cam 1, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=B_2He_msuWU
+# Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
 #
 ## Play List
-#
-# [해피선데이] 1박 2일 - Two days and one night https://www.youtube.com/playlist\?list\=PL50Rj50nc_5tAxeMAwoAMs7CnBCqf5dVu
 #
 ### MY YOUTUBE URLS END
