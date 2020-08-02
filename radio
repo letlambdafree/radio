@@ -208,7 +208,7 @@ elif (( $grepcount > 1 )) ; then
         if [[ $REPLY =~ ^("*"|"0")$ ]] ; then
             printf "\n\n You choose all items. \n"
             printf "\n They'll be played randomly and infinitely. \n"
-            printf "\n To exit, press Ctrl-c repeatedly. \n\n"
+            printf "\n To exit, press Ctrl-c. \n\n"
             while true ; do
                 randomurlname=$(shuf -n 1 <<< "$urlnames")
                 printf "\n\n"
@@ -289,6 +289,12 @@ fi
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
 # 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
+# Sia - Big Girls Cry (Official Video) https://www.youtube.com/watch?v=4NhKWZpkw1Q
+# Sia - The Greatest https://www.youtube.com/watch?v=GKSRyLdjsPA
+# Sia - Together (from the motion picture Music) https://www.youtube.com/watch?v=vnfGni4_RlI
+# Sia - Alive https://www.youtube.com/watch?v=t2NgsJrrAyM
+# Sia - Unstoppable https://www.youtube.com/watch?v=H3evCDEXp4I
+# Sia - Together (Initial Talk 80s Bootleg Video) https://www.youtube.com/watch?v=4Qi9wP9Smj4
 # Sia - Chandelier (Official Music Video) https://www.youtube.com/watch?v=2vjPBrBU-TM
 # Sia - Elastic Heart feat. Shia LaBeouf & Maddie Ziegler (Official Video) https://www.youtube.com/watch?v=KWZGAExj-es
 # LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
@@ -304,6 +310,8 @@ fi
 #
 ## Live Camera - remove a [ and ] for avoiding errors
 #
+# 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=am2Ivi346tQ&feature=emb_logo
+# 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
 # Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=wUOLcfnUKz0
 #loading error 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=NnNoL7shdjg
 # 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
@@ -311,12 +319,27 @@ fi
 # LIVE 大阪 道頓堀 ライブカメラ osaka Dotonbori LiveCamera https://www.youtube.com/watch?v=JZ61olPaaSQ
 # EarthCam Live: Times Square in 4K https://www.youtube.com/watch?v=mRe-514tGMg
 # Times Square: 1560 Broadway View Live https://www.youtube.com/watch?v=4qyZLflp-sI
+# Times Square: Express View Live https://www.youtube.com/watch?v=uw0lpuMSe9E&feature=emb_logo
+# Las Vegas: AE View Live https://www.youtube.com/watch?v=1ZNCtDLUKHw
 # WATCH NASA: Earth Viewing cameras - Earth From Space ISS feed https://www.youtube.com/watch?v=DDU-rZs-Ic4
-# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
+# Avalanche Bay Indoor Waterpark, Boyne Mountain https://www.youtube.com/watch?v=mm_fnIJ1c6Q&feature=emb_logo
+# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk https://www.youtube.com/watch?v=j_-4HMuw7PY
+# White Mountains TV Live Cam: North Conway Village
+# Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=D-N5ZiWzAC0&feature=emb_logo
+# Live Stream — Public Square, Watertown NY — Jake Johnson Properties https://www.youtube.com/watch?v=qP1y7Tdab7Y&feature=emb_logo
+# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (AI Camera looking for people) https://www.youtube.com/watch?v=-Fen7JP8oHI&feature=emb_logo
+# LIVE · Thailand / Koh Phangan · Thong Sala center (Mandolino Pizzeria) https://www.youtube.com/watch?v=1nnt_Beuo88&feature=emb_logo
 # Lamai Walking Street Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=17Deeq8N2e4
 # Sweet Soul Cafe Cam 2, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=C1LlLCsWdcg
 # Sweet Soul Cafe Cam 1, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=B_2He_msuWU
 # Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
+# Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
+# WebCam.NL | www.sportsatsea.nl - live HD PTZ camera. https://www.youtube.com/watch?v=5rkyZrQv674&feature=emb_logo
+# Beach Bar live HD Webcam in Cruz Bay https://www.youtube.com/watch?v=GrZ8LL8yAqs&feature=emb_logo
+# The central beach of Lignano Sabbiadoro (Italy) - Spiaggia LIVE streaming HD Webcam https://www.youtube.com/watch?v=2Xjog3Xs-P0
+# LIVE Deerfield Beach - Beach Camera https://www.youtube.com/watch?v=-HAi_5IIAYg&feature=emb_logo
+# Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
+# Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
 #
 ## Play List
 #
