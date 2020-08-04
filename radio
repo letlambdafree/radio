@@ -22,7 +22,7 @@
 #       - test all radios whether work or not.
 #         If failed, it logs the file named report.
 #
-# radio {-g|--group} {uk|us|kr|jp|mv|ln|lc}
+# radio {-g|--group} {uk|us|kr|jp|mv|lt|ln|lc|pl}
 #       - play a random group, press 'q' to play the next.
 #         this loops infinitely, press ctrl-c to exit.
 #
@@ -96,10 +96,11 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
             kr) [[ "$line" =~ ^(## Korea Radio) ]] && break ;;
             jp) [[ "$line" =~ ^(## Japan Radio) ]] && break ;;
             mv) [[ "$line" =~ ^(## Music Video) ]] && break ;;
+            lt) [[ "$line" =~ ^(## Live Tv) ]] && break ;;
             ln) [[ "$line" =~ ^(## Live News) ]] && break ;;
             lc) [[ "$line" =~ ^(## Live Camera) ]] && break ;;
             pl) [[ "$line" =~ ^(## Play List) ]] && break ;;
-            *) printf "\n\n Usage: radio -g {jp|kr|us|uk|mv|ln|lc|pl} \n\n"
+            *) printf "\n\n Usage: radio -g {jp|kr|us|uk|mv|lt|ln|lc|pl} \n\n"
                exit 1
         esac
     done <<< "$urllist"
@@ -283,6 +284,8 @@ fi
 #
 #
 #
+#
+#
 ### MY YOUTUBE URLS - It needs a youtube-dl package
 #
 ## Music Video
@@ -305,19 +308,50 @@ fi
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
 #
+## Live Tv
+#
+# 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
+# franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.com/watch?v=wwNZKfBLAsc
+# Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=QTRJR1en1gk
+# Adom TV Live https://www.youtube.com/watch?v=T9VZUsOC5M4
+# LIVE | Let's go to Broomstown together by watching Robocar POLI TV series! https://www.youtube.com/watch?v=A00EakzkUTc
+#
 ## Live News
 #
+# LIVE 언제, 어디서나 KBS 24시뉴스 https://www.youtube.com/watch?v=MkQgP7KzjCk
 # YTN LIVE 대한민국 24시간 뉴스채널 https://www.youtube.com/watch?v=U_sYIKWhJvk
-# 연합뉴스TV 24시간 현장을 전합니다 https://www.youtube.com/watch?v=oul5ldEUbHk
+# [생방송] 연합뉴스TV https://www.youtube.com/watch?v=0GN8t2u3flc
+# CNA 24/7 LIVE https://www.youtube.com/watch?v=XWq5kBlakcQ
 # ANNnewsCH https://www.youtube.com/watch?v=coYw-eVU0Ks
-# 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
+# Taiwan Formosa live news HD https://www.youtube.com/watch?v=XxJKnDLYZz4
+# Taiwan EBC 24h live news https://www.youtube.com/watch?v=RaIJ767Bj_M
+# Watch NBC News NOW Live https://www.youtube.com/watch?v=6hRk_zPTN1c
+# NBC2 Live Stream https://www.youtube.com/watch?v=tPeUHECNLKs
+# Watch The Latest News Headlines and Live Events: ABC News Live https://www.youtube.com/watch?v=w_Ma8oQLmSM
+# Al Jazeera English | Live https://www.youtube.com/watch?v=EOBY5J0b9Uo
+# Watch Sky News live https://www.youtube.com/watch?v=9Auq9mYxFEE
+# Euronews English Live https://www.youtube.com/watch?v=T7mRH8a5pMs
+# FRANCE 24 English – LIVE – International Breaking News & Top stories - 24/7 stream https://www.youtube.com/watch?v=FUnJzFT2i84
+# Sushant Singh Rajput Death Probe LIVE Updates | LIVE TV 24x7 | Latest News | Republic TV LIVE https://www.youtube.com/watch?v=ckKA-0MUm4E
+# LIVE: Puthiya Thalaimurai Live News | Tamil News | Live Tamil News | Ayodhya Ram temple | Sushant https://www.youtube.com/watch?v=fyd-8IcMIJo
+# OTV Live 24x7 | Latest News Updates | Coronavirus(COVID-19) News | Unlock 3.0 Updates | Odisha TV https://www.youtube.com/watch?v=AWq8Z8rP7b4
+# Sakshi TV LIVE | Today 'Telugu News' LIVE  https://www.youtube.com/watch?v=8McTsOqeueE
+# Manorama News LIVE TV https://www.youtube.com/watch?v=jjH6v95z3Nw
+# India Today Live TV | Breaking News Live | Latest India News in English https://www.youtube.com/watch?v=dA2cWLqsKBk
+# Watch SAMAA TV's News LIVE STREAM 24/7 | Full Pakistan coverage https://www.youtube.com/watch?v=pDXlyQf0Of8
+# AajTak Live TV | Ayodhya Ram Mandir | Sushant | Rajasthan | Corona | Breaking News https://www.youtube.com/watch?v=emCd4fr93rs
+# LIVE STREAMING KOMPAS TV 24/7 https://www.youtube.com/watch?v=gIB2egm7tL8
+# NETTV LIVE 2020 https://www.youtube.com/watch?v=WZ83bBwWZQY
+# Channels Television Live https://www.youtube.com/watch?v=-c8LoR84Xjs
+# TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
+# Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
 #
 ## Live Camera
 #
 # 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=am2Ivi346tQ&feature=emb_logo
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
 # Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=wUOLcfnUKz0
-#loading error 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=NnNoL7shdjg
+# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=NnNoL7shdjg
 # 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
 # Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
 # LIVE 大阪 道頓堀 ライブカメラ osaka Dotonbori LiveCamera https://www.youtube.com/watch?v=JZ61olPaaSQ
