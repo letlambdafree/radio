@@ -45,7 +45,7 @@ REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### REPORT"
 TESTTIME=5
 ROTATIONTIME=600
-FILTER="^#\?$\|^##\+\|^#[^ ]"
+PATTERN="^#\?$\|^##\+\|^#[^ ]"
 x=0
 while read -r line ; do
     (( x++ ))
@@ -66,56 +66,13 @@ radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 # printf "\n\n urlname is $urlname \n\n"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
-grepcount=$(grep -icF "$1" <<< "$urlname")
-# printf "\n\n grepcount is $grepcount \n\n"
-
-if (( $grepcount == 1 )) ; then
-    printf "\n\n"
-    grep -iF "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
-    printf "\n\n"
-    theurlname=$(grep -iF "$1" <<< "$urlname" | sed 's/# / /')
-    # printf "\n\n theurlname is $theurlname \n\n"
-    $PLAYER $(grep -iF "$theurlname" <<< "$urllist" | \
-                  awk -F 'http' '{print FS$2}')
-elif (( $grepcount > 1 )) ; then
-    urlnames=$(grep -iF "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
-    readarray -t arr_urlnames <<< "$urlnames"
-    select url in "${arr_urlnames[@]}" ; do
-        if [[ $REPLY =~ ^("*"|"0")$ ]] ; then
-            printf "\n\n You choose all items. \n"
-            printf "\n They'll be played randomly and infinitely. \n"
-            printf "\n To exit, press Ctrl-c. \n\n"
-            while true ; do
-                randomurlname=$(shuf -n 1 <<< "$urlnames")
-                printf "\n\n"
-                printf  "$randomurlname" | grep --color=auto .
-                printf "\n\n"
-                randomurlline=$(grep -iF "$randomurlname" <<< "$urllist")
-                $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomurlline")
-                sleep 1
-            done
-            exit 0
-        fi
-        selectedurl="$url"
-        break
-    done
-    printf "\n\n"
-    printf "$selectedurl" | grep --color=auto .
-    printf "\n\n"
-    $PLAYER $(grep -iF "$selectedurl" <<< "$urllist" | \
-                  awk -F 'http' '{print FS$2}')
-    exit 0
-else
-    printf "\n\n Sorry, the \"$1\" does not match. \n\n"
-    exit 1
-fi
 
 if [[ -z $1 ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$radiolist")
-        # filter for comments
+        # PATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
-        (( $(grep -c "$FILTER" <<< "$randomradio") )) && continue
+        (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
         printf "\n\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
@@ -131,8 +88,8 @@ fi
 if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$radiolist")
-        # filter for comments
-        (( $(grep -c "$FILTER" <<< "$randomradio") )) && continue
+        # PATTERN for comments
+        (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
         printf "\n\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
@@ -189,7 +146,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     grouplist=$(head -n "$(( y - 2 ))" <<< "$grouplist")
     while true ; do
         randomradio=$(shuf -n 1 <<< "$grouplist")
-        (( $(grep -c "$FILTER" <<< "$randomradio") )) && continue
+        (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
         printf "\n\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
@@ -244,6 +201,50 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     exit 0
 fi
 
+# add -F grep option for string
+grepcount=$(grep -icF "$1" <<< "$urlname")
+printf "\n\n grepcount is $grepcount \n\n"
+
+if (( $grepcount == 1 )) ; then
+    printf "\n\n"
+    grep -iF "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
+    printf "\n\n"
+    theurlname=$(grep -iF "$1" <<< "$urlname" | sed 's/# / /')
+    # printf "\n\n theurlname is $theurlname \n\n"
+    $PLAYER $(grep -iF "$theurlname" <<< "$urllist" | \
+                  awk -F 'http' '{print FS$2}')
+elif (( $grepcount > 1 )) ; then
+    urlnames=$(grep -iF "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
+    readarray -t arr_urlnames <<< "$urlnames"
+    select url in "${arr_urlnames[@]}" ; do
+        if [[ $REPLY =~ ^("*"|"0")$ ]] ; then
+            printf "\n\n You choose all items. \n"
+            printf "\n They'll be played randomly and infinitely. \n"
+            printf "\n To exit, press Ctrl-c. \n\n"
+            while true ; do
+                randomurlname=$(shuf -n 1 <<< "$urlnames")
+                printf "\n\n"
+                printf  "$randomurlname" | grep --color=auto .
+                printf "\n\n"
+                randomurlline=$(grep -iF "$randomurlname" <<< "$urllist")
+                $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomurlline")
+                sleep 1
+            done
+            exit 0
+        fi
+        selectedurl="$url"
+        break
+    done
+    printf "\n\n"
+    printf "$selectedurl" | grep --color=auto .
+    printf "\n\n"
+    $PLAYER $(grep -iF "$selectedurl" <<< "$urllist" | \
+                  awk -F 'http' '{print FS$2}')
+    exit 0
+else
+    printf "\n\n Sorry, the \"$1\" does not match. \n\n"
+    exit 1
+fi
 
 ### MY RADIO URLS
 #
