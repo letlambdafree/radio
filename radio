@@ -203,7 +203,7 @@ fi
 
 # add -F grep option for string
 grepcount=$(grep -icF "$1" <<< "$urlname")
-printf "\n\n grepcount is $grepcount \n\n"
+# printf "\n\n grepcount is $grepcount \n\n"
 
 if (( $grepcount == 1 )) ; then
     printf "\n\n"
@@ -292,12 +292,10 @@ fi
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
 ### MY RADIO URLS END
-#
-#
-#
-#
-#
-### MY YOUTUBE URLS - It needs a youtube-dl package
+
+
+
+### MY YOUTUBE URLS - You need a youtube-dl to play url.
 #
 ## Music Video
 #
@@ -357,7 +355,7 @@ fi
 # TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
 # Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
 #
-## Live Camera
+## Live Camera - often off camera
 #
 # 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=am2Ivi346tQ&feature=emb_logo
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
@@ -381,6 +379,9 @@ fi
 # Lamai Walking Street Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=17Deeq8N2e4
 # Sweet Soul Cafe Cam 2, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=C1LlLCsWdcg
 # Sweet Soul Cafe Cam 1, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=B_2He_msuWU
+# Hush Bar Cam, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wqvStiZyVBI
+# Crystal Bay Yacht Club Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=aJdwAUUbFL8
+# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (Seaview Sunrise Resort) https://www.youtube.com/watch?v=9WbCh2AE_NU
 # Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
 # Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
 # WebCam.NL | www.sportsatsea.nl - live HD PTZ camera. https://www.youtube.com/watch?v=5rkyZrQv674&feature=emb_logo
