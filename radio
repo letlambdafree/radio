@@ -217,7 +217,7 @@ elif (( $grepcount > 1 )) ; then
     urlnames=$(grep -iF "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
-        if [[ $REPLY =~ ^("*"|"0")$ ]] ; then
+        if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
             printf "\n"
             printf "\n You choose all items."
             printf "\n They'll be played randomly and infinitely."
@@ -250,7 +250,7 @@ else
     exit 1
 fi
 
-### MY RADIO URLS
+### MY RADIO URLS - this urls are from a latte radio app in kde plazma.
 #
 # write a symptom without any space after # for error log
 #
@@ -296,7 +296,7 @@ fi
 
 
 
-### MY YOUTUBE URLS - You need a youtube-dl to play url.
+### MY YOUTUBE URLS - You need a youtube-dl to play a url.
 #
 ## Music Video
 #
@@ -382,6 +382,7 @@ fi
 # Sweet Soul Cafe Cam 1, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=B_2He_msuWU
 # Hush Bar Cam, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wqvStiZyVBI
 # Crystal Bay Yacht Club Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=aJdwAUUbFL8
+# Crystal Bay Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=AK9TkxHCbHU
 # LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (Seaview Sunrise Resort) https://www.youtube.com/watch?v=9WbCh2AE_NU
 # Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
 # Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
@@ -391,9 +392,13 @@ fi
 # LIVE Deerfield Beach - Beach Camera https://www.youtube.com/watch?v=-HAi_5IIAYg&feature=emb_logo
 # Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
 # Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
+# Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=OUl8C1WEbMk
 #
 ## Play List
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
+# 정태춘 박은옥 노래모음 https://www.youtube.com/watch?v=5pXkvDVeCR4
+# 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
+# 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
 #
 ### MY YOUTUBE URLS END
