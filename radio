@@ -36,7 +36,6 @@
 ### TODO
 #
 # add more urls
-# add local music files
 
 PLAYER="mpv"
 PS3="Choose : "
@@ -243,19 +242,19 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
 fi
 
 # add -F grep option for string
-grepcount=$(grep -icF "$1" <<< "$urlname")
+grepcount=$(grep -ic "$1" <<< "$urlname")
 # printf "\n grepcount is $grepcount \n"
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    grep -iF "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
+    grep -i "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
     printf "\n"
-    theurlname=$(grep -iF "$1" <<< "$urlname" | sed 's/# / /')
+    theurlname=$(grep -i "$1" <<< "$urlname" | sed 's/# / /')
     # printf "\n theurlname is $theurlname \n"
-    $PLAYER $(grep -iF "$theurlname" <<< "$urllist" | \
+    $PLAYER $(grep -i "$theurlname" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
-    urlnames=$(grep -iF "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
+    urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
@@ -269,7 +268,7 @@ elif (( $grepcount > 1 )) ; then
                 printf "\n"
                 printf  "\n $randomurlname" | grep --color=auto .
                 printf "\n"
-                randomurlline=$(grep -iF "$randomurlname" <<< "$urllist")
+                randomurlline=$(grep -i "$randomurlname" <<< "$urllist")
                 $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomurlline")
                 sleep 1
             done
@@ -281,7 +280,7 @@ elif (( $grepcount > 1 )) ; then
     printf "\n"
     printf "\n $selectedurl" | grep --color=auto .
     printf "\n"
-    $PLAYER $(grep -iF "$selectedurl" <<< "$urllist" | \
+    $PLAYER $(grep -i "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     exit 0
 else
@@ -291,7 +290,7 @@ else
     exit 1
 fi
 
-### MY RADIO URLS - this urls are from a latte radio app in kde plazma.
+### MY RADIO URLS - from a radio app in kde plazma latte.
 #
 # write a symptom without any space after # for error log
 #
@@ -337,9 +336,7 @@ fi
 #
 #
 #
-#
-#
-### MY YOUTUBE URLS - You need a youtube-dl to play a url.
+### MY YOUTUBE URLS - need a youtube-dl to play a url.
 #
 ## Music Video
 #
@@ -443,18 +440,21 @@ fi
 # 정태춘 박은옥 노래모음 https://www.youtube.com/watch?v=5pXkvDVeCR4
 # 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
 # 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
+# 해바라기[모두가 사랑이에요/사랑의 시] 외 18곡 https://www.youtube.com/watch?v=HPGX4pphDg0
+# 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
+# 산울림 노래 모음 https://www.youtube.com/watch?v=WCBdljML6GI
 #
 ### MY YOUTUBE URLS END
 #
 #
 #
-#
-#
-### MY LOCAL MUSIC - hard to understand
+### MY LOCAL MUSIC
 #
 # 아이유 - 꽃갈피 둘
-# 김광석 [2005 Best ]
+# 김광석 [2005 Best]
 # fav
-# usb in sportage
+# Camila Cabello
+# moana
+# sia
 #
 ### MY LOCAL MUSIC END
