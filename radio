@@ -18,7 +18,7 @@
 # radio {-a|--all}
 #       - display all urls, choose a url number.
 #
-# radio {-g|--group} {uk|us|kr|jp|mv|lt|ln|lc|pl}
+# radio {-g|--group} {en|kr|jp|mv|lt|ln|lc|pl}
 #       - play a group, press 'q' to play the next.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
@@ -52,7 +52,7 @@ while read -r line ; do
     [[ "$line" == "$RADIOSTARTLINE" ]] && break
 done < "$0"
 
-# printf "\n\n RADIOSTARTLINE's number is $x \n\n"
+# printf "\n RADIOSTARTLINE's number is $x \n"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
 
 x=0
@@ -62,9 +62,9 @@ while read -r line ; do
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-# printf "\n\n radiolist is $radiolist \n\n"
+# printf "\n radiolist is $radiolist \n"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-# printf "\n\n urlname is $urlname \n\n"
+# printf "\n urlname is $urlname \n"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 if [[ -z $1 ]] ; then
@@ -73,10 +73,10 @@ if [[ -z $1 ]] ; then
         # PATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
-        printf "\n\n"
+        printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
-        printf "\n\n"
+        printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         wait $lastbgpid
@@ -90,10 +90,10 @@ if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
         randomradio=$(shuf -n 1 <<< "$radiolist")
         # PATTERN for comments
         (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
-        printf "\n\n"
+        printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
-        printf "\n\n"
+        printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -113,28 +113,28 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while read -r line ; do
         (( x++ ))
         case "$2" in
-            uk) [[ "$line" =~ ^(## UK Radio) ]] && break ;;
-            us) [[ "$line" =~ ^(## USA Radio) ]] && break ;;
-            kr) [[ "$line" =~ ^(## Korea Radio) ]] && break ;;
-            jp) [[ "$line" =~ ^(## Japan Radio) ]] && break ;;
+            en) [[ "$line" =~ ^(## English Radio) ]] && break ;;
+            kr) [[ "$line" =~ ^(## Korean Radio) ]] && break ;;
+            jp) [[ "$line" =~ ^(## Japanese Radio) ]] && break ;;
             mv) [[ "$line" =~ ^(## Music Video) ]] && break ;;
             lt) [[ "$line" =~ ^(## Live Tv) ]] && break ;;
             ln) [[ "$line" =~ ^(## Live News) ]] && break ;;
             lc) [[ "$line" =~ ^(## Live Camera) ]] && break ;;
             pl) [[ "$line" =~ ^(## Play List) ]] && break ;;
-            *) printf "\n There is no \"$2\" group. \n"
-               printf "\n Usage: radio -g {jp|kr|us|uk|mv|lt|ln|lc|pl} \n"
-               printf "\n uk - UK Radio \n"
-               printf "\n us - USA Radio \n"
-               printf "\n kr - Korea Radio \n"
-               printf "\n jp - Japan Radio \n"
-               printf "\n mv - Music Video \n"
-               printf "\n lt - Live Tv \n"
-               printf "\n ln - Live News \n"
-               printf "\n lc - Live Camera \n"
-               printf "\n pl - Play List \n"
-               printf "\n"
-               exit 1
+            *)printf "\n There is no \"$2\" group."
+              printf "\n"
+              printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
+              printf "\n"
+              printf "\n en - English Radio"
+              printf "\n kr - Korean Radio"
+              printf "\n jp - Japanese Radio"
+              printf "\n mv - Music Video"
+              printf "\n lt - Live Tv"
+              printf "\n ln - Live News"
+              printf "\n lc - Live Camera"
+              printf "\n pl - Play List"
+              printf "\n"
+              exit 1
         esac
     done <<< "$urllist"
     grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
@@ -147,10 +147,10 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$grouplist")
         (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
-        printf "\n\n"
+        printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/# / /' | grep --color=auto .
-        printf "\n\n"
+        printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         wait $lastbgpid
@@ -162,10 +162,10 @@ fi
 if [[ $1 =~ ^(-t|--test)$ ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
-        printf "\n\n"
+        printf "\n"
         awk -F 'http' '{print $1}' <<< $line | \
             sed 's/# / /' | grep --color=auto .
-        printf "\n\n"
+        printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< $line)
         lastbgpid=$!
         sleep $TESTTIME
@@ -176,9 +176,9 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
         fi
         sleep 1
     done <<< "$urllist"
-    printf "\n\n"
+    printf "\n"
     cat "$REPORTPATH"
-    printf "\n\n"
+    printf "\n"
     exit 0
 fi
 
@@ -196,21 +196,21 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     done <<< "$helplist"
     helplist=$(head -n $x <<< "$helplist")
     printf "\n"
-    printf "$helplist" | sed 's/#\+//' | sed 's/^ //'
+    printf "\n $helplist" | sed 's/#\+//' | sed 's/^ //'
     printf "\n"
     exit 0
 fi
 
 # add -F grep option for string
 grepcount=$(grep -icF "$1" <<< "$urlname")
-# printf "\n\n grepcount is $grepcount \n\n"
+# printf "\n grepcount is $grepcount \n"
 
 if (( $grepcount == 1 )) ; then
-    printf "\n\n"
+    printf "\n"
     grep -iF "$1" <<< "$urlname" | sed 's/# / /' | grep --color=auto .
-    printf "\n\n"
+    printf "\n"
     theurlname=$(grep -iF "$1" <<< "$urlname" | sed 's/# / /')
-    # printf "\n\n theurlname is $theurlname \n\n"
+    # printf "\n theurlname is $theurlname \n"
     $PLAYER $(grep -iF "$theurlname" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
 elif (( $grepcount > 1 )) ; then
@@ -218,14 +218,16 @@ elif (( $grepcount > 1 )) ; then
     readarray -t arr_urlnames <<< "$urlnames"
     select url in "${arr_urlnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"0")$ ]] ; then
-            printf "\n\n You choose all items. \n"
-            printf "\n They'll be played randomly and infinitely. \n"
-            printf "\n To exit, press Ctrl-c. \n\n"
+            printf "\n"
+            printf "\n You choose all items."
+            printf "\n They'll be played randomly and infinitely."
+            printf "\n To exit, press Ctrl-c."
+            printf "\n"
             while true ; do
                 randomurlname=$(shuf -n 1 <<< "$urlnames")
-                printf "\n\n"
-                printf  "$randomurlname" | grep --color=auto .
-                printf "\n\n"
+                printf "\n"
+                printf  "\n $randomurlname" | grep --color=auto .
+                printf "\n"
                 randomurlline=$(grep -iF "$randomurlname" <<< "$urllist")
                 $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomurlline")
                 sleep 1
@@ -235,14 +237,16 @@ elif (( $grepcount > 1 )) ; then
         selectedurl="$url"
         break
     done
-    printf "\n\n"
-    printf "$selectedurl" | grep --color=auto .
-    printf "\n\n"
+    printf "\n"
+    printf "\n $selectedurl" | grep --color=auto .
+    printf "\n"
     $PLAYER $(grep -iF "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     exit 0
 else
-    printf "\n\n Sorry, the \"$1\" does not match. \n\n"
+    printf "\n"
+    printf "\n Sorry, the \"$1\" does not match."
+    printf "\n"
     exit 1
 fi
 
@@ -250,12 +254,9 @@ fi
 #
 # write a symptom without any space after # for error log
 #
-## UK Radio
+## English Radio
 #
 # BBC Radio London 94.9 FM http://bbcmedia.ic.llnwd.net/stream/bbcmedia_lrldn_mf_p
-#
-## USA Radio
-#
 # NPR 24h Program Stream https://npr-ice.streamguys1.com/live.mp3
 # CNN HLN http://tunein.streamguys1.com/cnnhln
 # Fox News Radio https://streaming-ent.shoutcast.com/foxnews
@@ -263,15 +264,15 @@ fi
 # WNPR 90.5 Connecticut Public Radio - Meriden, CT http://16113.live.streamtheworld.com/WNPRFM_SC
 # 90.5 WESA Pittsburgh's NPR New Station https://17273.live.streamtheworld.com:443/WESAFM.mp3
 #
-## Korea Radio
+## Korean Radio
 #
 # SBS 러브 FM-SBS 라디오 http://slive.ytn.co.kr:1935/live/fmlive_0624_1.sdp/playlist.m3u8
 # gukak http://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8
 # FM 95.1 TBS fm http://58.234.158.60:1935/fmlive/myStream/playlist.m3u8
+#
+## Japanese Radio
+#
 # KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
-#
-## Japan Radio
-#
 #loading-error Eden of the West http://edenofthewest.com:8080/weeaboo.mp3
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
 # Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
