@@ -22,6 +22,10 @@
 #       - play a group, press 'q' to play the next.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
+# radio {-l|--local}
+#       - play local music files.
+#         this loops randomly and infinitely, press ctrl-c to exit.
+#
 # radio {-t|--test}
 #       - test all radios whether work or not.
 #         If failed, it logs the file named report.
@@ -36,10 +40,13 @@
 
 PLAYER="mpv"
 PS3="Choose : "
+LOCALDIR="/mnt/data/Music/"
 RADIOSTARTLINE="### MY RADIO URLS"
 RADIOENDLINE="### MY RADIO URLS END"
 YOUTUBESTARTLINE="### MY YOUTUBE URLS"
 YOUTUBEENDLINE="### MY YOUTUBE URLS END"
+LOCALSTARTLINE="### MY LOCAL MUSIC"
+LOCALENDLINE="### MY LOCAL MUSIC END"
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
 REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### REPORT"
@@ -49,16 +56,17 @@ PATTERN="^#\?$\|^##\+\|^#[^ ]"
 x=0
 while read -r line ; do
     (( x++ ))
-    [[ "$line" == "$RADIOSTARTLINE" ]] && break
+    [[ "$line" =~ ^("$RADIOSTARTLINE") ]] && break
 done < "$0"
 
 # printf "\n RADIOSTARTLINE's number is $x \n"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
+# printf "\n $urllist \n"
 
 x=0
 while read -r line ; do
     (( x++ ))
-    [[ "$line" == "$RADIOENDLINE" ]] && break
+    [[ "$line" =~ ^("$RADIOENDLINE") ]] && break
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
@@ -120,7 +128,6 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
             lt) [[ "$line" =~ ^(## Live Tv) ]] && break ;;
             ln) [[ "$line" =~ ^(## Live News) ]] && break ;;
             lc) [[ "$line" =~ ^(## Live Camera) ]] && break ;;
-            pl) [[ "$line" =~ ^(## Play List) ]] && break ;;
             *)printf "\n There is no \"$2\" group."
               printf "\n"
               printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
@@ -138,12 +145,12 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
         esac
     done <<< "$urllist"
     grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
-    y=0
+    x=0
     while read -r line ; do
-        (( y++ ))
+        (( x++ ))
         [[ "$line" =~ ^##+ ]] && break
     done <<< "$grouplist"
-    grouplist=$(head -n "$(( y - 2 ))" <<< "$grouplist")
+    grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
         randomradio=$(shuf -n 1 <<< "$grouplist")
         (( $(grep -c "$PATTERN" <<< "$randomradio") )) && continue
@@ -152,6 +159,40 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
             sed 's/# / /' | grep --color=auto .
         printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
+        lastbgpid=$!
+        wait $lastbgpid
+        sleep 1
+    done
+    exit 0
+fi
+
+if [[ $1 =~ ^(-l|--local)$ ]] ; then
+    x=0
+    printf "$urllist" | wc -l
+    printf "$urllist"
+    while read -r line ; do
+        (( x++ ))
+        if [[ "$line" =~ ^("$LOCALSTARTLINE") ]] ; then
+            break
+        fi
+    done <<< "$urllist"
+    printf "$x"
+    locallist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
+    printf "$locallist"
+    x=0
+    while read -r line ; do
+        (( x++ ))
+        [[ "$line" =~ ^##+ ]] && break
+    done <<< "$locallist"
+    locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
+    while true ; do
+        randomlocal=$(shuf -n 1 <<< "$locallist")
+        (( $(grep -c "$PATTERN" <<< "$randomlocal") )) && continue
+        printf "\n"
+        sed 's/# / /' <<< "$randomlocal" | grep --color=auto .
+        printf "\n"
+        randomlocal=$(sed 's/# //' <<< "$randomlocal")
+        $PLAYER "$LOCALDIR""$randomlocal" &
         lastbgpid=$!
         wait $lastbgpid
         sleep 1
@@ -293,9 +334,11 @@ fi
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
 ### MY RADIO URLS END
-
-
-
+#
+#
+#
+#
+#
 ### MY YOUTUBE URLS - You need a youtube-dl to play a url.
 #
 ## Music Video
@@ -402,3 +445,16 @@ fi
 # 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
 #
 ### MY YOUTUBE URLS END
+#
+#
+#
+#
+#
+### MY LOCAL MUSIC - hard to understand
+#
+# 아이유 - 꽃갈피 둘
+# 김광석 [2005 Best ]
+# fav
+# usb in sportage
+#
+### MY LOCAL MUSIC END
