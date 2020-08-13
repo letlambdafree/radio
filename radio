@@ -6,7 +6,7 @@
 #
 # radio "regex"
 #       - plays a searched item.
-#         need quote for regex searching.
+#         need quote for regex searching and "or" searching.
 #         don't need quote for "and" searching, only white-space needed.
 #
 # radio
@@ -131,7 +131,8 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
             ln) [[ $line =~ ^(## Live News) ]] && break ;;
             lc) [[ $line =~ ^(## Live Camera) ]] && break ;;
             pl) [[ $line =~ ^(## Play List) ]] && break ;;
-            *)printf "\n There is no \"$2\" group."
+            *)printf "\n Sorry, there is no \"$2\" group."
+              printf "\n Try again."
               printf "\n"
               printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
               printf "\n"
@@ -303,34 +304,38 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
 fi
 
 # grep 'and' option
-# testing...
 for arg in "$@"; do
     if [[ -z $grepnames ]] ; then
         grepnames=$(grep -i "$arg" <<< "$urlname")
     else
         grepnames=$(grep -i "$arg" <<< "$grepnames")
     fi
-    printf "\n grepnames is $grepnames \n"
+    printf "\n"
+    printf "\n grepnames is $grepnames"
+    printf "\n"
 done
-grepcount=$(wc -l <<< "$grepnames")
-printf "\n grepcount is $grepcount \n"
+if [[ -n $grepnames ]] ; then
+    grepcount=$(wc -l <<< "$grepnames")
+else
+    grepcount=0
+fi
+printf "\n"
+printf "\n grepcount is $grepcount"
+printf "\n"
 
 if (( $grepcount == 1 )) ; then
-    theurlname=$(grep -i "$1" <<< "$urlname" | sed 's/# / /')
     printf "\n"
-    grep --color=auto . <<< "$theurlname"
+    sed 's/# / /' <<< "$grepnames" | grep --color=auto .
     printf "\n"
-    httpurl=$(grep -i "$theurlname" <<< "$grepnames" | \
+    httpurl=$(grep -i "$grepnames" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -i "$theurlname" <<< "$grepnames" | \
+        $PLAYER "$LOCALDIR"$(grep -i "$grepnames" <<< "$urllist" | \
                                  sed 's/# //')
     else
         $PLAYER "$httpurl"
     fi
 elif (( $grepcount > 1 )) ; then
-    # urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
-    # readarray -t arr_urlnames <<< "$urlnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
