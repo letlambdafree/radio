@@ -4,34 +4,36 @@
 #
 # Usage: radio [a radio] or radio option [arg ...]
 #
-# radio fuji
-#       - play a fujiyama radio.
+# radio "regex"
+#       - plays a searched item.
+#         need quote for regex searching.
+#         don't need quote for "and" searching, only white-space needed.
 #
 # radio
-#       - play a random radio, press 'q' to play the next.
+#       - plays a random radio, press 'q' to play the next.
 #         this loops infinitely, press ctrl-c to exit.
 #
 # radio {-r|--rotate}
-#       - rotate a radio in a specific time.
+#       - rotates a radio in a specific time.
 #         this loops infinitely, press ctrl-c to exit.
 #
 # radio {-a|--all}
-#       - display all urls, choose a url number.
+#       - displays all urls, choose a url number.
 #
 # radio {-g|--group} {en|kr|jp|mv|lt|ln|lc|pl}
-#       - play a group, press 'q' to play the next.
+#       - plays a group, press 'q' to play the next.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
-# radio {-l|--local} [a regex]
-#       - play local music files.
+# radio {-l|--local} ["regex"]
+#       - plays local music files.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
 # radio {-t|--test}
-#       - test all radios whether work or not.
+#       - tests all radios whether work or not.
 #         If failed, it logs the file named report.
 #
 # radio {-h|--help}
-#       - print this help.
+#       - prints this help.
 
 ### TODO
 #
@@ -40,7 +42,7 @@
 PLAYER="mpv"
 PS3="Choose : "
 LOCALDIR="/mnt/data/Music/"
-LOCALEXT=".*\.(mp3|flac|asf)$"
+LOCALEXT=".*\.(mp3|flac)$"
 RADIOSTARTLINE="### MY RADIO URLS"
 RADIOENDLINE="### MY RADIO URLS END"
 YOUTUBESTARTLINE="### MY YOUTUBE URLS"
@@ -196,21 +198,20 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             sleep 1
         done
     else
-        # radio -l want-to-play-a-local-music-filename
+        # radio -l "regex"
         cd "$LOCALDIR"
         shopt -s globstar
         for file in **/* ; do
             if [[ $file =~ $LOCALEXT ]] ; then
-                if [[ -z $locallist ]] ; then
-                    locallist="$file"
+                if [[ -z $localoneline ]] ; then
+                    localoneline="$file"
                 else
-                    locallist="$locallist":"$file"
+                    localoneline="$localoneline":"$file"
                 fi
             fi
         done
-        locallist=$(sed s/:/\\n/g <<< $locallist)
+        locallist=$(sed s/:/\\n/g <<< $localoneline)
         greplocalcount=$(grep -ic "$2" <<< "$locallist")
-        # printf "\n greplocalcount is $greplocalcount \n"
         if (( $greplocalcount == 1 )) ; then
             thelocalname=$(grep -i "$2" <<< "$locallist")
             printf "\n"
@@ -220,6 +221,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
             readarray -t arr_localnames <<< "$localnames"
+            # Is it possible to select multiple items like 2,4,6 or 3-7?
             select localfile in "${arr_localnames[@]}" ; do
                 if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
                     printf "\n"
@@ -232,7 +234,9 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                         printf "\n"
                         printf "\n $randomlocalname" | grep --color=auto .
                         printf "\n"
-                        $PLAYER "$LOCALDIR""$randomlocalname"
+                        $PLAYER "$LOCALDIR""$randomlocalname" &
+                        lastbgpid=$!
+                        wait $lastbgpid
                         sleep 1
                     done
                     exit 0
@@ -247,7 +251,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             exit 0
         else
             printf "\n"
-            printf "\n Sorry, the \"$2\" in local does not match."
+            printf "\n Sorry, the \"$2\" does not match."
             printf "\n Try again."
             printf "\n"
             exit 1
@@ -298,27 +302,37 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     exit 0
 fi
 
-# add -F grep option for string
-grepcount=$(grep -ic "$1" <<< "$urlname")
-# printf "\n grepcount is $grepcount \n"
+# grep 'and' option
+# testing...
+for arg in "$@"; do
+    if [[ -z $grepnames ]] ; then
+        grepnames=$(grep -i "$arg" <<< "$urlname")
+    else
+        grepnames=$(grep -i "$arg" <<< "$grepnames")
+    fi
+    printf "\n grepnames is $grepnames \n"
+done
+grepcount=$(wc -l <<< "$grepnames")
+printf "\n grepcount is $grepcount \n"
 
 if (( $grepcount == 1 )) ; then
     theurlname=$(grep -i "$1" <<< "$urlname" | sed 's/# / /')
     printf "\n"
     grep --color=auto . <<< "$theurlname"
     printf "\n"
-    httpurl=$(grep -i "$theurlname" <<< "$urllist" | \
+    httpurl=$(grep -i "$theurlname" <<< "$grepnames" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -i "$theurlname" <<< "$urllist" | \
+        $PLAYER "$LOCALDIR"$(grep -i "$theurlname" <<< "$grepnames" | \
                                  sed 's/# //')
     else
         $PLAYER "$httpurl"
     fi
 elif (( $grepcount > 1 )) ; then
-    urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
-    readarray -t arr_urlnames <<< "$urlnames"
-    select url in "${arr_urlnames[@]}" ; do
+    # urlnames=$(grep -i "$1" <<< "$urlname" | sed 's/^# //' | sed '/^#/d')
+    # readarray -t arr_urlnames <<< "$urlnames"
+    readarray -t arr_grepnames <<< "$grepnames"
+    select url in "${arr_grepnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
             printf "\n"
             printf "\n You choose all items."
@@ -326,16 +340,16 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c."
             printf "\n"
             while true ; do
-                randomurlname=$(shuf -n 1 <<< "$urlnames")
+                randomurlname=$(shuf -n 1 <<< "$grepnames")
                 printf "\n"
                 printf "\n $randomurlname" | grep --color=auto .
                 printf "\n"
-                randomurlline=$(grep -i "$randomurlname" <<< "$urllist")
+                randomurlline=$(grep -i "$randomurlname" <<< "$grepnames")
                 httpurl=$(grep -i "$randomurlline" <<< "$urllist" | \
                               awk -F 'http' '{print FS$2}')
                 if [[ $httpurl == "http" ]] ; then
                     $PLAYER "$LOCALDIR"$(grep -i "$randomurlline" <<< \
-                                              "$urllist" | sed 's/# //')
+                                              "$grepnames" | sed 's/# //')
                 else
                     $PLAYER "$httpurl"
                 fi
@@ -352,7 +366,7 @@ elif (( $grepcount > 1 )) ; then
     httpurl=$(grep -i "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -i "$selectedurl" <<< "$urllist" | \
+        $PLAYER "$LOCALDIR"$(grep -i "$selectedurl" <<< "$grepnames" | \
                                  sed 's/# //')
     else
         $PLAYER "$httpurl"
