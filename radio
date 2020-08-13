@@ -22,7 +22,7 @@
 #       - play a group, press 'q' to play the next.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
-# radio {-l|--local}
+# radio {-l|--local} [a regex]
 #       - play local music files.
 #         this loops randomly and infinitely, press ctrl-c to exit.
 #
@@ -40,6 +40,7 @@
 PLAYER="mpv"
 PS3="Choose : "
 LOCALDIR="/mnt/data/Music/"
+LOCALEXT=".*\.(mp3|flac|asf)$"
 RADIOSTARTLINE="### MY RADIO URLS"
 RADIOENDLINE="### MY RADIO URLS END"
 YOUTUBESTARTLINE="### MY YOUTUBE URLS"
@@ -181,18 +182,77 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         [[ $line =~ ^##+ ]] && break
     done <<< "$locallist"
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
-    while true ; do
-        randomlocal=$(shuf -n 1 <<< "$locallist")
-        (( $(grep -c "$PATTERN" <<< "$randomlocal") )) && continue
-        printf "\n"
-        sed 's/# / /' <<< "$randomlocal" | grep --color=auto .
-        printf "\n"
-        randomlocal=$(sed 's/# //' <<< "$randomlocal")
-        $PLAYER "$LOCALDIR""$randomlocal" &
-        lastbgpid=$!
-        wait $lastbgpid
-        sleep 1
-    done
+    if [[ -z $2 ]] ; then
+        while true ; do
+            randomlocal=$(shuf -n 1 <<< "$locallist")
+            (( $(grep -c "$PATTERN" <<< "$randomlocal") )) && continue
+            printf "\n"
+            sed 's/# / /' <<< "$randomlocal" | grep --color=auto .
+            printf "\n"
+            randomlocal=$(sed 's/# //' <<< "$randomlocal")
+            $PLAYER "$LOCALDIR""$randomlocal" &
+            lastbgpid=$!
+            wait $lastbgpid
+            sleep 1
+        done
+    else
+        # radio -l want-to-play-a-local-music-filename
+        cd "$LOCALDIR"
+        shopt -s globstar
+        for file in **/* ; do
+            if [[ $file =~ $LOCALEXT ]] ; then
+                if [[ -z $locallist ]] ; then
+                    locallist="$file"
+                else
+                    locallist="$locallist":"$file"
+                fi
+            fi
+        done
+        locallist=$(sed s/:/\\n/g <<< $locallist)
+        greplocalcount=$(grep -ic "$2" <<< "$locallist")
+        # printf "\n greplocalcount is $greplocalcount \n"
+        if (( $greplocalcount == 1 )) ; then
+            thelocalname=$(grep -i "$2" <<< "$locallist")
+            printf "\n"
+            grep --color=auto . <<< "$thelocalname"
+            printf "\n"
+            $PLAYER "$LOCALDIR""$thelocalname"
+        elif (( $greplocalcount > 1 )) ; then
+            localnames=$(grep -i "$2" <<< "$locallist")
+            readarray -t arr_localnames <<< "$localnames"
+            select localfile in "${arr_localnames[@]}" ; do
+                if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
+                    printf "\n"
+                    printf "\n You choose all items."
+                    printf "\n They'll be played randomly and infinitely."
+                    printf "\n To exit, press Ctrl-c."
+                    printf "\n"
+                    while true ; do
+                        randomlocalname=$(shuf -n 1 <<< "$localnames")
+                        printf "\n"
+                        printf "\n $randomlocalname" | grep --color=auto .
+                        printf "\n"
+                        $PLAYER "$LOCALDIR""$randomlocalname"
+                        sleep 1
+                    done
+                    exit 0
+                fi
+                selectedlocalfile="$localfile"
+                break
+            done
+            printf "\n"
+            printf "\n $selectedlocalfile" | grep --color=auto .
+            printf "\n"
+            $PLAYER "$LOCALDIR""$selectedlocalfile"
+            exit 0
+        else
+            printf "\n"
+            printf "\n Sorry, the \"$2\" in local does not match."
+            printf "\n Try again."
+            printf "\n"
+            exit 1
+        fi
+    fi
     exit 0
 fi
 
@@ -301,6 +361,7 @@ elif (( $grepcount > 1 )) ; then
 else
     printf "\n"
     printf "\n Sorry, the \"$1\" does not match."
+    printf "\n Try again."
     printf "\n"
     exit 1
 fi
