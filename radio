@@ -6,8 +6,9 @@
 #
 # radio "regex"
 #       - plays a searched item.
-#         need quote for regex searching and "or" searching.
-#         don't need quote for "and" searching, only white-space needed.
+#         need quote for "or" regex searching like "wordA\|wordB".
+#         don't need quote for "and" regex searching, only white-space needed.
+#         ex) radio "sia\|live\|tv" cam  "mango\|full"
 #
 # radio
 #       - plays a random radio, press 'q' to play the next.
@@ -98,7 +99,7 @@ if [[ -z $1 ]] ; then
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /' | grep --color=auto .
+            sed 's/^# / /' | grep --color=auto .
         printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -115,7 +116,7 @@ if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /' | grep --color=auto .
+            sed 's/^# / /' | grep --color=auto .
         printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -174,7 +175,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/# / /' | grep --color=auto .
+            sed 's/^# / /' | grep --color=auto .
         printf "\n"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -204,7 +205,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             randomlocal=$(shuf -n 1 <<< "$locallist")
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
             printf "\n"
-            sed 's/# / /' <<< "$randomlocal" | grep --color=auto .
+            sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
             printf "\n"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALDIR""$randomlocal" &
@@ -247,7 +248,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     while true ; do
                         randomlocalname=$(shuf -n 1 <<< "$localnames")
                         printf "\n"
-                        printf "\n $randomlocalname" | grep --color=auto .
+                        grep --color=auto . <<< "$randomlocalname"
                         printf "\n"
                         $PLAYER "$LOCALDIR""$randomlocalname" &
                         lastbgpid=$!
@@ -260,7 +261,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                 break
             done
             printf "\n"
-            printf "\n $selectedlocalfile" | grep --color=auto .
+            grep --color=auto . <<< "$selectedlocalfile"
             printf "\n"
             $PLAYER "$LOCALDIR""$selectedlocalfile"
             exit 0
@@ -279,10 +280,10 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         printf "\n"
-        awk -F 'http' '{print $1}' <<< $line | \
-            sed 's/# / /' | grep --color=auto .
+        awk -F 'http' '{print $1}' <<< "$line" | \
+            sed 's/^# / /' | grep --color=auto .
         printf "\n"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< $line)
+        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line")
         lastbgpid=$!
         sleep $TESTTIME
         if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
@@ -312,7 +313,7 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     done <<< "$helplist"
     helplist=$(head -n $x <<< "$helplist")
     printf "\n"
-    printf "\n $helplist" | sed 's/#\+//' | sed 's/^ //'
+    sed 's/#\+//' <<< "$helplist"
     printf "\n"
     exit 0
 fi
@@ -328,25 +329,22 @@ for arg in "$@" ; do
     printf "\n grepnames is $grepnames"
     printf "\n"
 done
+grepnames=$(sed '/^##\+\|^#$\|^$/d' <<< "$grepnames" | sed 's/^# //')
+grepcount=$(grep -ic .  <<< "$grepnames")
 
-if [[ -n $grepnames ]] ; then
-    grepcount=$(wc -l <<< "$grepnames")
-else
-    grepcount=0
-fi
 printf "\n"
 printf "\n grepcount is $grepcount"
 printf "\n"
 
 if (( $grepcount == 1 )) ; then
     printf "\n"
-    sed 's/# / /' <<< "$grepnames" | grep --color=auto .
+    grep --color=auto . <<< "$grepnames"
     printf "\n"
     httpurl=$(grep -i "$grepnames" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
         $PLAYER "$LOCALDIR"$(grep -i "$grepnames" <<< "$urllist" | \
-                                 sed 's/# //')
+                                 sed 's/^# //')
     else
         $PLAYER "$httpurl"
     fi
@@ -362,14 +360,14 @@ elif (( $grepcount > 1 )) ; then
             while true ; do
                 randomurlname=$(shuf -n 1 <<< "$grepnames")
                 printf "\n"
-                printf "\n $randomurlname" | grep --color=auto .
+                grep --color=auto . <<< "$randomurlname"
                 printf "\n"
                 randomurlline=$(grep -i "$randomurlname" <<< "$grepnames")
                 httpurl=$(grep -i "$randomurlline" <<< "$urllist" | \
                               awk -F 'http' '{print FS$2}')
                 if [[ $httpurl == "http" ]] ; then
                     $PLAYER "$LOCALDIR"$(grep -i "$randomurlline" <<< \
-                                              "$grepnames" | sed 's/# //')
+                                              "$grepnames" | sed 's/^# //')
                 else
                     $PLAYER "$httpurl"
                 fi
@@ -381,13 +379,13 @@ elif (( $grepcount > 1 )) ; then
         break
     done
     printf "\n"
-    printf "\n $selectedurl" | grep --color=auto .
+    grep --color=auto . <<< "$selectedurl"
     printf "\n"
     httpurl=$(grep -i "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
         $PLAYER "$LOCALDIR"$(grep -i "$selectedurl" <<< "$grepnames" | \
-                                 sed 's/# //')
+                                 sed 's/^# //')
     else
         $PLAYER "$httpurl"
     fi
@@ -568,11 +566,11 @@ fi
 #
 ### MY LOCAL MUSIC - my favorite music directories in my computer.
 #
-# 아이유 - 꽃갈피 둘
-# 김광석 [2005 Best]
-# fav
-# Camila Cabello
-# moana
-# sia
+# 아이유 - 꽃갈피 둘/
+# 김광석 [2005 Best]/
+# fav/
+# Camila Cabello/
+# moana/
+# sia/
 #
 ### MY LOCAL MUSIC END
