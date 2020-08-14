@@ -340,10 +340,11 @@ if (( $grepcount == 1 )) ; then
     printf "\n"
     grep --color=auto . <<< "$grepnames"
     printf "\n"
-    httpurl=$(grep -i "$grepnames" <<< "$urllist" | \
+    # grep '-F' for only string like [abc]
+    httpurl=$(grep -iF "$grepnames" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -i "$grepnames" <<< "$urllist" | \
+        $PLAYER "$LOCALDIR"$(grep -iF "$grepnames" <<< "$urllist" | \
                                  sed 's/^# //')
     else
         $PLAYER "$httpurl"
@@ -362,11 +363,11 @@ elif (( $grepcount > 1 )) ; then
                 printf "\n"
                 grep --color=auto . <<< "$randomurlname"
                 printf "\n"
-                randomurlline=$(grep -i "$randomurlname" <<< "$grepnames")
-                httpurl=$(grep -i "$randomurlline" <<< "$urllist" | \
+                randomurlline=$(grep -iF "$randomurlname" <<< "$grepnames")
+                httpurl=$(grep -iF "$randomurlline" <<< "$urllist" | \
                               awk -F 'http' '{print FS$2}')
                 if [[ $httpurl == "http" ]] ; then
-                    $PLAYER "$LOCALDIR"$(grep -i "$randomurlline" <<< \
+                    $PLAYER "$LOCALDIR"$(grep -iF "$randomurlline" <<< \
                                               "$grepnames" | sed 's/^# //')
                 else
                     $PLAYER "$httpurl"
@@ -381,10 +382,10 @@ elif (( $grepcount > 1 )) ; then
     printf "\n"
     grep --color=auto . <<< "$selectedurl"
     printf "\n"
-    httpurl=$(grep -i "$selectedurl" <<< "$urllist" | \
+    httpurl=$(grep -iF "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -i "$selectedurl" <<< "$grepnames" | \
+        $PLAYER "$LOCALDIR"$(grep -iF "$selectedurl" <<< "$grepnames" | \
                                  sed 's/^# //')
     else
         $PLAYER "$httpurl"
@@ -546,6 +547,7 @@ fi
 # Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
 # Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
 # Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=OUl8C1WEbMk
+# Tropical Reef Camera powered by EXPLORE.org https://www.youtube.com/watch?v=F109TZt3nRc
 #
 ## Play List - my favorite songs
 #
@@ -553,8 +555,8 @@ fi
 # 정태춘 박은옥 노래모음 https://www.youtube.com/watch?v=5pXkvDVeCR4
 # 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
 # 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
-# 해바라기[모두가 사랑이에요/사랑의 시] 외 18곡 https://www.youtube.com/watch?v=HPGX4pphDg0
-# 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
+# 해바라기 - 모두가 사랑이에요/사랑의 시 외 18곡 https://www.youtube.com/watch?v=HPGX4pphDg0
+# 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
 # 산울림 노래 모음 https://www.youtube.com/watch?v=WCBdljML6GI
 #
 ### MY YOUTUBE URLS END
