@@ -46,7 +46,8 @@
 
 PLAYER="mpv"
 PS3="Choose : "
-LOCALDIR="/mnt/data/Music/"
+LOCALVIDEODIR="/mnt/data/Videos/"
+LOCALMUSICDIR="/mnt/data/Music/"
 LOCALEXT=".*\.(mp3|flac)$"
 RADIOSTARTLINE="### MY RADIO URLS"
 RADIOENDLINE="### MY RADIO URLS END"
@@ -91,6 +92,7 @@ urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 # printf "\n"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
+# only radio
 if [[ -z $1 ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$radiolist")
@@ -208,14 +210,14 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
             printf "\n"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
-            $PLAYER "$LOCALDIR""$randomlocal" &
+            $PLAYER "$LOCALMUSICDIR""$randomlocal" &
             lastbgpid=$!
             wait $lastbgpid
             sleep 1
         done
     else
         # radio -l "regex"
-        cd "$LOCALDIR"
+        cd "$LOCALMUSICDIR"
         shopt -s globstar
         for file in **/* ; do
             if [[ $file =~ $LOCALEXT ]] ; then
@@ -233,7 +235,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             printf "\n"
             grep --color=auto . <<< "$thelocalname"
             printf "\n"
-            $PLAYER "$LOCALDIR""$thelocalname"
+            $PLAYER "$LOCALMUSICDIR""$thelocalname"
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
             readarray -t arr_localnames <<< "$localnames"
@@ -250,7 +252,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                         printf "\n"
                         grep --color=auto . <<< "$randomlocalname"
                         printf "\n"
-                        $PLAYER "$LOCALDIR""$randomlocalname" &
+                        $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
                         wait $lastbgpid
                         sleep 1
@@ -263,7 +265,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             printf "\n"
             grep --color=auto . <<< "$selectedlocalfile"
             printf "\n"
-            $PLAYER "$LOCALDIR""$selectedlocalfile"
+            $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
             exit 0
         else
             printf "\n"
@@ -340,12 +342,12 @@ if (( $grepcount == 1 )) ; then
     printf "\n"
     grep --color=auto . <<< "$grepnames"
     printf "\n"
-    # grep '-F' for only string like [abc]
+    # grep '-F' for only string like "[live] tv"
     httpurl=$(grep -iF "$grepnames" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -iF "$grepnames" <<< "$urllist" | \
-                                 sed 's/^# //')
+        $PLAYER "$LOCALMUSICDIR"$(grep -iF "$grepnames" <<< "$urllist" | \
+                                      sed 's/^# //')
     else
         $PLAYER "$httpurl"
     fi
@@ -367,7 +369,7 @@ elif (( $grepcount > 1 )) ; then
                 httpurl=$(grep -iF "$randomurlline" <<< "$urllist" | \
                               awk -F 'http' '{print FS$2}')
                 if [[ $httpurl == "http" ]] ; then
-                    $PLAYER "$LOCALDIR"$(grep -iF "$randomurlline" <<< \
+                    $PLAYER "$LOCALMUSICDIR"$(grep -iF "$randomurlline" <<< \
                                               "$grepnames" | sed 's/^# //')
                 else
                     $PLAYER "$httpurl"
@@ -385,7 +387,7 @@ elif (( $grepcount > 1 )) ; then
     httpurl=$(grep -iF "$selectedurl" <<< "$urllist" | \
                   awk -F 'http' '{print FS$2}')
     if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALDIR"$(grep -iF "$selectedurl" <<< "$grepnames" | \
+        $PLAYER "$LOCALMUSICDIR"$(grep -iF "$selectedurl" <<< "$grepnames" | \
                                  sed 's/^# //')
     else
         $PLAYER "$httpurl"
@@ -459,7 +461,9 @@ fi
 # Дария Ставрович «Chandelier» - Полуфинал - Голос - Сезон 5 https://www.youtube.com/watch?v=ltV1yoeIoPM
 # Sting - Shape of My Heart (Leon) https://www.youtube.com/watch?v=QK-Z1K67uaA
 # What's up - EXCELENTE COVER!!! https://www.youtube.com/watch?v=1NNE0b55AoM
-# 나카시마 미카 - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
+# nakashima mika - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
+# nakashima mika - 中島美嘉『雪の華』 Music Video https://www.youtube.com/watch?v=oIoaIlPpIcA
+# Amazarash(아마자라시 - 한글자막)  - 내가 죽으려고 생각한 것은【acoustic live ver】 https://www.youtube.com/watch?v=6SNscvxLP4E
 # Sia - Big Girls Cry (Official Video) https://www.youtube.com/watch?v=4NhKWZpkw1Q
 # Sia - The Greatest https://www.youtube.com/watch?v=GKSRyLdjsPA
 # Sia - Together (from the motion picture Music) https://www.youtube.com/watch?v=vnfGni4_RlI
@@ -471,6 +475,14 @@ fi
 # LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
+# Les Misérables (2012) - Look down 고개 숙여 https://www.youtube.com/watch?v=RP4evZVuLkM
+# Les Misérables (2012) - Do you hear the people sing 너는 듣고 있는가 https://www.youtube.com/watch?v=UVXp3SnHsPg
+# Les Misérables (2012) - Look Down Beggar https://www.youtube.com/watch?v=zy_veDZAuYU
+# Les Misérables (2012) - the confrontation 자베르 vs 장발장 https://www.youtube.com/watch?v=sfDv5gWEOOA
+#local video file and blank issues
+#Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#5' --end=20:06
+#Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#15' --end=1:07:08
+#Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#17' --end=1:17:24
 #
 ## Live Tv
 #
@@ -479,6 +491,7 @@ fi
 # Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=QTRJR1en1gk
 # Adom TV Live https://www.youtube.com/watch?v=T9VZUsOC5M4
 # LIVE | Let's go to Broomstown together by watching Robocar POLI TV series! https://www.youtube.com/watch?v=A00EakzkUTc
+# ★즐밍PICK★ [대탈출] 시즌 1~2 전편 정주행 | Great escape 1~2 Streaming https://www.youtube.com/watch?v=7FNbSWBP_UE
 #
 ## Live News
 #
@@ -519,14 +532,18 @@ fi
 # 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
 # Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
 # LIVE 大阪 道頓堀 ライブカメラ osaka Dotonbori LiveCamera https://www.youtube.com/watch?v=JZ61olPaaSQ
+# 秋葉原ライブカメラ Akihabara live camera YouTube Live version https://www.youtube.com/watch?v=QECVEPF_gIo
+# KABUKICHO TOKYO Live Stream https://www.youtube.com/watch?v=kUeDK-f2IMk
+# LIVE 道後温泉本館！！正面カメラ https://www.youtube.com/watch?v=vM7_-e0gdsc
+# 【ライブ配信】丸沼高原　標高1500ｍ https://www.youtube.com/watch?v=m-U577NAs_U
 # WATCH NASA: Earth Viewing cameras - Earth From Space ISS feed https://www.youtube.com/watch?v=DDU-rZs-Ic4
 # EarthCam Live: Times Square in 4K https://www.youtube.com/watch?v=mRe-514tGMg
 # Times Square: 1560 Broadway View Live https://www.youtube.com/watch?v=4qyZLflp-sI
 # Times Square: Express View Live https://www.youtube.com/watch?v=uw0lpuMSe9E&feature=emb_logo
 # Las Vegas: AE View Live https://www.youtube.com/watch?v=1ZNCtDLUKHw
 # Avalanche Bay Indoor Waterpark, Boyne Mountain https://www.youtube.com/watch?v=mm_fnIJ1c6Q&feature=emb_logo
-# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk https://www.youtube.com/watch?v=j_-4HMuw7PY
-# White Mountains TV Live Cam: North Conway Village
+# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
+# White Mountains TV Live Cam: North Conway Village https://www.youtube.com/watch?v=j_-4HMuw7PY
 # Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=D-N5ZiWzAC0&feature=emb_logo
 # Live Stream — Public Square, Watertown NY — Jake Johnson Properties https://www.youtube.com/watch?v=qP1y7Tdab7Y&feature=emb_logo
 # LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (AI Camera looking for people) https://www.youtube.com/watch?v=-Fen7JP8oHI&feature=emb_logo
@@ -549,6 +566,15 @@ fi
 # Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
 # Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=OUl8C1WEbMk
 # Tropical Reef Camera powered by EXPLORE.org https://www.youtube.com/watch?v=F109TZt3nRc
+# "Shirahama Ohama Beach" 白浜大浜海水浴場（静岡県下田市） https://www.youtube.com/watch?v=xuP8xIbZvmo
+# Frenchy’s Clearwater Beach Cam https://www.youtube.com/watch?v=fa7wCF6JL1w
+# 「LIVECAMERA」　草津温泉「湯畑」湯滝前  https://www.youtube.com/watch?v=GzbPVzPnT-U
+# 【LIVE CAMERA】飛騨高山ライブカメラ 陣屋前 /Hida-Takayama,In front of the Takayama Jinya https://www.youtube.com/watch?v=PG8kZQ2EkSQ
+# 【ライブ配信】丸沼高原スキー場　標高1400m https://www.youtube.com/watch?v=YqXzpB-ardY
+# 上高地河童橋ライブカメラ KAMIKOCHI KAPPA-BASHI LIVE CAMERA https://www.youtube.com/watch?v=GZ87zaSjiFE
+# 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=ZDg06flkS4o
+# LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
+# 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
 #
 ## Play List - my favorite songs
 #
