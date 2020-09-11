@@ -57,8 +57,9 @@ LOCALSTARTLINE="### MY LOCAL MUSIC"
 LOCALENDLINE="### MY LOCAL MUSIC END"
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
 REPORTPATH="$SCRIPTDIR/report"
-REPORTFIRSTLINE="### REPORT"
-TESTTIME=5
+# add date
+REPORTFIRSTLINE="### ERROR REPORT"
+TESTTIME=10
 ROTATIONTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]"
 
@@ -126,7 +127,7 @@ if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
         # fail playing
         (( ! $(ps -A | grep -c $lastbgpid) )) && continue
         sleep $ROTATIONTIME
-        kill -9 $lastbgpid
+        kill $lastbgpid
         sleep 1
     done
     exit 0
@@ -279,22 +280,32 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
 fi
 
 if [[ $1 =~ ^(-t|--test)$ ]] ; then
+    x=0
+    while read -r line ; do
+        (( x++ ))
+        [[ $line =~ ^($YOUTUBEENDLINE) ]] && break
+    done < "$urllist"
+    testlist=$(head -n +$x "$urllist")
+    # printf "\n"
+    # printf $testlist
+    # printf "\n"
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
+        (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
         printf "\n"
         awk -F 'http' '{print $1}' <<< "$line" | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line")
+        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
         sleep $TESTTIME
-        if (( ! $(ps -A | grep -c $lastbgpid) )) ; then
-            echo "Fail: $line" >> "$REPORTPATH"
+        if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
+            echo "$line" >> "$REPORTPATH"
         else
-            kill -9 $lastbgpid
+            kill $lastbgpid
         fi
         sleep 1
-    done <<< "$urllist"
+    done <<< "$testlist"
     printf "\n"
     cat "$REPORTPATH"
     printf "\n"
@@ -487,15 +498,13 @@ fi
 ## Live Tv
 #
 # 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
-# franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.com/watch?v=wwNZKfBLAsc
-# Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=QTRJR1en1gk
-# Adom TV Live https://www.youtube.com/watch?v=T9VZUsOC5M4
-# LIVE | Let's go to Broomstown together by watching Robocar POLI TV series! https://www.youtube.com/watch?v=A00EakzkUTc
-# ★즐밍PICK★ [대탈출] 시즌 1~2 전편 정주행 | Great escape 1~2 Streaming https://www.youtube.com/watch?v=7FNbSWBP_UE
+# franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.c
+# Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=TDy-nmXZNQM
+# Adom TV Live https://www.youtube.com/watch?v=LIb1ADo0pGs
 #
 ## Live News
 #
-# LIVE 언제, 어디서나 KBS 24시뉴스 https://www.youtube.com/watch?v=MkQgP7KzjCk
+# LIVE 언제, 어디서나 KBS 24시뉴스 https://www.youtube.com/watch?v=cUaptEjecPE
 # YTN LIVE 대한민국 24시간 뉴스채널 https://www.youtube.com/watch?v=U_sYIKWhJvk
 # live 연합뉴스TV https://www.youtube.com/watch?v=0GN8t2u3flc
 # CNA 24/7 LIVE https://www.youtube.com/watch?v=XWq5kBlakcQ
@@ -505,34 +514,30 @@ fi
 # Watch NBC News NOW Live https://www.youtube.com/watch?v=6hRk_zPTN1c
 # NBC2 Live Stream https://www.youtube.com/watch?v=tPeUHECNLKs
 # Watch The Latest News Headlines and Live Events: ABC News Live https://www.youtube.com/watch?v=w_Ma8oQLmSM
-# Al Jazeera English | Live https://www.youtube.com/watch?v=EOBY5J0b9Uo
+# Al Jazeera English | Live https://www.youtube.com/watch?v=_dsWF2prkR8
 # Watch Sky News live https://www.youtube.com/watch?v=9Auq9mYxFEE
-# Euronews English Live https://www.youtube.com/watch?v=T7mRH8a5pMs
+# Euronews English Live https://www.youtube.com/watch?v=4MHhTZaGt2w
 # FRANCE 24 English – LIVE – International Breaking News & Top stories - 24/7 stream https://www.youtube.com/watch?v=FUnJzFT2i84
-# Sushant Singh Rajput Death Probe LIVE Updates | LIVE TV 24x7 | Latest News | Republic TV LIVE https://www.youtube.com/watch?v=ckKA-0MUm4E
-# LIVE: Puthiya Thalaimurai Live News | Tamil News | Live Tamil News | Ayodhya Ram temple | Sushant https://www.youtube.com/watch?v=fyd-8IcMIJo
-# OTV Live 24x7 | Latest News Updates | Coronavirus(COVID-19) News | Unlock 3.0 Updates | Odisha TV https://www.youtube.com/watch?v=AWq8Z8rP7b4
+# LIVE: Puthiya Thalaimurai Live News | Tamil News | Live Tamil News | Ayodhya Ram temple | Sushant https://www.youtube.com/watch?v=AyOCx_DHXJU
+# OTV Live 24x7 | Latest News Updates | Coronavirus(COVID-19) News | Unlock 3.0 Updates | Odisha TV https://www.youtube.com/watch?v=Axu-FoqBIXY
 # Sakshi TV LIVE | Today 'Telugu News' LIVE  https://www.youtube.com/watch?v=8McTsOqeueE
 # Manorama News LIVE TV https://www.youtube.com/watch?v=jjH6v95z3Nw
-# India Today Live TV | Breaking News Live | Latest India News in English https://www.youtube.com/watch?v=dA2cWLqsKBk
-# Watch SAMAA TV's News LIVE STREAM 24/7 | Full Pakistan coverage https://www.youtube.com/watch?v=pDXlyQf0Of8
-# AajTak Live TV | Ayodhya Ram Mandir | Sushant | Rajasthan | Corona | Breaking News https://www.youtube.com/watch?v=emCd4fr93rs
+# Watch SAMAA TV's News LIVE STREAM 24/7 | Full Pakistan coverage https://www.youtube.com/watch?v=vBjv7ZkRzig
 # LIVE STREAMING KOMPAS TV 24/7 https://www.youtube.com/watch?v=gIB2egm7tL8
 # NETTV LIVE 2020 https://www.youtube.com/watch?v=WZ83bBwWZQY
-# Channels Television Live https://www.youtube.com/watch?v=-c8LoR84Xjs
+# Channels Television Live https://www.youtube.com/watch?v=MSQhwpYQbtQ
 # TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
 # Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
 #
 ## Live Camera - often off camera
 #
-# 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=am2Ivi346tQ&feature=emb_logo
+# 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
-# Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=wUOLcfnUKz0
-# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=NnNoL7shdjg
+# Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=jEhIe2SDKso
+# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=I6YANW67hQ0
 # 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
 # Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
-# LIVE 大阪 道頓堀 ライブカメラ osaka Dotonbori LiveCamera https://www.youtube.com/watch?v=JZ61olPaaSQ
-# 秋葉原ライブカメラ Akihabara live camera YouTube Live version https://www.youtube.com/watch?v=QECVEPF_gIo
+# 秋葉原ライブカメラ Akihabara live camera YouTube Live version https://www.youtube.com/watch?v=mpFAKw68Je0
 # KABUKICHO TOKYO Live Stream https://www.youtube.com/watch?v=kUeDK-f2IMk
 # LIVE 道後温泉本館！！正面カメラ https://www.youtube.com/watch?v=vM7_-e0gdsc
 # 【ライブ配信】丸沼高原　標高1500ｍ https://www.youtube.com/watch?v=m-U577NAs_U
@@ -543,14 +548,13 @@ fi
 # Las Vegas: AE View Live https://www.youtube.com/watch?v=1ZNCtDLUKHw
 # Avalanche Bay Indoor Waterpark, Boyne Mountain https://www.youtube.com/watch?v=mm_fnIJ1c6Q&feature=emb_logo
 # Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
-# White Mountains TV Live Cam: North Conway Village https://www.youtube.com/watch?v=j_-4HMuw7PY
-# Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=D-N5ZiWzAC0&feature=emb_logo
+# White Mountains TV Live Cam: North Conway Village https://www.youtube.com/watch?v=eT7Z70L5SPo
+# Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=NHkrWF5HMSE
 # Live Stream — Public Square, Watertown NY — Jake Johnson Properties https://www.youtube.com/watch?v=qP1y7Tdab7Y&feature=emb_logo
+# Tropical Murphys 1 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=0Ns1sNoUSaY
+# Tropical Murphys 2 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wXsYOpVP-kQ
 # LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (AI Camera looking for people) https://www.youtube.com/watch?v=-Fen7JP8oHI&feature=emb_logo
 # LIVE · Thailand / Koh Phangan · Thong Sala center (Mandolino Pizzeria) https://www.youtube.com/watch?v=1nnt_Beuo88&feature=emb_logo
-# Lamai Walking Street Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=17Deeq8N2e4
-# Sweet Soul Cafe Cam 2, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=C1LlLCsWdcg
-# Sweet Soul Cafe Cam 1, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=B_2He_msuWU
 # Hush Bar Cam, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wqvStiZyVBI
 # Crystal Bay Yacht Club Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=aJdwAUUbFL8
 # Crystal Bay Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=AK9TkxHCbHU
@@ -559,32 +563,46 @@ fi
 # Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
 # WebCam.NL | www.sportsatsea.nl - live HD PTZ camera. https://www.youtube.com/watch?v=5rkyZrQv674&feature=emb_logo
 # Beach Bar live HD Webcam in Cruz Bay https://www.youtube.com/watch?v=GrZ8LL8yAqs&feature=emb_logo
-# The central beach of Lignano Sabbiadoro (Italy) - Spiaggia LIVE streaming HD Webcam https://www.youtube.com/watch?v=2Xjog3Xs-P0
+# Live da Club Camping Jesolo International https://www.youtube.com/watch?v=SDIPtTeTUdA
+# Live Da Jesolo Spiagge - Oro Beach https://www.youtube.com/watch?v=zE_yzuxFiMo
+# Lanzarote Webcam LIVE HD Streaming from Puerto del Carmen Beach (Lanzarote,Canary Islands,Spain) https://www.youtube.com/watch?v=mpd2CHIgJ9A
+# Alanya Turkey, Alanya Türkei, Аланья Турция Palmiye Beach Hotel Live Camera https://www.youtube.com/watch?v=hYAaoI2E1Pw
+# The central beach of Lignano Sabbiadoro (Italy) - Spiaggia LIVE streaming HD Webcam https://www.youtube.com/watch?v=jB_ix1xoj1c
+# Historical city center "Piazza Fontana" of Lignano Sabbiadoro (Italy) - LIVE streaming HD Webcam https://www.youtube.com/watch?v=3J_-o4sB2RU
+# Webcam Bari Sardo - Sardegna https://www.youtube.com/watch?v=IbgPG5L-uoI
 # LIVE Deerfield Beach - Beach Camera https://www.youtube.com/watch?v=-HAi_5IIAYg&feature=emb_logo
 # Underwater Camera in Deerfield Beach, Florida https://www.youtube.com/watch?v=GAv4VCC41oU
 # Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
 # Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
-# Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=OUl8C1WEbMk
+# HC Lomnice nad Popelkou https://www.youtube.com/watch?v=7AGre-USTMc
+# Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=MAIRHYclfyM
+# Lomnice nad Popelkou - Koupaliště (kamera 2) https://www.youtube.com/watch?v=sDKNrdqMcqE
+# Lomnice nad Popelkou - Husovo náměstí https://www.youtube.com/watch?v=IsJWaa_KMVc
+# Lomnice nad Popelkou - TENIS - pohled ke klubovně https://www.youtube.com/watch?v=vPWxzpc0Iek
+# Lomnice nad Popelkou - tour https://www.youtube.com/watch?v=qAWlaKoSqa4
+# TJ Sokol Nová Ves nad Popelkou, z.s. , fotbalové hřiště https://www.youtube.com/watch?v=Bg2JXM5KcII
+# Jinolice - Oborský rybník https://www.youtube.com/watch?v=t1NLP0TJwn8
 # Tropical Reef Camera powered by EXPLORE.org https://www.youtube.com/watch?v=F109TZt3nRc
 # "Shirahama Ohama Beach" 白浜大浜海水浴場（静岡県下田市） https://www.youtube.com/watch?v=xuP8xIbZvmo
 # Frenchy’s Clearwater Beach Cam https://www.youtube.com/watch?v=fa7wCF6JL1w
 # 「LIVECAMERA」　草津温泉「湯畑」湯滝前  https://www.youtube.com/watch?v=GzbPVzPnT-U
+# 「LIVECAMERA 」草津温泉 西の河原・湯川LIVE https://www.youtube.com/watch?v=iPBW7BBoyIw
 # 【LIVE CAMERA】飛騨高山ライブカメラ 陣屋前 /Hida-Takayama,In front of the Takayama Jinya https://www.youtube.com/watch?v=PG8kZQ2EkSQ
 # 【ライブ配信】丸沼高原スキー場　標高1400m https://www.youtube.com/watch?v=YqXzpB-ardY
-# 上高地河童橋ライブカメラ KAMIKOCHI KAPPA-BASHI LIVE CAMERA https://www.youtube.com/watch?v=GZ87zaSjiFE
-# 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=ZDg06flkS4o
+# 上高地河童橋ライブカメラ KAMIKOCHI KAPPA-BASHI LIVE CAMERA https://www.youtube.com/watch?v=8bZTa4CBJ2o
+# 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=sgteH34KgM0
 # LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
 # 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
 #
 ## Play List - my favorite songs
 #
 # 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
-# 정태춘 박은옥 노래모음 https://www.youtube.com/watch?v=5pXkvDVeCR4
+# 정태춘, 박은옥 히트곡 모음 듣기ㅣ북한강에서, 촛불 https://www.youtube.com/watch?v=TuukzC2chdo
 # 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
 # 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
-# 해바라기 - 모두가 사랑이에요/사랑의 시 외 18곡 https://www.youtube.com/watch?v=HPGX4pphDg0
+# 해바라기 - 노래모음 베스트 20곡 https://www.youtube.com/watch?v=zGsIgF3UBpU
 # 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
-# 산울림 노래 모음 https://www.youtube.com/watch?v=WCBdljML6GI
+# 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
 #
 ### MY YOUTUBE URLS END
 #
