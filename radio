@@ -55,6 +55,7 @@ YOUTUBESTARTLINE="### MY YOUTUBE URLS"
 YOUTUBEENDLINE="### MY YOUTUBE URLS END"
 LOCALSTARTLINE="### MY LOCAL MUSIC"
 LOCALENDLINE="### MY LOCAL MUSIC END"
+TESTENDLINE="### TEST END"
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
 REPORTPATH="$SCRIPTDIR/report"
 # add date
@@ -283,11 +284,11 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     x=0
     while read -r line ; do
         (( x++ ))
-        [[ $line =~ ^($YOUTUBEENDLINE) ]] && break
+        [[ $line =~ ^($TESTENDLINE) ]] && break
     done < "$urllist"
     testlist=$(head -n +$x "$urllist")
     # printf "\n"
-    # printf $testlist
+    # printf "$testlist"
     # printf "\n"
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
@@ -596,7 +597,7 @@ fi
 #
 ## Play List - my favorite songs
 #
-# 심수봉 노래모음: best 18곡 연속듣기 https://www.youtube.com/watch?v=2WPMh5faFpw
+# 심수봉 노래 모음 https://www.youtube.com/watch?v=-03cg8u5fdU
 # 정태춘, 박은옥 히트곡 모음 듣기ㅣ북한강에서, 촛불 https://www.youtube.com/watch?v=TuukzC2chdo
 # 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
 # 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
@@ -605,6 +606,12 @@ fi
 # 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
 #
 ### MY YOUTUBE URLS END
+#
+#
+#
+#
+#
+### TEST END
 #
 #
 #
