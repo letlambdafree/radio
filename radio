@@ -370,14 +370,33 @@ if (( $grepcount == 1 )) ; then
     grep --color=auto . <<< "$grepnames"
     printf "\n"
     # grep '-F' for only string like "[live] tv"
-    httpurl=$(grep -iF "$grepnames" <<< "$urllist" | \
-                  awk -F 'http' '{print FS$2}')
-    if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALMUSICDIR"$(grep -iF "$grepnames" <<< "$urllist" | \
-                                      sed 's/^# //')
-    else
-        $PLAYER "$httpurl"
+    grepline=$(grep -iF "$grepnames" <<< "$urllist")
+    if [[ "$grepline" =~ http ]] ; then
+        arg1=$(awk -F 'http' '{print FS$2}' <<< "$grepline")
+    elif [[ "$grepline" =~ /mnt ]] ; then
+        arg1=$(awk -F '/mnt' '{print FS$2}' <<< "$grepline")
+        # seek time
+        if [[ "$arg1" =~ --start ]] ; then
+            arg1org="$arg1"
+            arg1=$(awk -F ' --start' '{print $1}' <<< "$arg1org")
+            arg2org=$(awk -F '--start' '{print FS$2}' <<< "$arg1org")
+            arg2=$(awk -F ' --end' '{print $1}' <<< "$arg2org")
+            arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg2org")
+        fi
+    elif [[ "$grepline" =~ /$ ]] ; then
+        arg1="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$grepline")
     fi
+    $PLAYER "$arg1" "$arg2" "$arg3"
+
+    # httpurl=$(grep -iF "$grepnames" <<< "$urllist" | \
+    #               awk -F 'http' '{print FS$2}')
+    # if [[ $httpurl != "http" ]] ; then
+    #     $PLAYER "$httpurl"
+    # else
+    #     $PLAYER "$LOCALMUSICDIR"$(grep -iF "$grepnames" <<< "$urllist" | \
+    #                                   sed 's/^# //')
+    # fi
+
 elif (( $grepcount > 1 )) ; then
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
@@ -392,15 +411,23 @@ elif (( $grepcount > 1 )) ; then
                 printf "\n"
                 grep --color=auto . <<< "$randomurlname"
                 printf "\n"
-                randomurlline=$(grep -iF "$randomurlname" <<< "$grepnames")
-                httpurl=$(grep -iF "$randomurlline" <<< "$urllist" | \
-                              awk -F 'http' '{print FS$2}')
-                if [[ $httpurl == "http" ]] ; then
-                    $PLAYER "$LOCALMUSICDIR"$(grep -iF "$randomurlline" <<< \
-                                              "$grepnames" | sed 's/^# //')
-                else
-                    $PLAYER "$httpurl"
+                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
+                if [[ "$grepline" =~ http ]] ; then
+                    arg1=$(awk -F 'http' '{print FS$2}' <<< "$grepline")
+                elif [[ "$grepline" =~ /mnt ]] ; then
+                    arg1=$(awk -F '/mnt' '{print FS$2}' <<< "$grepline")
+                    # seek time
+                    if [[ "$arg1" =~ --start ]] ; then
+                        arg11="$arg1"
+                        arg1=$(awk -F ' --start' '{print $1}' <<< "$arg11")
+                        arg22=$(awk -F '--start' '{print FS$2}' <<< "$arg11")
+                        arg2=$(awk -F ' --end' '{print $1}' <<< "$arg22")
+                        arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg22")
+                    fi
+                elif [[ "$grepline" =~ /$ ]] ; then
+                    arg1="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$grepline")
                 fi
+                $PLAYER "$arg1" "$arg2" "$arg3"
                 sleep 1
             done
             exit 0
@@ -411,14 +438,23 @@ elif (( $grepcount > 1 )) ; then
     printf "\n"
     grep --color=auto . <<< "$selectedurl"
     printf "\n"
-    httpurl=$(grep -iF "$selectedurl" <<< "$urllist" | \
-                  awk -F 'http' '{print FS$2}')
-    if [[ $httpurl == "http" ]] ; then
-        $PLAYER "$LOCALMUSICDIR"$(grep -iF "$selectedurl" <<< "$grepnames" | \
-                                 sed 's/^# //')
-    else
-        $PLAYER "$httpurl"
+    grepline=$(grep -iF "$selectedurl" <<< "$urllist")
+    if [[ "$grepline" =~ http ]] ; then
+        arg1=$(awk -F 'http' '{print FS$2}' <<< "$grepline")
+    elif [[ "$grepline" =~ /mnt ]] ; then
+        arg1=$(awk -F '/mnt' '{print FS$2}' <<< "$grepline")
+        # seek time
+        if [[ "$arg1" =~ --start ]] ; then
+            arg11="$arg1"
+            arg1=$(awk -F ' --start' '{print $1}' <<< "$arg11")
+            arg22=$(awk -F '--start' '{print FS$2}' <<< "$arg11")
+            arg2=$(awk -F ' --end' '{print $1}' <<< "$arg22")
+            arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg22")
+        fi
+    elif [[ "$grepline" =~ /$ ]] ; then
+        arg1="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$grepline")
     fi
+    $PLAYER "$arg1" "$arg2" "$arg3"
     exit 0
 else
     printf "\n"
@@ -498,9 +534,9 @@ fi
 # Les Misérables (2012) - Look Down Beggar https://www.youtube.com/watch?v=zy_veDZAuYU
 # Les Misérables (2012) - the confrontation 자베르 vs 장발장 https://www.youtube.com/watch?v=sfDv5gWEOOA
 #-local video file and blank issues
-#-Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#5' --end=20:06
-#-Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#15' --end=1:07:08
-#-Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start='#17' --end=1:17:24
+# Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
+# Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:08
+# Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
 #
 ## Live Tv
