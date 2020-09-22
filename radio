@@ -49,7 +49,6 @@
 
 
 PLAYER="mpv"
-RADIOEDITOR="emacsclient"
 PS3="Choose : "
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
@@ -327,7 +326,7 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
 fi
 
 if [[ $1 =~ ^(-e|--edit)$ ]] ; then
-    $RADIOEDITOR $HOME/git/radio/radio
+    $EDITOR $HOME/git/radio/radio
     exit 0
 fi
 
