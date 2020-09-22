@@ -69,23 +69,31 @@ TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]"
 
-play-radio() {
-    if [[ $1 =~ http ]] ; then
-        arg1=$(awk -F 'http' '{print FS$2}' <<< $1)
+play() {
+    local arg arg0 arg1 arg2 arg3
+    if [[ $1 =~ https?:// ]] ; then
+        arg=$(awk -F 'http' '{print FS$2}' <<< $1)
+        $PLAYER "$arg"
     elif [[ $1 =~ /$ ]] ; then
-        arg1="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
-    elif [[ $1 =~ /mnt ]] ; then
-        arg1=$(awk -F '/mnt' '{print FS$2}' <<< $1)
+        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
+        $PLAYER "$arg"
+    elif [[ $1 =~ /mnt/ ]] ; then
+        arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
         # seek time
-        if [[ "$arg1" =~ --start ]] ; then
-            arg1origin="$arg1"
-            arg1=$(awk -F ' --start' '{print $1}' <<< "$arg1origin")
-            arg2origin=$(awk -F '--start' '{print FS$2}' <<< "$arg1origin")
-            arg2=$(awk -F ' --end' '{print $1}' <<< "$arg2origin")
-            arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg2origin")
+        if [[ "$arg" =~ --start ]] ; then
+            arg1=$(awk -F ' --start' '{print $1}' <<< "$arg")
+            arg0=$(awk -F '--start' '{print FS$2}' <<< "$arg")
+            arg2=$(awk -F ' --end' '{print $1}' <<< "$arg0")
+            arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg0")
+            $PLAYER "$arg1" "$arg2" "$arg3"
         fi
+    else
+        printf "\n"
+        printf "\n Sorry, something is wrong!"
+        printf "\n Try again."
+        printf "\n"
+        exit 1
     fi
-    $PLAYER "$arg1" "$arg2" "$arg3"
 }
 
 x=0
@@ -205,7 +213,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
         awk -F 'http' '{print $1}' <<< "$randomradio" | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
-        play-radio "$randomradio"
+        play "$randomradio"
         sleep 1
     done
     exit 0
@@ -380,7 +388,7 @@ if (( $grepcount == 1 )) ; then
     printf "\n"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
-    play-radio "$grepline"
+    play "$grepline"
 elif (( $grepcount > 1 )) ; then
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
@@ -396,7 +404,7 @@ elif (( $grepcount > 1 )) ; then
                 grep --color=auto . <<< "$randomurlname"
                 printf "\n"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
-                play-radio "$grepline"
+                play "$grepline"
                 sleep 1
             done
             exit 0
@@ -408,7 +416,7 @@ elif (( $grepcount > 1 )) ; then
     grep --color=auto . <<< "$selectedurl"
     printf "\n"
     grepline=$(grep -iF "$selectedurl" <<< "$urllist")
-    play-radio "$grepline"
+    play "$grepline"
     exit 0
 else
     printf "\n"
@@ -488,9 +496,9 @@ fi
 # Les Misérables (2012) - Look Down Beggar https://www.youtube.com/watch?v=zy_veDZAuYU
 # Les Misérables (2012) - the confrontation 자베르 vs 장발장 https://www.youtube.com/watch?v=sfDv5gWEOOA
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
-#*local video file
+#--local video file
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
-# Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:08
+# Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
 #
 ## Live Tv
