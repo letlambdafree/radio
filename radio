@@ -14,7 +14,7 @@
 #       - plays a random radio, press 'q' to play the next.
 #         this loops infinitely, press ctrl-c to exit.
 #
-# radio {-r|--rotate}
+# radio {-p|--period}
 #       - rotates a radio in a specific time.
 #         this loops infinitely, press ctrl-c to exit.
 #
@@ -44,6 +44,7 @@
 ### TODO
 #
 # add more urls
+# add local mv with --start and --end
 # instead quit mpv, can mpv play items continually?
 
 
@@ -65,7 +66,7 @@ REPORTPATH="$SCRIPTDIR/report"
 # add date
 REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
-ROTATIONTIME=600
+PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]"
 
 # function_name () {
@@ -125,7 +126,7 @@ if [[ -z $1 ]] ; then
     exit 0
 fi
 
-if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
+if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$radiolist")
         # SKIPPATTERN for comments
@@ -139,7 +140,7 @@ if [[ $1 =~ ^(-r|--rotate)$ ]] ; then
         sleep $TESTTIME
         # fail playing
         (( ! $(ps -A | grep -c $lastbgpid) )) && continue
-        sleep $ROTATIONTIME
+        sleep $PERIODTIME
         kill $lastbgpid
         sleep 1
     done
