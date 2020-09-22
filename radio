@@ -297,11 +297,8 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     while read -r line ; do
         (( x++ ))
         [[ $line =~ ^($TESTENDLINE) ]] && break
-    done < "$urllist"
-    testlist=$(head -n +$x "$urllist")
-    printf "\n"
-    printf "$testlist"
-    printf "\n"
+    done <<< "$urllist"
+    testlist=$(head -n +$x <<< "$urllist")
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
@@ -430,8 +427,6 @@ else
     exit 1
 fi
 
-
-
 ### MY RADIO URLS - from a latte applet in kde.
 #
 # write a symptom without any space after # for error log
@@ -474,8 +469,6 @@ fi
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
 ### MY RADIO URLS END
-
-
 
 ### MY YOUTUBE URLS - need a youtube-dl to play a url.
 #
@@ -623,11 +616,7 @@ fi
 #
 ### MY YOUTUBE URLS END
 
-
-
 ### TEST END
-
-
 
 ### MY LOCAL MUSIC - my favorite music directories in my computer.
 #
