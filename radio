@@ -33,11 +33,11 @@
 #       - tests all radios whether work or not.
 #         If failed, it logs the file named report.
 #
-# radio {-h|--help}
-#       - prints this help.
-#
 # radio {-e|--edit}
 #       - edit this script.
+#
+# radio {-h|--help}
+#       - prints this help.
 
 
 
@@ -300,9 +300,9 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
         [[ $line =~ ^($TESTENDLINE) ]] && break
     done < "$urllist"
     testlist=$(head -n +$x "$urllist")
-    # printf "\n"
-    # printf "$testlist"
-    # printf "\n"
+    printf "\n"
+    printf "$testlist"
+    printf "\n"
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
@@ -326,6 +326,11 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     exit 0
 fi
 
+if [[ $1 =~ ^(-e|--edit)$ ]] ; then
+    $RADIOEDITOR $HOME/git/radio/radio
+    exit 0
+fi
+
 if [[ $1 =~ ^(-h|--help)$ ]] ; then
     x=0
     while read -r line ; do
@@ -343,10 +348,6 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     sed 's/#\+//' <<< "$helplist"
     printf "\n"
     exit 0
-fi
-
-if [[ $1 =~ ^(-e|--edit)$ ]] ; then
-    $RADIOEDITOR $HOME/git/radio/radio
 fi
 
 # grep 'and' option
