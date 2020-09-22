@@ -2,7 +2,7 @@
 
 ### A command line radio player with mpv
 #
-# Usage: radio [a radio] or radio option [arg ...]
+# Usage: radio [a url-part-name] or radio option [arg ...]
 #
 # radio "regex"
 #       - plays a searched item.
@@ -41,6 +41,7 @@
 ### TODO
 #
 # add more urls
+# instead quit mpv, can mpv play items continually?
 
 
 
@@ -421,6 +422,8 @@ else
     exit 1
 fi
 
+
+
 ### MY RADIO URLS - from a latte applet in kde.
 #
 # write a symptom without any space after # for error log
@@ -463,6 +466,8 @@ fi
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
 ### MY RADIO URLS END
+
+
 
 ### MY YOUTUBE URLS - need a youtube-dl to play a url.
 #
@@ -605,13 +610,16 @@ fi
 # 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
 # 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
 # This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
-# [AUDIO] 이 어둠의 이 슬픔 - 도시의 그림자 | 1986년 강변가요제금상 https://www.youtube.com/watch?v=XytcFrkJQdQ
 # 도시의 그림자(Shadow of City) - 도시의 그림자(Shadow of City) (Full Album) https://www.youtube.com/watch?v=LW14PKtNvws
 # ♣등려군 노래 모음 11곡♣ https://www.youtube.com/watch?v=tIoLOB1fRgo
 #
 ### MY YOUTUBE URLS END
 
+
+
 ### TEST END
+
+
 
 ### MY LOCAL MUSIC - my favorite music directories in my computer.
 #
