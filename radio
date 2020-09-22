@@ -35,6 +35,9 @@
 #
 # radio {-h|--help}
 #       - prints this help.
+#
+# radio {-e|--edit}
+#       - edit this script.
 
 
 
@@ -46,6 +49,7 @@
 
 
 PLAYER="mpv"
+RADIOEDITOR="emacsclient"
 PS3="Choose : "
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
@@ -339,6 +343,10 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     sed 's/#\+//' <<< "$helplist"
     printf "\n"
     exit 0
+fi
+
+if [[ $1 =~ ^(-e|--edit)$ ]] ; then
+    $RADIOEDITOR $HOME/git/radio/radio
 fi
 
 # grep 'and' option
