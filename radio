@@ -120,6 +120,14 @@ print() {
     fi
 }
 
+remove-parts(){
+    if [[ $1 =~ https?:// ]] ; then
+        $1=$(awk -F 'http' '{print $1}' <<< $1)
+    elif [[ $1 =~ /mnt/ ]] ; then
+        $1=$(awk -F '/mnt/' '{print $1}' <<< $1)
+    fi
+}
+
 x=0
 while read -r line ; do
     (( x++ ))
@@ -424,12 +432,13 @@ if (( $grepcount == 1 )) ; then
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
 elif (( $grepcount > 1 )) ; then
-    remove unnecessary parts
-    if [[ "$grepnames" =~ https?:// ]] ; then
-        grepnames=$(awk -F 'http' '{print $1}' <<< "$grepnames")
-    elif [[ "$grepnames" =~ /mnt/ ]] ; then
-        grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$grepnames")
-    fi
+    # remove unnecessary parts
+    # if [[ "$grepnames" =~ https?:// ]] ; then
+    #     grepnames=$(awk -F 'http' '{print $1}' <<< "$grepnames")
+    # elif [[ "$grepnames" =~ /mnt/ ]] ; then
+    #     grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$grepnames")
+    # fi
+    remove-parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
