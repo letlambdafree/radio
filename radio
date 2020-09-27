@@ -67,7 +67,7 @@ REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
-SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]"
+SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 
 play() {
     local arg arg0 arg1 arg2 arg3
@@ -80,12 +80,14 @@ play() {
     elif [[ $1 =~ /mnt/ ]] ; then
         arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
         # seek time
-        if [[ "$arg" =~ --start ]] ; then
-            arg1=$(awk -F ' --start' '{print $1}' <<< "$arg")
-            arg0=$(awk -F '--start' '{print FS$2}' <<< "$arg")
-            arg2=$(awk -F ' --end' '{print $1}' <<< "$arg0")
-            arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg0")
+        if [[ "$arg" =~ --start= ]] ; then
+            arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
+            arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
+            arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
+            arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
             $PLAYER "$arg1" "$arg2" "$arg3"
+        else
+            $PLAYER "$arg"
         fi
     else
         printf "\n"
@@ -375,7 +377,8 @@ for arg in "$@" ; do
     # printf "\n grepnames is $grepnames"
     # printf "\n"
 done
-grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]/d' <<< "$grepnames" | sed 's/^# //')
+grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
+                sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
 
 # printf "\n"
@@ -496,10 +499,19 @@ fi
 # Les Misérables (2012) - Look Down Beggar https://www.youtube.com/watch?v=zy_veDZAuYU
 # Les Misérables (2012) - the confrontation 자베르 vs 장발장 https://www.youtube.com/watch?v=sfDv5gWEOOA
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
-#--local video file
+#----- local music video file -----#
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
+#Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
+# Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
+#Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+#Moana - We know the way /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+#Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+#Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+#Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+# Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
+# Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
 #
 ## Live Tv
 #
@@ -627,3 +639,5 @@ fi
 # sia/
 #
 ### MY LOCAL MUSIC END
+
+#  LocalWords:  Moana
