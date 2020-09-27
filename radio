@@ -8,7 +8,7 @@
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only white-space needed.
-#         ex) radio "sia\|live\|tv" cam  "mango\|full"
+#         ex) radio "sia\|live\|tv" cam "mango\|full"
 #
 # radio
 #       - plays a random radio, press 'q' to play the next.
@@ -98,6 +98,28 @@ play() {
     fi
 }
 
+print() {
+    if [[ $1 =~ https?:// ]] ; then
+        printf "\n"
+        awk -F 'http' '{print $1}' <<< $1 | \
+            sed 's/^# / /' | grep --color=auto .
+        printf "\n"
+    elif [[ $1 =~ /$ ]] ; then
+        printf "\n"
+        sed 's/^# / /' <<< $1 | grep --color=auto .
+        printf "\n"
+    elif [[ $1 =~ /mnt/ ]] ; then
+        printf "\n"
+        awk -F '/mnt/' '{print $1}' <<< $1 | \
+            sed 's/^# / /' | grep --color=auto .
+        printf "\n"
+    else
+        printf "\n"
+        grep --color=auto . <<< $1
+        printf "\n"
+    fi
+}
+
 x=0
 while read -r line ; do
     (( x++ ))
@@ -135,10 +157,11 @@ if [[ -z $1 ]] ; then
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
-        printf "\n"
-        awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/^# / /' | grep --color=auto .
-        printf "\n"
+        # printf "\n"
+        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
+        #     sed 's/^# / /' | grep --color=auto .
+        # printf "\n"
+        print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         wait $lastbgpid
@@ -153,9 +176,10 @@ if [[ $1 =~ ^(-p|--period)$ ]] ; then
         # SKIPPATTERN for comments
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
-        awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/^# / /' | grep --color=auto .
-        printf "\n"
+        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
+        #     sed 's/^# / /' | grep --color=auto .
+        # printf "\n"
+        print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -211,10 +235,11 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$grouplist")
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
-        printf "\n"
-        awk -F 'http' '{print $1}' <<< "$randomradio" | \
-            sed 's/^# / /' | grep --color=auto .
-        printf "\n"
+        # printf "\n"
+        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
+        #     sed 's/^# / /' | grep --color=auto .
+        # printf "\n"
+        print "$randomradio"
         play "$randomradio"
         sleep 1
     done
@@ -240,9 +265,10 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         while true ; do
             randomlocal=$(shuf -n 1 <<< "$locallist")
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
-            printf "\n"
-            sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
-            printf "\n"
+            # printf "\n"
+            # sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
+            # printf "\n"
+            print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
             lastbgpid=$!
@@ -266,9 +292,10 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         greplocalcount=$(grep -ic "$2" <<< "$locallist")
         if (( $greplocalcount == 1 )) ; then
             thelocalname=$(grep -i "$2" <<< "$locallist")
-            printf "\n"
-            grep --color=auto . <<< "$thelocalname"
-            printf "\n"
+            # printf "\n"
+            # grep --color=auto . <<< "$thelocalname"
+            # printf "\n"
+            print "$thelocalname"
             $PLAYER "$LOCALMUSICDIR""$thelocalname"
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
@@ -283,9 +310,10 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     while true ; do
                         randomlocalname=$(shuf -n 1 <<< "$localnames")
-                        printf "\n"
-                        grep --color=auto . <<< "$randomlocalname"
-                        printf "\n"
+                        # printf "\n"
+                        # grep --color=auto . <<< "$randomlocalname"
+                        # printf "\n"
+                        print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
                         wait $lastbgpid
@@ -296,9 +324,10 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                 selectedlocalfile="$localfile"
                 break
             done
-            printf "\n"
-            grep --color=auto . <<< "$selectedlocalfile"
-            printf "\n"
+            # printf "\n"
+            # grep --color=auto . <<< "$selectedlocalfile"
+            # printf "\n"
+            print "$selectedlocalfile"
             $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
             exit 0
         else
@@ -322,10 +351,11 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
-        printf "\n"
-        awk -F 'http' '{print $1}' <<< "$line" | \
-            sed 's/^# / /' | grep --color=auto .
-        printf "\n"
+        # printf "\n"
+        # awk -F 'http' '{print $1}' <<< "$line" | \
+        #     sed 's/^# / /' | grep --color=auto .
+        # printf "\n"
+        print "$line"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -386,13 +416,20 @@ grepcount=$(grep -ic .  <<< "$grepnames")
 # printf "\n"
 
 if (( $grepcount == 1 )) ; then
-    printf "\n"
-    grep --color=auto . <<< "$grepnames"
-    printf "\n"
+    # printf "\n"
+    # grep --color=auto . <<< "$grepnames"
+    # printf "\n"
+    print "$grepnames"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
 elif (( $grepcount > 1 )) ; then
+    remove unnecessary parts
+    if [[ "$grepnames" =~ https?:// ]] ; then
+        grepnames=$(awk -F 'http' '{print $1}' <<< "$grepnames")
+    elif [[ "$grepnames" =~ /mnt/ ]] ; then
+        grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$grepnames")
+    fi
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
         if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
@@ -403,9 +440,10 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             while true ; do
                 randomurlname=$(shuf -n 1 <<< "$grepnames")
-                printf "\n"
-                grep --color=auto . <<< "$randomurlname"
-                printf "\n"
+                # printf "\n"
+                # grep --color=auto . <<< "$randomurlname"
+                # printf "\n"
+                print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
                 sleep 1
@@ -415,9 +453,10 @@ elif (( $grepcount > 1 )) ; then
         selectedurl="$url"
         break
     done
-    printf "\n"
-    grep --color=auto . <<< "$selectedurl"
-    printf "\n"
+    # printf "\n"
+    # grep --color=auto . <<< "$selectedurl"
+    # printf "\n"
+    print "$selectedurl"
     grepline=$(grep -iF "$selectedurl" <<< "$urllist")
     play "$grepline"
     exit 0
@@ -494,10 +533,6 @@ fi
 # LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
-# Les Misérables (2012) - Look down 고개 숙여 https://www.youtube.com/watch?v=RP4evZVuLkM
-# Les Misérables (2012) - Do you hear the people sing 너는 듣고 있는가 https://www.youtube.com/watch?v=UVXp3SnHsPg
-# Les Misérables (2012) - Look Down Beggar https://www.youtube.com/watch?v=zy_veDZAuYU
-# Les Misérables (2012) - the confrontation 자베르 vs 장발장 https://www.youtube.com/watch?v=sfDv5gWEOOA
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
 #----- local music video file -----#
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
@@ -512,6 +547,12 @@ fi
 #Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
 # Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
+# Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
+# Les.Miserables 2012 - The Confrontation /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=43:20 --end=45:10
+# Les.Miserables 2012 - Paris / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:06:42 --end=1:09:36
+# Les.Miserables 2012 - On My Own / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
+# Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
+# Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
 #
 ## Live Tv
 #
