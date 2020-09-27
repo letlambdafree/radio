@@ -122,9 +122,9 @@ print() {
 
 remove-parts(){
     if [[ $1 =~ https?:// ]] ; then
-        $1=$(awk -F 'http' '{print $1}' <<< $1)
+        grepnames=$(awk -F 'http' '{print $1}' <<< $1)
     elif [[ $1 =~ /mnt/ ]] ; then
-        $1=$(awk -F '/mnt/' '{print $1}' <<< $1)
+        grepnames=$(awk -F '/mnt/' '{print $1}' <<< $1)
     fi
 }
 
