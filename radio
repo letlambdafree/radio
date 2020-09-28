@@ -86,9 +86,10 @@ play() {
         printf "\n"
         exit 1
     fi
+
     if [[ "$arg" =~ --start= ]] ; then
-        arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
+        arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
         arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
         $PLAYER "$arg1" "$arg2" "$arg3"
@@ -542,6 +543,7 @@ fi
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
+# 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
 #----- local music video file -----#
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
