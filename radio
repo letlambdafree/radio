@@ -71,31 +71,17 @@ TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 
-play-with-seek() {
-    local arg0 arg1 arg2 arg3
-        if [[ $1 =~ --start= ]] ; then
-            arg1=$(awk -F ' --start=' '{print $1}' <<< $1)
-            arg0=$(awk -F '--start=' '{print FS$2}' <<< $1)
-            arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
-            arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
-            $PLAYER "$arg1" "$arg2" "$arg3"
-        else
-            $PLAYER "$arg"
-        fi
-}
-
 play() {
     local arg arg0 arg1 arg2 arg3
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
-        $PLAYER "$arg"
+        # $PLAYER "$arg"
     elif [[ $1 =~ /$ ]] ; then
         arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
-        $PLAYER "$arg"
+        # $PLAYER "$arg"
     elif [[ $1 =~ /mnt/ ]] ; then
         arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
         # seek time
-        play-with-seek "$arg"
         # if [[ "$arg" =~ --start= ]] ; then
         #     arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         #     arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
@@ -111,6 +97,15 @@ play() {
         printf "\n Try again."
         printf "\n"
         exit 1
+    fi
+    if [[ $1 =~ --start= ]] ; then
+        arg1=$(awk -F ' --start=' '{print $1}' <<< $1)
+        arg0=$(awk -F '--start=' '{print FS$2}' <<< $1)
+        arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
+        arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
+        $PLAYER "$arg1" "$arg2" "$arg3"
+    else
+        $PLAYER $1
     fi
 }
 
