@@ -75,22 +75,10 @@ play() {
     local arg arg0 arg1 arg2 arg3
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
-        # $PLAYER "$arg"
     elif [[ $1 =~ /$ ]] ; then
         arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
-        # $PLAYER "$arg"
     elif [[ $1 =~ /mnt/ ]] ; then
         arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
-        # seek time
-        # if [[ "$arg" =~ --start= ]] ; then
-        #     arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
-        #     arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
-        #     arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
-        #     arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
-        #     $PLAYER "$arg1" "$arg2" "$arg3"
-        # else
-        #     $PLAYER "$arg"
-        # fi
     else
         printf "\n"
         printf "\n Sorry, something is wrong!"
@@ -98,14 +86,14 @@ play() {
         printf "\n"
         exit 1
     fi
-    if [[ $1 =~ --start= ]] ; then
-        arg1=$(awk -F ' --start=' '{print $1}' <<< $1)
-        arg0=$(awk -F '--start=' '{print FS$2}' <<< $1)
+    if [[ "$arg" =~ --start= ]] ; then
+        arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
+        arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
         arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
         arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
         $PLAYER "$arg1" "$arg2" "$arg3"
     else
-        $PLAYER $1
+        $PLAYER "$arg"
     fi
 }
 
