@@ -1,7 +1,8 @@
 #!/bin/bash
 
-### A command line radio player with mpv
-#
+### this script for my favorite music from various sources
+### like radio, youtube, local storage
+
 # Usage: radio [a url-part-name] or radio option [arg ...]
 #
 # radio "regex"
@@ -31,7 +32,7 @@
 #
 # radio {-t|--test}
 #       - tests all radios whether work or not.
-#         If failed, it logs the file named report.
+#         If failed, it logs on the file named report.
 #
 # radio {-e|--edit}
 #       - edit this script.
@@ -44,7 +45,6 @@
 ### TODO
 #
 # add more urls
-# add local mv with --start and --end
 # instead quit mpv, can mpv play items continually?
 
 
@@ -98,7 +98,7 @@ play() {
     fi
 }
 
-print() {
+grep-print() {
     if [[ $1 =~ https?:// ]] ; then
         printf "\n"
         awk -F 'http' '{print $1}' <<< $1 | \
@@ -120,6 +120,12 @@ print() {
     fi
 }
 
+test-print() {
+    printf "\n"
+    printf "\n $1 is $2"
+    printf "\n"
+}
+
 remove-parts(){
     if [[ $1 =~ https?:// ]] ; then
         grepnames=$(awk -F 'http' '{print $1}' <<< $1)
@@ -133,14 +139,10 @@ while read -r line ; do
     (( x++ ))
     [[ $line =~ ^($RADIOSTARTLINE) ]] && break
 done < "$0"
-
-# printf "\n"
-# printf "\n RADIOSTARTLINE's number is $x"
-# printf "\n"
+# test-print "RADIOSTARTLINE's number" "$x"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
-# printf "\n"
-# printf "\n $urllist"
-# printf "\n"
+# test-print urllist "$urllist"
+
 
 x=0
 while read -r line ; do
@@ -149,13 +151,9 @@ while read -r line ; do
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-# printf "\n"
-# printf "\n radiolist is $radiolist"
-# printf "\n"
+# test-print radiolist "$radiolist"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-# printf "\n"
-# printf "\n urlname is $urlname"
-# printf "\n"
+# test-print urlname "$urlname"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
@@ -169,7 +167,7 @@ if [[ -z $1 ]] ; then
         # awk -F 'http' '{print $1}' <<< "$randomradio" | \
         #     sed 's/^# / /' | grep --color=auto .
         # printf "\n"
-        print "$randomradio"
+        grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         wait $lastbgpid
@@ -187,7 +185,7 @@ if [[ $1 =~ ^(-p|--period)$ ]] ; then
         # awk -F 'http' '{print $1}' <<< "$randomradio" | \
         #     sed 's/^# / /' | grep --color=auto .
         # printf "\n"
-        print "$randomradio"
+        grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -247,7 +245,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
         # awk -F 'http' '{print $1}' <<< "$randomradio" | \
         #     sed 's/^# / /' | grep --color=auto .
         # printf "\n"
-        print "$randomradio"
+        grep-print "$randomradio"
         play "$randomradio"
         sleep 1
     done
@@ -276,7 +274,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             # printf "\n"
             # sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
             # printf "\n"
-            print "$randomlocal"
+            grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
             lastbgpid=$!
@@ -303,7 +301,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             # printf "\n"
             # grep --color=auto . <<< "$thelocalname"
             # printf "\n"
-            print "$thelocalname"
+            grep-print "$thelocalname"
             $PLAYER "$LOCALMUSICDIR""$thelocalname"
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
@@ -321,7 +319,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                         # printf "\n"
                         # grep --color=auto . <<< "$randomlocalname"
                         # printf "\n"
-                        print "$randomlocalname"
+                        grep-print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
                         wait $lastbgpid
@@ -335,7 +333,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             # printf "\n"
             # grep --color=auto . <<< "$selectedlocalfile"
             # printf "\n"
-            print "$selectedlocalfile"
+            grep-print "$selectedlocalfile"
             $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
             exit 0
         else
@@ -363,7 +361,7 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
         # awk -F 'http' '{print $1}' <<< "$line" | \
         #     sed 's/^# / /' | grep --color=auto .
         # printf "\n"
-        print "$line"
+        grep-print "$line"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -411,23 +409,18 @@ for arg in "$@" ; do
     else
         grepnames=$(grep -i "$arg" <<< "$grepnames")
     fi
-    # printf "\n"
-    # printf "\n grepnames is $grepnames"
-    # printf "\n"
+    # test-print grepnames "$grepnames"
 done
 grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
                 sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
-
-# printf "\n"
-# printf "\n grepcount is $grepcount"
-# printf "\n"
+# test-print grepcount "$grepcount"
 
 if (( $grepcount == 1 )) ; then
     # printf "\n"
     # grep --color=auto . <<< "$grepnames"
     # printf "\n"
-    print "$grepnames"
+    grep-print "$grepnames"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
@@ -452,7 +445,7 @@ elif (( $grepcount > 1 )) ; then
                 # printf "\n"
                 # grep --color=auto . <<< "$randomurlname"
                 # printf "\n"
-                print "$randomurlname"
+                grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
                 sleep 1
@@ -465,7 +458,7 @@ elif (( $grepcount > 1 )) ; then
     # printf "\n"
     # grep --color=auto . <<< "$selectedurl"
     # printf "\n"
-    print "$selectedurl"
+    grep-print "$selectedurl"
     grepline=$(grep -iF "$selectedurl" <<< "$urllist")
     play "$grepline"
     exit 0
@@ -542,9 +535,11 @@ fi
 # LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
-# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk
+# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16
 # 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
-#----- local music video file -----#
+# 노래얼_김옥희_이 어둠의 이 슬픔_고대 85학번 입학 30주년 기념 모교방문 축제 https://www.youtube.com/watch?v=cmNekU_svwY&list=RDcmNekU_svwY
+# 강지민 - 이 어둠의 이 슬픔 (도시의 그림자) https://www.youtube.com/watch?v=lg6IKzPdoes
+#--- local music video file ---#
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
@@ -673,7 +668,7 @@ fi
 # 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
 # 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
 # This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
-# 도시의 그림자(Shadow of City) - 도시의 그림자(Shadow of City) (Full Album) https://www.youtube.com/watch?v=LW14PKtNvws
+# 도시의 그림자(Shadow of City) - 도시의 그림자 (Full Album) https://www.youtube.com/watch?v=LW14PKtNvws
 # ♣등려군 노래 모음 11곡♣ https://www.youtube.com/watch?v=tIoLOB1fRgo
 #
 ### MY YOUTUBE URLS END
