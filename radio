@@ -50,7 +50,8 @@
 
 
 PLAYER="mpv"
-PS3="Choose : "
+PS3="00 or * : all
+     0       : none"
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
 LOCALEXT=".*\.(mp3|flac)$"
@@ -547,13 +548,13 @@ fi
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
-#Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
+# Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=09:13 --end=12:38
 # Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
-#Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
-#Moana - We know the way /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
-#Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
-#Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
-#Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#17 --end=1:17:24
+# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
+# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
+# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
+# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
+# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
 # Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
 # Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
@@ -597,7 +598,7 @@ fi
 # TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
 # Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
 #
-## Live Camera - often off camera
+## Live Camera - often change url address for restart
 #
 # 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
