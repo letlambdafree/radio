@@ -121,9 +121,8 @@ grep-print() {
 }
 
 test-print() {
-    printf "\n"
-    printf "\n $1 is $2"
-    printf "\n"
+    return 0 # to test, comment this line
+    printf "\n $1 is $2 \n"
 }
 
 remove-parts(){
@@ -139,10 +138,9 @@ while read -r line ; do
     (( x++ ))
     [[ $line =~ ^($RADIOSTARTLINE) ]] && break
 done < "$0"
-# test-print "RADIOSTARTLINE's number" "$x"
+test-print "RADIOSTARTLINE's number" "$x"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
-# test-print urllist "$urllist"
-
+test-print urllist "$urllist"
 
 x=0
 while read -r line ; do
@@ -151,9 +149,9 @@ while read -r line ; do
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-# test-print radiolist "$radiolist"
+test-print radiolist "$radiolist"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-# test-print urlname "$urlname"
+test-print urlname "$urlname"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
@@ -163,10 +161,6 @@ if [[ -z $1 ]] ; then
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
-        # printf "\n"
-        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
-        #     sed 's/^# / /' | grep --color=auto .
-        # printf "\n"
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -182,9 +176,6 @@ if [[ $1 =~ ^(-p|--period)$ ]] ; then
         # SKIPPATTERN for comments
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
-        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
-        #     sed 's/^# / /' | grep --color=auto .
-        # printf "\n"
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -209,12 +200,11 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
             kr) [[ $line =~ ^(## Korean Radio) ]] && break ;;
             jp) [[ $line =~ ^(## Japanese Radio) ]] && break ;;
             mv) [[ $line =~ ^(## Music Video) ]] && break ;;
-            lt) [[ $line =~ ^(## Live Tv) ]] && break ;;
+            lt) [[ $line =~ ^(## Live TV) ]] && break ;;
             ln) [[ $line =~ ^(## Live News) ]] && break ;;
             lc) [[ $line =~ ^(## Live Camera) ]] && break ;;
             pl) [[ $line =~ ^(## Play List) ]] && break ;;
-            *) printf "\n"
-               printf "\n Sorry, there is no \"$2\" group."
+            *) printf "\n Sorry, there is no \"$2\" group."
                printf "\n Try again."
                printf "\n"
                printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
@@ -223,7 +213,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
                printf "\n kr - Korean Radio"
                printf "\n jp - Japanese Radio"
                printf "\n mv - Music Video"
-               printf "\n lt - Live Tv"
+               printf "\n lt - Live TV"
                printf "\n ln - Live News"
                printf "\n lc - Live Camera"
                printf "\n pl - Play List"
@@ -241,10 +231,6 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while true ; do
         randomradio=$(shuf -n 1 <<< "$grouplist")
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
-        # printf "\n"
-        # awk -F 'http' '{print $1}' <<< "$randomradio" | \
-        #     sed 's/^# / /' | grep --color=auto .
-        # printf "\n"
         grep-print "$randomradio"
         play "$randomradio"
         sleep 1
@@ -271,9 +257,6 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         while true ; do
             randomlocal=$(shuf -n 1 <<< "$locallist")
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
-            # printf "\n"
-            # sed 's/^# / /' <<< "$randomlocal" | grep --color=auto .
-            # printf "\n"
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
@@ -298,9 +281,6 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         greplocalcount=$(grep -ic "$2" <<< "$locallist")
         if (( $greplocalcount == 1 )) ; then
             thelocalname=$(grep -i "$2" <<< "$locallist")
-            # printf "\n"
-            # grep --color=auto . <<< "$thelocalname"
-            # printf "\n"
             grep-print "$thelocalname"
             $PLAYER "$LOCALMUSICDIR""$thelocalname"
         elif (( $greplocalcount > 1 )) ; then
@@ -316,9 +296,6 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     while true ; do
                         randomlocalname=$(shuf -n 1 <<< "$localnames")
-                        # printf "\n"
-                        # grep --color=auto . <<< "$randomlocalname"
-                        # printf "\n"
                         grep-print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
@@ -330,9 +307,6 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                 selectedlocalfile="$localfile"
                 break
             done
-            # printf "\n"
-            # grep --color=auto . <<< "$selectedlocalfile"
-            # printf "\n"
             grep-print "$selectedlocalfile"
             $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
             exit 0
@@ -357,10 +331,6 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
-        # printf "\n"
-        # awk -F 'http' '{print $1}' <<< "$line" | \
-        #     sed 's/^# / /' | grep --color=auto .
-        # printf "\n"
         grep-print "$line"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
@@ -409,28 +379,19 @@ for arg in "$@" ; do
     else
         grepnames=$(grep -i "$arg" <<< "$grepnames")
     fi
-    # test-print grepnames "$grepnames"
+    test-print grepnames "$grepnames"
 done
 grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
                 sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
-# test-print grepcount "$grepcount"
+test-print grepcount "$grepcount"
 
 if (( $grepcount == 1 )) ; then
-    # printf "\n"
-    # grep --color=auto . <<< "$grepnames"
-    # printf "\n"
     grep-print "$grepnames"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
 elif (( $grepcount > 1 )) ; then
-    # remove unnecessary parts
-    # if [[ "$grepnames" =~ https?:// ]] ; then
-    #     grepnames=$(awk -F 'http' '{print $1}' <<< "$grepnames")
-    # elif [[ "$grepnames" =~ /mnt/ ]] ; then
-    #     grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$grepnames")
-    # fi
     remove-parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
@@ -442,9 +403,6 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             while true ; do
                 randomurlname=$(shuf -n 1 <<< "$grepnames")
-                # printf "\n"
-                # grep --color=auto . <<< "$randomurlname"
-                # printf "\n"
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
@@ -455,9 +413,6 @@ elif (( $grepcount > 1 )) ; then
         selectedurl="$url"
         break
     done
-    # printf "\n"
-    # grep --color=auto . <<< "$selectedurl"
-    # printf "\n"
     grep-print "$selectedurl"
     grepline=$(grep -iF "$selectedurl" <<< "$urllist")
     play "$grepline"
@@ -559,7 +514,7 @@ fi
 # Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
 # Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
 #
-## Live Tv
+## Live TV
 #
 # 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
 # franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.c
