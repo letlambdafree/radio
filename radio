@@ -1,8 +1,8 @@
 #!/bin/bash
 
-### this script for my favorite music from various sources
-### like radio, youtube, local storage
-
+# this script for my favorite music from various sources
+# like radio, youtube, local storage
+#
 # Usage: radio [a url-part-name] or radio option [arg ...]
 #
 # radio "regex"
@@ -44,8 +44,10 @@
 
 ### TODO
 #
-# add more urls
-# instead quit mpv, can mpv play items continually?
+# 1. Add more urls
+# 2. Instead quitting mpv (now it steals focus from my current window),
+# can it play the predefined items (at least 100) continually?
+# 3. Change a random util instead of shuf (not good)
 
 
 
@@ -55,7 +57,7 @@ PS3="
 choose : "
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
-LOCALEXT=".*\.(mp3|flac)$"
+LOCALMUSICEXT=".*\.(mp3|flac)$"
 RADIOSTARTLINE="### MY RADIO URLS"
 RADIOENDLINE="### MY RADIO URLS END"
 YOUTUBESTARTLINE="### MY YOUTUBE URLS"
@@ -269,7 +271,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         cd "$LOCALMUSICDIR"
         shopt -s globstar
         for file in **/* ; do
-            if [[ $file =~ $LOCALEXT ]] ; then
+            if [[ $file =~ $LOCALMUSICEXT ]] ; then
                 if [[ -z $localoneline ]] ; then
                     localoneline="$file"
                 else
@@ -359,7 +361,7 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
         (( x++ ))
         [[ $line =~ ^(# Usage) ]] && break
     done < "$0"
-    helplist=$(tail -n +$(( x - 2 )) "$0")
+    helplist=$(tail -n +$(( x - 3 )) "$0")
     x=0
     while read -r line ; do
         (( x++ ))
