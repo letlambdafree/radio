@@ -48,6 +48,7 @@
 # 2. Instead quitting mpv (now it steals focus from my current window),
 # can it play the predefined items (at least 100) continually?
 # 3. Change a random util instead of shuf (not good)
+# 4. Add playlist support
 
 
 
@@ -73,8 +74,39 @@ TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 
+
+
+# while true ; do
+#     count=$(( count + 1 ))
+#     if (( $count > 10 )) ; then
+#         break
+#     fi
+#     test-print count "$count"
+#     randomurlname=$(shuf -n 1 <<< "$grepnames")
+#     grep-print "$randomurlname"
+#     grepline=$(grep -iF "$randomurlname" <<< "$urllist")
+#     test-print grepline "$grepline"
+#     if [[ -z $greplinelist ]] ; then
+#         greplinelist="$grepline"
+#     else
+#         greplinelist="$greplinelist","$grepline"
+#     fi
+#     test-print greplinelist "$greplinelist"
+#     sleep 1
+# done
+# playlist=$(tr ',' '\012' <<< "$greplinelist")
+# test-print playlist "$playlist"
+# playlist=$(sed  's/.*\/mnt\/data/\/mnt\/data/g' <<< "$playlist")
+
+# # playlist=$(awk -F '/mnt/' '{print FS$2}' <<< "$playlist")
+# test-print playlist "$playlist"
+# mpv --playlist="$playlist"
+
+
+
 play() {
     local arg arg0 arg1 arg2 arg3
+    count=$(( $count + 1 ))
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
     elif [[ $1 =~ /$ ]] ; then
@@ -94,9 +126,18 @@ play() {
         arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
         arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
-        $PLAYER "$arg1" "$arg2" "$arg3"
-    else
-        $PLAYER "$arg"
+        if (( count < 5 )) ; then
+            test-print arglist "$arglist"
+            if [[ -z "$arglist" ]] ; then
+                arglist=""$arg1" "$arg2" "$arg3""
+            else
+                arglist=""$arglist" "$arg1" "$arg2" "$arg3""
+            fi
+            return
+        fi
+        $PLAYER $arglist
+        count=0
+        arglist=""
     fi
 }
 
@@ -123,7 +164,7 @@ grep-print() {
 }
 
 test-print() {
-    return 0 # to test, comment this line
+    # return 0 # to test, comment this line
     printf "\n $1 is $2 \n"
 }
 
@@ -379,7 +420,14 @@ for arg in "$@" ; do
     if [[ -z $grepnames ]] ; then
         grepnames=$(grep -i "$arg" <<< "$urlname")
     else
-        grepnames=$(grep -i "$arg" <<< "$grepnames")
+        if [[ $arg == -v ]] ; then
+            reverse="-v"
+            continue
+        fi
+        grepnames=$(grep -i $reverse "$arg" <<< "$grepnames")
+        if [[ -n $reverse ]] ; then
+            reverse=""
+        fi
     fi
     test-print grepnames "$grepnames"
 done
