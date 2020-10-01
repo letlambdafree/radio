@@ -54,9 +54,7 @@
 #  Add playlist support
 
 
-arg1="$1"
-arg2="$2"
-arg3="$3"
+
 PLAYER="mpv"
 PS3="
 # for all, press * or 00
@@ -108,13 +106,13 @@ play() {
     fi
     # playlist with random items as much as count
     # mpv item1 item2 item3 item4 item5
+    if [[ -z "$arglist" ]] ; then
+        arglist="$arg"
+    else
+        arglist=""$arglist" "$arg""
+    fi
+    test-print arglist "$arglist"
     if (( count < $countnumber )) ; then
-        if [[ -z "$arglist" ]] ; then
-            arglist="$arg"
-        else
-            arglist=""$arglist" "$arg""
-        fi
-        test-print arglist "$arglist"
         return
     fi
     $PLAYER $arglist
@@ -157,15 +155,6 @@ remove-parts(){
     fi
 }
 
-shuffle-radio() {
-    shuffleradio=$(shuf -n 1 <<< $1)
-    if [[ -z $2 ]] ; then
-        S2="$shuffleradio"
-    elif [[ $2 == "$shuffleradio" ]] ; then
-        continue # avoid the same radio in a raw
-    fi
-}
-
 x=0
 while read -r line ; do
     (( x++ ))
@@ -190,7 +179,12 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
-        shuffle-radio "$radiolist" "$randomradio"
+        shufrandomradio=$(shuf -n 1 <<< "$radiolist")
+        if [[ -z "$randomradio" ]] ; then
+            randomradio="$shufrandomradio"
+        elif [[ "$randomradio" == "$shufrandomradio" ]] ; then
+            continue
+        fi
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
@@ -205,7 +199,7 @@ fi
 
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
-        shuffle-radio "$radiolist" "$randomradio"
+        randomradio=$(shuf -n 1 <<< "$radiolist")
         # SKIPPATTERN for comments
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
@@ -262,7 +256,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     done <<< "$grouplist"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
-        shuffle-radio "$grouplist" "$randomradio"
+        randomradio=$(shuf -n 1 <<< "$grouplist")
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         grep-print "$randomradio"
         play "$randomradio"
@@ -288,7 +282,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
-            shuffle-radio "$locallist" "$randomlocal"
+            randomlocal=$(shuf -n 1 <<< "$locallist")
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
@@ -328,7 +322,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n To exit, press Ctrl-c."
                     printf "\n"
                     while true ; do
-                        shuffle-radio "$localnames" "$randomlocalname"
+                        randomlocalname=$(shuf -n 1 <<< "$localnames")
                         grep-print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
@@ -410,6 +404,13 @@ for arg in "$@" ; do
     if [[ -z $grepnames ]] ; then
         if [[ $arg =~ ^@[0-9] ]] ; then
             countnumber=${arg/@/}
+            if (( countnumber < 1 )) ; then
+                printf "\n"
+                printf "\n Sorry, @number is more than 1!"
+                printf "\n Try again."
+                printf "\n"
+                exit 1
+            fi
             continue
         fi
         grepnames=$(grep -i "$arg" <<< "$urlname")
@@ -447,7 +448,7 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c."
             printf "\n"
             while true ; do
-                shuffle-radio "$grepnames" "$randomurlname"
+                randomurlname=$(shuf -n 1 <<< "$grepnames")
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
