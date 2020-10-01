@@ -54,7 +54,9 @@
 #  Add playlist support
 
 
-
+arg1="$1"
+arg2="$2"
+arg3="$3"
 PLAYER="mpv"
 PS3="
 # for all, press * or 00
@@ -156,12 +158,11 @@ remove-parts(){
 }
 
 shuffle-radio() {
-    shufflerandom=$(shuf -n 1 <<< $1)
+    shuffleradio=$(shuf -n 1 <<< $1)
     if [[ -z $2 ]] ; then
-        S2="$shufflerandom"
-    elif [[ $2 == "$shufflerandom" ]] ; then
-        # avoid the same radio in a raw
-        continue
+        S2="$shuffleradio"
+    elif [[ $2 == "$shuffleradio" ]] ; then
+        continue # avoid the same radio in a raw
     fi
 }
 
