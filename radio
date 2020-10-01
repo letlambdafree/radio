@@ -10,7 +10,8 @@
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only white-space needed.
 #         You can use -v to invert match
-#         you can play random file like playlist
+#         you can play random file like playlist with @number
+#         at the start of search line
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but "lsd"
 #             radio @100 sia - 100 random items include "sia" will be played
@@ -75,34 +76,7 @@ REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
-countnumber=100
-
-
-# while true ; do
-#     count=$(( count + 1 ))
-#     if (( $count > 10 )) ; then
-#         break
-#     fi
-#     test-print count "$count"
-#     randomurlname=$(shuf -n 1 <<< "$grepnames")
-#     grep-print "$randomurlname"
-#     grepline=$(grep -iF "$randomurlname" <<< "$urllist")
-#     test-print grepline "$grepline"
-#     if [[ -z $greplinelist ]] ; then
-#         greplinelist="$grepline"
-#     else
-#         greplinelist="$greplinelist","$grepline"
-#     fi
-#     test-print greplinelist "$greplinelist"
-#     sleep 1
-# done
-# playlist=$(tr ',' '\012' <<< "$greplinelist")
-# test-print playlist "$playlist"
-# playlist=$(sed  's/.*\/mnt\/data/\/mnt\/data/g' <<< "$playlist")
-
-# # playlist=$(awk -F '/mnt/' '{print FS$2}' <<< "$playlist")
-# test-print playlist "$playlist"
-# mpv --playlist="$playlist"
+countnumber=10
 
 
 
@@ -181,6 +155,16 @@ remove-parts(){
     fi
 }
 
+shuffle-radio() {
+    shufflerandom=$(shuf -n 1 <<< $1)
+    if [[ -z $2 ]] ; then
+        S2="$shufflerandom"
+    elif [[ $2 == "$shufflerandom" ]] ; then
+        # avoid the same radio in a raw
+        continue
+    fi
+}
+
 x=0
 while read -r line ; do
     (( x++ ))
@@ -205,7 +189,7 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$radiolist")
+        shuffle-radio "$radiolist" "$randomradio"
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
@@ -220,7 +204,7 @@ fi
 
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$radiolist")
+        shuffle-radio "$radiolist" "$randomradio"
         # SKIPPATTERN for comments
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
@@ -277,7 +261,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     done <<< "$grouplist"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$grouplist")
+        shuffle-radio "$grouplist" "$randomradio"
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         grep-print "$randomradio"
         play "$randomradio"
@@ -303,7 +287,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
-            randomlocal=$(shuf -n 1 <<< "$locallist")
+            shuffle-radio "$locallist" "$randomlocal"
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
@@ -343,7 +327,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n To exit, press Ctrl-c."
                     printf "\n"
                     while true ; do
-                        randomlocalname=$(shuf -n 1 <<< "$localnames")
+                        shuffle-radio "$localnames" "$randomlocalname"
                         grep-print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
@@ -462,11 +446,11 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c."
             printf "\n"
             while true ; do
-                randomurlname=$(shuf -n 1 <<< "$grepnames")
+                shuffle-radio "$grepnames" "$randomurlname"
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
-                # sleep 1
+                sleep 1
             done
             exit 0
         fi
@@ -484,6 +468,8 @@ else
     printf "\n"
     exit 1
 fi
+
+
 
 ### MY RADIO URLS - from a latte applet in kde.
 #
