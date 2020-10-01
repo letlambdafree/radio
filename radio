@@ -9,7 +9,11 @@
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only white-space needed.
+#         You can use -v to invert match
+#         you can play random file like playlist
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
+#             radio sia -v lsd - include "sia" but "lsd"
+#             radio @100 sia - 100 random items include "sia" will be played
 #
 # radio
 #       - plays a random radio, press 'q' to play the next.
@@ -44,11 +48,9 @@
 
 ### TODO
 #
-# 1. Add more urls
-# 2. Instead quitting mpv (now it steals focus from my current window),
-# can it play the predefined items (at least 100) continually?
-# 3. Change a random util instead of shuf (not good)
-# 4. Add playlist support
+#  Add more urls
+#  Change a random util instead of shuf (not good)
+#  Add playlist support
 
 
 
@@ -73,7 +75,7 @@ REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
-
+countnumber=100
 
 
 # while true ; do
@@ -107,6 +109,7 @@ SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 play() {
     local arg arg0 arg1 arg2 arg3
     count=$(( $count + 1 ))
+    test-print count "$count"
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
     elif [[ $1 =~ /$ ]] ; then
@@ -120,25 +123,27 @@ play() {
         printf "\n"
         exit 1
     fi
-
     if [[ "$arg" =~ --start= ]] ; then
         arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
         arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
         arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
-        if (( count < 5 )) ; then
-            test-print arglist "$arglist"
-            if [[ -z "$arglist" ]] ; then
-                arglist=""$arg1" "$arg2" "$arg3""
-            else
-                arglist=""$arglist" "$arg1" "$arg2" "$arg3""
-            fi
-            return
-        fi
-        $PLAYER $arglist
-        count=0
-        arglist=""
+        arg=""$arg1" "$arg2" "$arg3""
     fi
+    # playlist with random items as much as count
+    # mpv item1 item2 item3 item4 item5
+    if (( count < $countnumber )) ; then
+        if [[ -z "$arglist" ]] ; then
+            arglist="$arg"
+        else
+            arglist=""$arglist" "$arg""
+        fi
+        test-print arglist "$arglist"
+        return
+    fi
+    $PLAYER $arglist
+    count=0
+    arglist=""
 }
 
 grep-print() {
@@ -418,6 +423,10 @@ fi
 # grep 'and' option
 for arg in "$@" ; do
     if [[ -z $grepnames ]] ; then
+        if [[ $arg =~ ^@[0-9] ]] ; then
+            countnumber=${arg/@/}
+            continue
+        fi
         grepnames=$(grep -i "$arg" <<< "$urlname")
     else
         if [[ $arg == -v ]] ; then
@@ -429,6 +438,7 @@ for arg in "$@" ; do
             reverse=""
         fi
     fi
+    test-print countnumber "$countnumber"
     test-print grepnames "$grepnames"
 done
 grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
@@ -456,7 +466,7 @@ elif (( $grepcount > 1 )) ; then
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
-                sleep 1
+                # sleep 1
             done
             exit 0
         fi
