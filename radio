@@ -10,11 +10,11 @@
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only white-space needed.
 #         You can use -v to invert match
-#         you can play random file like playlist with @number
-#         at the start of search line
+#         you can play random files with @number at the start of search line
+#         but it can't play files with a option like --start=03:04 --end=05:33
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but "lsd"
-#             radio @100 sia - 100 random items include "sia" will be played
+#             radio @100 sia - 100 random ordered items will be played
 #
 # radio
 #       - plays a random radio, press 'q' to play the next.
@@ -76,7 +76,7 @@ REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
-countnumber=10
+countnumber=1
 
 
 
@@ -102,10 +102,11 @@ play() {
         arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
         arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
         arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
-        arg=""$arg1" "$arg2" "$arg3""
+        $PLAYER "$arg1" "$arg2" "$arg3"
+        retrun
     fi
     # playlist with random items as much as count
-    # mpv item1 item2 item3 item4 item5
+    # mpv item1 item2 item3 item4 item5 (can't handle item with --option)
     if [[ -z "$arglist" ]] ; then
         arglist="$arg"
     else
@@ -115,7 +116,7 @@ play() {
     if (( count < $countnumber )) ; then
         return
     fi
-    $PLAYER $arglist
+    $PLAYER "$arglist"
     count=0
     arglist=""
 }
@@ -179,11 +180,16 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
-        shufrandomradio=$(shuf -n 1 <<< "$radiolist")
+        shuffleradio=$(shuf -n 1 <<< "$radiolist")
         if [[ -z "$randomradio" ]] ; then
-            randomradio="$shufrandomradio"
-        elif [[ "$randomradio" == "$shufrandomradio" ]] ; then
+             printf "\n start \n"
+            randomradio="$shuffleradio"
+        elif [[ "$randomradio" == "$shuffleradio" ]] ; then
+            printf "\n continue \n"
             continue
+        else
+             printf "\n normal \n"
+            randomradio="$shuffleradio"
         fi
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
@@ -256,7 +262,17 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     done <<< "$grouplist"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$grouplist")
+        shuffleradio=$(shuf -n 1 <<< "$grouplist")
+        if [[ -z "$randomradio" ]] ; then
+            printf "\n start \n"
+            randomradio="$shuffleradio"
+        elif [[ "$randomradio" == "$shuffleradio" ]] ; then
+            printf "\n continue \n"
+            continue
+        else
+            printf "\n normal \n"
+            randomradio="$shuffleradio"
+        fi
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         grep-print "$randomradio"
         play "$randomradio"
@@ -282,7 +298,17 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
-            randomlocal=$(shuf -n 1 <<< "$locallist")
+            shuffleradio=$(shuf -n 1 <<< "$locallist")
+            if [[ -z "$randomlocal" ]] ; then
+                printf "\n start \n"
+                randomlocal="$shuffleradio"
+            elif [[ "$randomlocal" == "$shuffleradio" ]] ; then
+                printf "\n continue \n"
+                continue
+            else
+                printf "\n normal \n"
+                randomlocal="$shuffleradio"
+            fi
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
@@ -322,7 +348,17 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n To exit, press Ctrl-c."
                     printf "\n"
                     while true ; do
-                        randomlocalname=$(shuf -n 1 <<< "$localnames")
+                        shuffleradio=$(shuf -n 1 <<< "$localnames")
+                        if [[ -z "$randomlocalname" ]] ; then
+                            printf "\n start \n"
+                            randomlocalname="$shuffleradio"
+                        elif [[ "$randomlocalname" == "$shuffleradio" ]] ; then
+                            printf "\n continue \n"
+                            continue
+                        else
+                            printf "\n normal \n"
+                            randomlocalname="$shuffleradio"
+                        fi
                         grep-print "$randomlocalname"
                         $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
                         lastbgpid=$!
@@ -448,11 +484,21 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c."
             printf "\n"
             while true ; do
-                randomurlname=$(shuf -n 1 <<< "$grepnames")
+                shuffleradio=$(shuf -n 1 <<< "$grepnames")
+                if [[ -z "$randomurlname" ]] ; then
+                    printf "\n start \n"
+                    randomurlname="$shuffleradio"
+                elif [[ "$randomurlname" == "$shuffleradio" ]] ; then
+                    printf "\n continue \n"
+                    continue
+                else
+                    printf "\n normal \n"
+                    randomurlname="$shuffleradio"
+                fi
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
-                sleep 1
+                # sleep 1
             done
             exit 0
         fi
