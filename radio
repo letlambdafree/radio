@@ -18,22 +18,22 @@
 #
 # radio
 #       - plays a random radio, press 'q' to play the next.
-#         this loops infinitely, press ctrl-c to exit.
+#         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
 # radio {-p|--period}
 #       - rotates a radio in a specific time.
-#         this loops infinitely, press ctrl-c to exit.
+#         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
 # radio {-a|--all}
 #       - displays all urls, choose a url number.
 #
 # radio {-g|--group} {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a group, press 'q' to play the next.
-#         this loops randomly and infinitely, press ctrl-c to exit.
+#         this loops randomly and infinitely, press Ctrl-c repeatedly to exit.
 #
 # radio {-l|--local} ["regex"]
 #       - plays local music files.
-#         this loops randomly and infinitely, press ctrl-c to exit.
+#         this loops randomly and infinitely, press Ctrl-c repeatedly to exit.
 #
 # radio {-t|--test}
 #       - tests all radios whether work or not.
@@ -76,14 +76,14 @@ REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
-countnumber=1
+playlistnumber=1
 
 
 
 play() {
     local arg arg0 arg1 arg2 arg3
-    count=$(( $count + 1 ))
-    test-print count "$count"
+    (( count++ ))
+    # test-print count "$count"
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
     elif [[ $1 =~ /$ ]] ; then
@@ -97,11 +97,18 @@ play() {
         printf "\n"
         exit 1
     fi
-    if [[ "$arg" =~ --start= ]] ; then
-        arg0=$(awk -F '--start=' '{print FS$2}' <<< "$arg")
-        arg1=$(awk -F ' --start=' '{print $1}' <<< "$arg")
-        arg2=$(awk -F ' --end=' '{print $1}' <<< "$arg0")
-        arg3=$(awk -F '--end=' '{print FS$2}' <<< "$arg0")
+    # only options with --start and --end, otherwise fails
+    if [[ "$arg" =~ --start ]] ; then
+        # with sed
+        arg0=$(sed 's/.*--start/--start/' <<< "$arg")
+        arg1=$(sed 's/ --start.*//' <<< "$arg")
+        arg2=$(sed 's/ --end.*//' <<< "$arg0")
+        arg3=$(sed 's/.*--end/--end/' <<< "$arg0")
+        # with awk
+        # arg0=$(awk -F '--start' '{print FS$2}' <<< "$arg")
+        # arg1=$(awk -F ' --start' '{print $1}' <<< "$arg")
+        # arg2=$(awk -F ' --end' '{print $1}' <<< "$arg0")
+        # arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg0")
         $PLAYER "$arg1" "$arg2" "$arg3"
         retrun
     fi
@@ -112,11 +119,15 @@ play() {
     else
         arglist=""$arglist" "$arg""
     fi
-    test-print arglist "$arglist"
-    if (( count < $countnumber )) ; then
+    # test-print arglist "$arglist"
+    if (( count < $playlistnumber )) ; then
         return
     fi
-    $PLAYER "$arglist"
+    if (( $playlistnumber == 1 )) ; then
+        $PLAYER "$arg"
+    else
+        $PLAYER $arglist
+    fi
     count=0
     arglist=""
 }
@@ -145,7 +156,7 @@ grep-print() {
 
 test-print() {
     # return 0 # to test, comment this line
-    printf "\n $1 is $2 \n"
+    printf "\n\n $1 is $2\n\n"
 }
 
 remove-parts(){
@@ -156,14 +167,31 @@ remove-parts(){
     fi
 }
 
+shuffle-radio() {
+    local retval shuffleradio
+    # eval declare -g $3
+    shuffleradio=$(shuf -n 1 <<< $1)
+    if [[ -z $2 ]] ; then
+        printf "\n start \n"
+        retval="$shuffleradio"
+    elif [[ $2 == "$shuffleradio" ]] ; then
+        printf "\n continue \n"
+        continue
+    else
+        printf "\n normal \n"
+        retval="$shuffleradio"
+    fi
+    eval "$3=\$retval"
+}
+
 x=0
 while read -r line ; do
     (( x++ ))
     [[ $line =~ ^($RADIOSTARTLINE) ]] && break
 done < "$0"
-test-print "RADIOSTARTLINE's number" "$x"
+# test-print "RADIOSTARTLINE's number" "$x"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
-test-print urllist "$urllist"
+# test-print urllist "$urllist"
 
 x=0
 while read -r line ; do
@@ -172,25 +200,15 @@ while read -r line ; do
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-test-print radiolist "$radiolist"
+# test-print radiolist "$radiolist"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-test-print urlname "$urlname"
+# test-print urlname "$urlname"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
-        shuffleradio=$(shuf -n 1 <<< "$radiolist")
-        if [[ -z "$randomradio" ]] ; then
-             printf "\n start \n"
-            randomradio="$shuffleradio"
-        elif [[ "$randomradio" == "$shuffleradio" ]] ; then
-            printf "\n continue \n"
-            continue
-        else
-             printf "\n normal \n"
-            randomradio="$shuffleradio"
-        fi
+        shuffle-radio "$radiolist" "$randomradio" randomradio
         # SKIPPATTERN for comments
         # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
@@ -205,7 +223,7 @@ fi
 
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
-        randomradio=$(shuf -n 1 <<< "$radiolist")
+        shuffle-radio "$radiolist" "$randomradio" randomradio
         # SKIPPATTERN for comments
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         printf "\n"
@@ -262,17 +280,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     done <<< "$grouplist"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
-        shuffleradio=$(shuf -n 1 <<< "$grouplist")
-        if [[ -z "$randomradio" ]] ; then
-            printf "\n start \n"
-            randomradio="$shuffleradio"
-        elif [[ "$randomradio" == "$shuffleradio" ]] ; then
-            printf "\n continue \n"
-            continue
-        else
-            printf "\n normal \n"
-            randomradio="$shuffleradio"
-        fi
+        shuffle-radio "$grouplist" "$randomradio" randomradio
         (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
         grep-print "$randomradio"
         play "$randomradio"
@@ -298,17 +306,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
-            shuffleradio=$(shuf -n 1 <<< "$locallist")
-            if [[ -z "$randomlocal" ]] ; then
-                printf "\n start \n"
-                randomlocal="$shuffleradio"
-            elif [[ "$randomlocal" == "$shuffleradio" ]] ; then
-                printf "\n continue \n"
-                continue
-            else
-                printf "\n normal \n"
-                randomlocal="$shuffleradio"
-            fi
+            shuffle-radio "$locallist" "$randomlocal" randomlocal
             (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
@@ -345,22 +343,12 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     printf "\n You choose all items."
                     printf "\n They'll be played randomly and infinitely."
-                    printf "\n To exit, press Ctrl-c."
+                    printf "\n To exit, press Ctrl-c repeatedly."
                     printf "\n"
                     while true ; do
-                        shuffleradio=$(shuf -n 1 <<< "$localnames")
-                        if [[ -z "$randomlocalname" ]] ; then
-                            printf "\n start \n"
-                            randomlocalname="$shuffleradio"
-                        elif [[ "$randomlocalname" == "$shuffleradio" ]] ; then
-                            printf "\n continue \n"
-                            continue
-                        else
-                            printf "\n normal \n"
-                            randomlocalname="$shuffleradio"
-                        fi
-                        grep-print "$randomlocalname"
-                        $PLAYER "$LOCALMUSICDIR""$randomlocalname" &
+                        shuffle-radio "$localnames" "$randomlocal" randomlocal
+                        grep-print "$randomlocal"
+                        $PLAYER "$LOCALMUSICDIR""$randomlocal" &
                         lastbgpid=$!
                         wait $lastbgpid
                         sleep 1
@@ -439,8 +427,8 @@ fi
 for arg in "$@" ; do
     if [[ -z $grepnames ]] ; then
         if [[ $arg =~ ^@[0-9] ]] ; then
-            countnumber=${arg/@/}
-            if (( countnumber < 1 )) ; then
+            playlistnumber=${arg/@/}
+            if (( playlistnumber < 1 )) ; then
                 printf "\n"
                 printf "\n Sorry, @number is more than 1!"
                 printf "\n Try again."
@@ -460,13 +448,13 @@ for arg in "$@" ; do
             reverse=""
         fi
     fi
-    test-print countnumber "$countnumber"
-    test-print grepnames "$grepnames"
+    # test-print playlistnumber "$playlistnumber"
+    # test-print grepnames "$grepnames"
 done
 grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
                 sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
-test-print grepcount "$grepcount"
+# test-print grepcount "$grepcount"
 
 if (( $grepcount == 1 )) ; then
     grep-print "$grepnames"
@@ -481,20 +469,10 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             printf "\n You choose all items."
             printf "\n They'll be played randomly and infinitely."
-            printf "\n To exit, press Ctrl-c."
+            printf "\n To exit, press Ctrl-c repeatedly"
             printf "\n"
             while true ; do
-                shuffleradio=$(shuf -n 1 <<< "$grepnames")
-                if [[ -z "$randomurlname" ]] ; then
-                    printf "\n start \n"
-                    randomurlname="$shuffleradio"
-                elif [[ "$randomurlname" == "$shuffleradio" ]] ; then
-                    printf "\n continue \n"
-                    continue
-                else
-                    printf "\n normal \n"
-                    randomurlname="$shuffleradio"
-                fi
+                shuffle-radio "$grepnames" "$randomurlname" randomurlname
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
@@ -594,11 +572,11 @@ fi
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
 # Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=09:13 --end=12:38
 # Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
-# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
-# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
-# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
-# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
-# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
+# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
+# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 .0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
+# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
+# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
+# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
 # Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
 # Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
