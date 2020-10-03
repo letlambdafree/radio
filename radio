@@ -45,15 +45,11 @@
 # radio {-h|--help}
 #       - prints this help.
 
-
-
 ### TODO
 #
 #  Add more urls
 #  Change a random util instead of shuf (not good)
 #  Add playlist support
-
-
 
 PLAYER="mpv"
 PS3="
@@ -75,21 +71,24 @@ REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
+# basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 playlistnumber=1
 
-
+# user-defined exit codes
+# 64 - the same item in a row
+# 65 - returnstring is empty
 
 play() {
     local arg arg0 arg1 arg2 arg3
     (( count++ ))
     # test-print count "$count"
-    if [[ "$1" =~ https?:// ]] ; then
-        arg=$(awk -F 'http' '{print FS$2}' <<< "$1")
-    elif [[ "$1" =~ /$ ]] ; then
-        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$1")
-    elif [[ "$1" =~ /mnt/ ]] ; then
-        arg=$(awk -F '/mnt/' '{print FS$2}' <<< "$1")
+    if [[ $1 =~ https?:// ]] ; then
+        arg=$(awk -F 'http' '{print FS$2}' <<< $1)
+    elif [[ $1 =~ /$ ]] ; then
+        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
+    elif [[ $1 =~ /mnt/ ]] ; then
+        arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
     else
         printf "\n"
         printf "\n Sorry, something is wrong!"
@@ -120,7 +119,7 @@ play() {
         arglist=""$arglist" "$arg""
     fi
     # test-print arglist "$arglist"
-    if (( count < $playlistnumber )) ; then
+    if (( $count < $playlistnumber )) ; then
         return
     fi
     if (( $playlistnumber == 1 )) ; then
@@ -130,45 +129,44 @@ play() {
     fi
     count=0
     arglist=""
-    retrun 0
+    return 0
 }
 
 grep-print() {
-    if [[ "$1" =~ https?:// ]] ; then
+    if [[ $1 =~ https?:// ]] ; then
         printf "\n"
-        awk -F 'http' '{print $1}' <<< "$1" | \
+        awk -F 'http' '{print $1}' <<< $1 | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
-    elif [[ "$1" =~ /$ ]] ; then
+    elif [[ $1 =~ /$ ]] ; then
         printf "\n"
         sed 's/^# / /' <<< $1 | grep --color=auto .
         printf "\n"
-    elif [[ "$1" =~ /mnt/ ]] ; then
+    elif [[ $1 =~ /mnt/ ]] ; then
         printf "\n"
-        awk -F '/mnt/' '{print $1}' <<< "$1" | \
+        awk -F '/mnt/' '{print $1}' <<< $1 | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
     else
         printf "\n"
-        grep --color=auto . <<< "$1"
+        grep --color=auto . <<< $1
         printf "\n"
     fi
-    retrun 0
+    return 0
 }
 
 test-print() {
-    # return 0 # to test, comment this line
     printf "\n\n$1 is $2\n\n"
-    retrun 0
+    return 0
 }
 
 remove-parts() {
-    if [[ "$1" =~ https?:// ]] ; then
-        grepnames=$(awk -F 'http' '{print $1}' <<< "$1")
-    elif [[ "$1" =~ /mnt/ ]] ; then
-        grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$1")
+    if [[ $1 =~ https?:// ]] ; then
+        grepnames=$(awk -F 'http' '{print $1}' <<< $1)
+    elif [[ $1 =~ /mnt/ ]] ; then
+        grepnames=$(awk -F '/mnt/' '{print $1}' <<< $1)
     fi
-    retrun 0
+    return 0
 }
 
 shuffle-radio() {
@@ -176,14 +174,14 @@ shuffle-radio() {
     local returnstring firstshuffle
     # eval declare -g $3
     if [[ -z "$shufflelist" ]] ; then
-        test-print initial-shufflelist "\n$1"
-        firstshuffle=$(shuf -n 1 <<< "$1")
+        test-print start-shufflelist "\n$1"
+        firstshuffle=$(shuf -n 1 <<< $1)
         # avoid selecting the same item in a row
         if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
             printf "\n continue \n"
-            continue
+            return 64 # continue
         else
-            shufflelist=$(grep -v "$firstshuffle" <<< "$1")
+            shufflelist=$(grep -v "$firstshuffle" <<< $1)
             returnstring="$firstshuffle"
         fi
     else
@@ -192,8 +190,12 @@ shuffle-radio() {
         shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
         returnstring="$lastshuffle"
     fi
-    eval "$3=\$returnstring" # bash special use for return string
-    retrun 0
+    if [[ -n "$returnstring" ]] ; then
+        eval "$3=\$returnstring" # bash special form for returning a string
+    else
+        return 65  #continue
+    fi
+    return 0
 }
 
 x=0
@@ -220,10 +222,9 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
+        radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle-radio "$radiolist" "$randomradio" randomradio
-        # SKIPPATTERN for comments
-        # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
-        (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
+        [[ $? =~ "^(64|65)$" ]] && continue
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -235,16 +236,15 @@ fi
 
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
+        radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle-radio "$radiolist" "$randomradio" randomradio
-        # SKIPPATTERN for comments
-        (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
-        printf "\n"
+        [[ $? =~ "^(64|65)$" ]] && continue
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
         # fail playing
-        (( ! $(ps -A | grep -c $lastbgpid) )) && continue
+        (( ! $(ps -A | grep -c $lastbgpid) )) &&continue
         sleep $PERIODTIME
         kill $lastbgpid
         sleep 1
@@ -292,8 +292,9 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     done <<< "$grouplist"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
+        grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
         shuffle-radio "$grouplist" "$randomradio" randomradio
-        (( $(grep -c "$SKIPPATTERN" <<< "$randomradio") )) && continue
+        [[ $? =~ "^(64|65)$" ]] && continue
         grep-print "$randomradio"
         play "$randomradio"
         sleep 1
@@ -318,8 +319,9 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
+            locallist=$(grep -c "$SKIPPATTERN" <<< "$locallist")
             shuffle-radio "$locallist" "$randomlocal" randomlocal
-            (( $(grep -c "$SKIPPATTERN" <<< "$randomlocal") )) && continue
+            [[ $? =~ "^(64|65)$" ]] && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
@@ -359,6 +361,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     while true ; do
                         shuffle-radio "$localnames" "$randomlocal" randomlocal
+                        [[ $? =~ "^(64|65)$" ]] && continue
                         grep-print "$randomlocal"
                         $PLAYER "$LOCALMUSICDIR""$randomlocal" &
                         lastbgpid=$!
@@ -393,7 +396,7 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     testlist=$(head -n +$x <<< "$urllist")
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
-        (( $(grep -c "$SKIPPATTERN" <<< "$line") )) && continue
+        (( $(grep -c "$SKIPPATTERN" <<< "$line") )) &&continue
         grep-print "$line"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
@@ -440,7 +443,7 @@ for arg in "$@" ; do
     if [[ -z $grepnames ]] ; then
         if [[ $arg =~ ^@[0-9] ]] ; then
             playlistnumber=${arg/@/}
-            if (( playlistnumber < 1 )) ; then
+            if (( $playlistnumber < 1 )) ; then
                 printf "\n"
                 printf "\n Sorry, @number is more than 1!"
                 printf "\n Try again."
@@ -463,8 +466,10 @@ for arg in "$@" ; do
     # test-print playlistnumber "$playlistnumber"
     # test-print grepnames "$grepnames"
 done
-grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
+grepnames=$(grep -v "/^#\?$\|^##\+\|^#[^ ]\|^#  \+" <<< "$grepnames" | \
                 sed 's/^# //')
+# grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
+#                 sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
 # test-print grepcount "$grepcount"
 
@@ -485,6 +490,7 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             while true ; do
                 shuffle-radio "$grepnames" "$randomurlname" randomurlname
+                [[ $? =~ "^(64|65)$" ]] && continue
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
