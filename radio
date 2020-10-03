@@ -173,7 +173,7 @@ remove-parts() {
 
 shuffle-radio() {
     # all items must be selected only once for one-cycle
-    local returnstring firstshuffle lastshuffle
+    local returnstring firstshuffle
     # eval declare -g $3
     if [[ -z "$shufflelist" ]] ; then
         test-print initial-shufflelist "\n$1"
