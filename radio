@@ -57,7 +57,7 @@
 
 PLAYER="mpv"
 PS3="
-# for all, press * or 00
+# for all, press 00
 choose : "
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
@@ -84,12 +84,12 @@ play() {
     local arg arg0 arg1 arg2 arg3
     (( count++ ))
     # test-print count "$count"
-    if [[ $1 =~ https?:// ]] ; then
-        arg=$(awk -F 'http' '{print FS$2}' <<< $1)
-    elif [[ $1 =~ /$ ]] ; then
-        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
-    elif [[ $1 =~ /mnt/ ]] ; then
-        arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
+    if [[ "$1" =~ https?:// ]] ; then
+        arg=$(awk -F 'http' '{print FS$2}' <<< "$1")
+    elif [[ "$1" =~ /$ ]] ; then
+        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$1")
+    elif [[ "$1" =~ /mnt/ ]] ; then
+        arg=$(awk -F '/mnt/' '{print FS$2}' <<< "$1")
     else
         printf "\n"
         printf "\n Sorry, something is wrong!"
@@ -130,67 +130,70 @@ play() {
     fi
     count=0
     arglist=""
+    retrun 0
 }
 
 grep-print() {
-    if [[ $1 =~ https?:// ]] ; then
+    if [[ "$1" =~ https?:// ]] ; then
         printf "\n"
-        awk -F 'http' '{print $1}' <<< $1 | \
+        awk -F 'http' '{print $1}' <<< "$1" | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
-    elif [[ $1 =~ /$ ]] ; then
+    elif [[ "$1" =~ /$ ]] ; then
         printf "\n"
         sed 's/^# / /' <<< $1 | grep --color=auto .
         printf "\n"
-    elif [[ $1 =~ /mnt/ ]] ; then
+    elif [[ "$1" =~ /mnt/ ]] ; then
         printf "\n"
-        awk -F '/mnt/' '{print $1}' <<< $1 | \
+        awk -F '/mnt/' '{print $1}' <<< "$1" | \
             sed 's/^# / /' | grep --color=auto .
         printf "\n"
     else
         printf "\n"
-        grep --color=auto . <<< $1
+        grep --color=auto . <<< "$1"
         printf "\n"
     fi
+    retrun 0
 }
 
 test-print() {
     # return 0 # to test, comment this line
     printf "\n\n$1 is $2\n\n"
+    retrun 0
 }
 
 remove-parts() {
-    if [[ $1 =~ https?:// ]] ; then
-        grepnames=$(awk -F 'http' '{print $1}' <<< $1)
-    elif [[ $1 =~ /mnt/ ]] ; then
-        grepnames=$(awk -F '/mnt/' '{print $1}' <<< $1)
+    if [[ "$1" =~ https?:// ]] ; then
+        grepnames=$(awk -F 'http' '{print $1}' <<< "$1")
+    elif [[ "$1" =~ /mnt/ ]] ; then
+        grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$1")
     fi
+    retrun 0
 }
 
 shuffle-radio() {
-    # all items must be chosen only once by shuffling while one cycling
-    local returnvalue firstshuffle lastshuffle
+    # all items must be selected only once for one-cycle
+    local returnstring firstshuffle lastshuffle
     # eval declare -g $3
     if [[ -z "$shufflelist" ]] ; then
-        printf "\n start \n"
-        test-print start-shufflelist "\n$1"
+        test-print initial-shufflelist "\n$1"
         firstshuffle=$(shuf -n 1 <<< "$1")
-        # avoid selecting item in a row
+        # avoid selecting the same item in a row
         if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
             printf "\n continue \n"
             continue
         else
             shufflelist=$(grep -v "$firstshuffle" <<< "$1")
-            returnvalue="$firstshuffle"
+            returnstring="$firstshuffle"
         fi
     else
-        printf "\n normal \n"
-        test-print normal-shufflelist "\n$shufflelist"
+        test-print shufflelist "\n$shufflelist"
         lastshuffle=$(shuf -n 1 <<< "$shufflelist")
         shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
-        returnvalue="$lastshuffle"
+        returnstring="$lastshuffle"
     fi
-    eval "$3=\$returnvalue"
+    eval "$3=\$returnstring" # bash special use for return string
+    retrun 0
 }
 
 x=0
@@ -348,7 +351,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             readarray -t arr_localnames <<< "$localnames"
             # Is it possible to select multiple items like 2,4,6 or 3-7?
             select localfile in "${arr_localnames[@]}" ; do
-                if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
+                if [[ $REPLY =~ ^("00")$ ]] ; then
                     printf "\n"
                     printf "\n You choose all items."
                     printf "\n They'll be played randomly and infinitely."
@@ -474,7 +477,7 @@ elif (( $grepcount > 1 )) ; then
     remove-parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
-        if [[ $REPLY =~ ^("*"|"00")$ ]] ; then
+        if [[ $REPLY =~ ^("00")$ ]] ; then
             printf "\n"
             printf "\n You choose all items."
             printf "\n They'll be played randomly and infinitely."
