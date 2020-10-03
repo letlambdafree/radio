@@ -110,7 +110,7 @@ play() {
         # arg2=$(awk -F ' --end' '{print $1}' <<< "$arg0")
         # arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg0")
         $PLAYER "$arg1" "$arg2" "$arg3"
-        retrun
+        return 0
     fi
     # playlist with random items as much as count
     # mpv item1 item2 item3 item4 item5 (can't handle item with --option)
@@ -156,10 +156,10 @@ grep-print() {
 
 test-print() {
     # return 0 # to test, comment this line
-    printf "\n\n $1 is $2\n\n"
+    printf "\n\n$1 is $2\n\n"
 }
 
-remove-parts(){
+remove-parts() {
     if [[ $1 =~ https?:// ]] ; then
         grepnames=$(awk -F 'http' '{print $1}' <<< $1)
     elif [[ $1 =~ /mnt/ ]] ; then
@@ -168,20 +168,29 @@ remove-parts(){
 }
 
 shuffle-radio() {
-    local retval shuffleradio
+    # all items must be chosen only once by shuffling while one cycling
+    local returnvalue firstshuffle lastshuffle
     # eval declare -g $3
-    shuffleradio=$(shuf -n 1 <<< $1)
-    if [[ -z $2 ]] ; then
+    if [[ -z "$shufflelist" ]] ; then
         printf "\n start \n"
-        retval="$shuffleradio"
-    elif [[ $2 == "$shuffleradio" ]] ; then
-        printf "\n continue \n"
-        continue
+        test-print start-shufflelist "\n$1"
+        firstshuffle=$(shuf -n 1 <<< "$1")
+        # avoid selecting item in a row
+        if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
+            printf "\n continue \n"
+            continue
+        else
+            shufflelist=$(grep -v "$firstshuffle" <<< "$1")
+            returnvalue="$firstshuffle"
+        fi
     else
         printf "\n normal \n"
-        retval="$shuffleradio"
+        test-print normal-shufflelist "\n$shufflelist"
+        lastshuffle=$(shuf -n 1 <<< "$shufflelist")
+        shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
+        returnvalue="$lastshuffle"
     fi
-    eval "$3=\$retval"
+    eval "$3=\$returnvalue"
 }
 
 x=0
