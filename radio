@@ -77,7 +77,6 @@ playlistnumber=1
 
 # user-defined exit codes
 # 64 - the same item in a row
-# 65 - returnstring is empty
 
 play() {
     local arg arg0 arg1 arg2 arg3
@@ -190,11 +189,7 @@ shuffle-radio() {
         shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
         returnstring="$lastshuffle"
     fi
-    if [[ -n "$returnstring" ]] ; then
-        eval "$3=\$returnstring" # bash special form for returning a string
-    else
-        return 65  #continue
-    fi
+    eval "$3=\$returnstring" # bash special form for returning a string
     return 0
 }
 
@@ -224,7 +219,7 @@ if [[ -z $1 ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle-radio "$radiolist" "$randomradio" randomradio
-        [[ $? =~ "^(64|65)$" ]] && continue
+        (( $? == 64 )) && continue
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -238,7 +233,7 @@ if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle-radio "$radiolist" "$randomradio" randomradio
-        [[ $? =~ "^(64|65)$" ]] && continue
+        (( $? == 64 )) && continue
         grep-print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -294,7 +289,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
         shuffle-radio "$grouplist" "$randomradio" randomradio
-        [[ $? =~ "^(64|65)$" ]] && continue
+        (( $? == 64 )) && continue
         grep-print "$randomradio"
         play "$randomradio"
         sleep 1
@@ -321,7 +316,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         while true ; do
             locallist=$(grep -c "$SKIPPATTERN" <<< "$locallist")
             shuffle-radio "$locallist" "$randomlocal" randomlocal
-            [[ $? =~ "^(64|65)$" ]] && continue
+            (( $? == 64 )) && continue
             grep-print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
@@ -361,7 +356,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     while true ; do
                         shuffle-radio "$localnames" "$randomlocal" randomlocal
-                        [[ $? =~ "^(64|65)$" ]] && continue
+                        (( $? == 64 )) && continue
                         grep-print "$randomlocal"
                         $PLAYER "$LOCALMUSICDIR""$randomlocal" &
                         lastbgpid=$!
@@ -490,7 +485,7 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             while true ; do
                 shuffle-radio "$grepnames" "$randomurlname" randomurlname
-                [[ $? =~ "^(64|65)$" ]] && continue
+                (( $? == 64 )) && continue
                 grep-print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
