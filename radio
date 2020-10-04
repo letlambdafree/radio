@@ -62,14 +62,17 @@
 
 ### TODO
 #
-#  Add more urls
-#  Change a random util instead of shuf (not good)
-#  Add playlist support
+# Add more urls
 
-PLAYER="mpv"
 PS3="
 # for all, press 00
 choose : "
+garg0="$0"
+garg1="$1"
+garg2="$2"
+PROGNAME=${0##*/}
+VERSION="0.1"
+PLAYER="mpv"
 LOCALVIDEODIR="/mnt/data/Videos/"
 LOCALMUSICDIR="/mnt/data/Music/"
 LOCALMUSICEXT=".*\.(mp3|flac)$"
@@ -80,7 +83,7 @@ YOUTUBEENDLINE="### MY YOUTUBE URLS END"
 LOCALSTARTLINE="### MY LOCAL MUSIC"
 LOCALENDLINE="### MY LOCAL MUSIC END"
 TESTENDLINE="### TEST END"
-SCRIPTDIR=$(dirname -- "$(readlink -f -- "$0")")
+SCRIPTDIR="${0%/*}"
 REPORTPATH="$SCRIPTDIR/report"
 # add date
 REPORTFIRSTLINE="### ERROR REPORT"
@@ -93,16 +96,101 @@ playlistnumber=1
 # user-defined exit-codes
 # 64 - the same item in a row
 
+test_print() {
+    local arg1="$1"
+    local arg2="$2"
+    local linesnumber
+    linesnumber=$(wc -l <<< "$arg2")
+    if (( linesnumber == 1 )) ; then
+        printf "\n\n${arg1} is ${arg2}\n\n"
+    elif (( linesnumber > 1 && linesnumber < 10)) ; then
+        printf "\n\n${arg1} is \n${arg2}\n\n"
+        printf "\n"
+    else
+        printf "\n\n${arg1} is \n${arg2}\n\n"
+        printf "${linesnumber} lines"
+        printf "\n"
+    fi
+    return 0
+}
+
+grep_print() {
+    local arg1="$1"
+    local webline="https?://"
+    local directoryline="/$"
+    local localline="/mnt/"
+    if [[ "$arg1" =~ "$webline" ]] ; then
+        printf "\n"
+        awk -F 'http' '{print $1}' <<< "$arg1" \
+            | sed 's/^# / /' \
+            | grep --color=auto .
+        printf "\n"
+    elif [[ "$arg1" =~ "$directoryline" ]] ; then
+        printf "\n"
+        sed 's/^# / /' <<< "$arg1" | grep --color=auto .
+        printf "\n"
+    elif [[ "$arg1" =~ "$localline" ]] ; then
+        printf "\n"
+        awk -F '/mnt/' '{print $1}' <<< "$arg1" \
+            | sed 's/^# / /' \
+            | grep --color=auto .
+        printf "\n"
+    else
+        printf "\n"
+        grep --color=auto . <<< "$arg1"
+        printf "\n"
+    fi
+    return 0
+}
+
+remove_parts() {
+    local arg1="$1"
+    if [[ "$arg1" =~ https?:// ]] ; then
+        grepnames=$(awk -F 'http' '{print $1}' <<< "$arg1")
+    elif [[ "$arg1" =~ /mnt/ ]] ; then
+        grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$arg1")
+    fi
+    return 0
+}
+
+shuffle_list() {
+    # all items must be selected only once for one-cycle
+    local arg1="$1"
+    local arg2="$2"
+    local firstshuffle
+    # eval declare -g $2
+    if [[ -z "$shufflelist" ]] ; then
+        test_print start-shufflelist "$arg1"
+        firstshuffle=$(shuf -n 1 <<< "$arg1")
+        # avoid selecting the same item in a row
+        if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
+            printf "\n continue \n"
+            return 64 # continue
+        else
+            shufflelist=$(grep -v "$firstshuffle" <<< "$arg1")
+            arg2="$firstshuffle"
+        fi
+    else
+        test_print shufflelist "$shufflelist"
+        lastshuffle=$(shuf -n 1 <<< "$shufflelist")
+        shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
+        arg2="$lastshuffle"
+    fi
+    eval "$2=\$arg2" # bash special form for returning a string
+    return 0
+}
+
 play() {
-    local arg arg0 arg1 arg2 arg3
+    local arg1="$1"
+    local partline partline0 partline1 partline2 partline3
     (( count++ ))
     # test_print count "$count"
-    if [[ $1 =~ https?:// ]] ; then
-        arg=$(awk -F 'http' '{print FS$2}' <<< $1)
-    elif [[ $1 =~ /$ ]] ; then
-        arg="$LOCALMUSICDIR"$(sed 's/^# //' <<< $1)
-    elif [[ $1 =~ /mnt/ ]] ; then
-        arg=$(awk -F '/mnt/' '{print FS$2}' <<< $1)
+    if [[ "$arg1" =~ https?:// ]] ; then
+        partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
+    elif [[ "$arg1" =~ /$ ]] ; then
+        partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
+    elif [[ "$arg1" =~ /mnt/ ]] ; then
+        partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
     else
         printf "\n"
         printf "\n Sorry, something is wrong!"
@@ -111,103 +199,38 @@ play() {
         exit 1
     fi
     # only options with --start and --end, otherwise fails
-    if [[ "$arg" =~ --start ]] ; then
+    if [[ "$partline" =~ --start ]] ; then
         # with sed
-        arg0=$(sed 's/.*--start/--start/' <<< "$arg")
-        arg1=$(sed 's/ --start.*//' <<< "$arg")
-        arg2=$(sed 's/ --end.*//' <<< "$arg0")
-        arg3=$(sed 's/.*--end/--end/' <<< "$arg0")
+        partline0=$(sed 's/.*--start/--start/' <<< "$partline")
+        partline1=$(sed 's/ --start.*//' <<< "$partline")
+        partline2=$(sed 's/ --end.*//' <<< "$partline0")
+        partline3=$(sed 's/.*--end/--end/' <<< "$partline0")
         # with awk
-        # arg0=$(awk -F '--start' '{print FS$2}' <<< "$arg")
-        # arg1=$(awk -F ' --start' '{print $1}' <<< "$arg")
-        # arg2=$(awk -F ' --end' '{print $1}' <<< "$arg0")
-        # arg3=$(awk -F '--end' '{print FS$2}' <<< "$arg0")
-        $PLAYER "$arg1" "$arg2" "$arg3"
+        # partline0=$(awk -F '--start' '{print FS$2}' <<< "$partline")
+        # partline1=$(awk -F ' --start' '{print $1}' <<< "$partline")
+        # partline2=$(awk -F ' --end' '{print $1}' <<< "$partline0")
+        # partline3=$(awk -F '--end' '{print FS$2}' <<< "$partline0")
+        $PLAYER "$partline1" "$partline2" "$partline3"
         return 0
     fi
     # playlist with random items as much as count
     # mpv item1 item2 item3 item4 item5 (can't handle item with --option)
-    if [[ -z "$arglist" ]] ; then
-        arglist="$arg"
+    if [[ -z "$partlinelist" ]] ; then
+        partlinelist="$partline"
     else
-        arglist=""$arglist" "$arg""
+        partlinelist=""$partlinelist" "$partline""
     fi
-    # test_print arglist "$arglist"
+    # test_print partlinelist "$partlinelist"
     if (( $count < $playlistnumber )) ; then
         return
     fi
     if (( $playlistnumber == 1 )) ; then
-        $PLAYER "$arg"
+        $PLAYER "$partline"
     else
-        $PLAYER $arglist
+        $PLAYER $partlinelist
     fi
     count=0
-    arglist=""
-    return 0
-}
-
-grep_print() {
-    if [[ $1 =~ https?:// ]] ; then
-        printf "\n"
-        awk -F 'http' '{print $1}' <<< $1 \
-            | sed 's/^# / /' \
-            | grep --color=auto .
-        printf "\n"
-    elif [[ $1 =~ /$ ]] ; then
-        printf "\n"
-        sed 's/^# / /' <<< $1 \
-            | grep --color=auto .
-        printf "\n"
-    elif [[ $1 =~ /mnt/ ]] ; then
-        printf "\n"
-        awk -F '/mnt/' '{print $1}' <<< $1 \
-            | sed 's/^# / /' \
-            | grep --color=auto .
-        printf "\n"
-    else
-        printf "\n"
-        grep --color=auto . <<< $1
-        printf "\n"
-    fi
-    return 0
-}
-
-test_print() {
-    printf "\n\n$1 is $2\n\n"
-    return 0
-}
-
-remove_parts() {
-    if [[ $1 =~ https?:// ]] ; then
-        grepnames=$(awk -F 'http' '{print $1}' <<< $1)
-    elif [[ $1 =~ /mnt/ ]] ; then
-        grepnames=$(awk -F '/mnt/' '{print $1}' <<< $1)
-    fi
-    return 0
-}
-
-shuffle_list() {
-    # all items must be selected only once for one-cycle
-    local returnstring firstshuffle
-    # eval declare -g $3
-    if [[ -z "$shufflelist" ]] ; then
-        test_print start-shufflelist "\n$1"
-        firstshuffle=$(shuf -n 1 <<< $1)
-        # avoid selecting the same item in a row
-        if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
-            printf "\n continue \n"
-            return 64 # continue
-        else
-            shufflelist=$(grep -v "$firstshuffle" <<< $1)
-            returnstring="$firstshuffle"
-        fi
-    else
-        test_print shufflelist "\n$shufflelist"
-        lastshuffle=$(shuf -n 1 <<< "$shufflelist")
-        shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
-        returnstring="$lastshuffle"
-    fi
-    eval "$3=\$returnstring" # bash special form for returning a string
+    partlinelist=""
     return 0
 }
 
@@ -236,7 +259,7 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 if [[ -z $1 ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" "$randomradio" randomradio
+        shuffle_list "$radiolist" randomradio
         (( $? == 64 )) && continue
         grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
@@ -250,7 +273,7 @@ fi
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" "$randomradio" randomradio
+        shuffle_list "$radiolist" randomradio
         (( $? == 64 )) && continue
         grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
@@ -272,29 +295,38 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while read -r line ; do
         (( x++ ))
         case "$2" in
-            en) [[ $line =~ ^(## English Radio) ]] && break ;;
-            kr) [[ $line =~ ^(## Korean Radio) ]] && break ;;
-            jp) [[ $line =~ ^(## Japanese Radio) ]] && break ;;
-            mv) [[ $line =~ ^(## Music Video) ]] && break ;;
-            lt) [[ $line =~ ^(## Live TV) ]] && break ;;
-            ln) [[ $line =~ ^(## Live News) ]] && break ;;
-            lc) [[ $line =~ ^(## Live Camera) ]] && break ;;
-            pl) [[ $line =~ ^(## Play List) ]] && break ;;
-            *) printf "\n Sorry, there is no \"$2\" group."
-               printf "\n Try again."
-               printf "\n"
-               printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
-               printf "\n"
-               printf "\n en - English Radio"
-               printf "\n kr - Korean Radio"
-               printf "\n jp - Japanese Radio"
-               printf "\n mv - Music Video"
-               printf "\n lt - Live TV"
-               printf "\n ln - Live News"
-               printf "\n lc - Live Camera"
-               printf "\n pl - Play List"
-               printf "\n"
-               exit 1
+            en)
+                [[ $line =~ ^(## English Radio) ]] && break ;;
+            kr)
+                [[ $line =~ ^(## Korean Radio) ]] && break ;;
+            jp)
+                [[ $line =~ ^(## Japanese Radio) ]] && break ;;
+            mv)
+                [[ $line =~ ^(## Music Video) ]] && break ;;
+            lt)
+                [[ $line =~ ^(## Live TV) ]] && break ;;
+            ln)
+                [[ $line =~ ^(## Live News) ]] && break ;;
+            lc)
+                [[ $line =~ ^(## Live Camera) ]] && break ;;
+            pl)
+                [[ $line =~ ^(## Play List) ]] && break ;;
+            *)
+                printf "\n Sorry, there is no \"$2\" group."
+                printf "\n Try again."
+                printf "\n"
+                printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
+                printf "\n"
+                printf "\n en - English Radio"
+                printf "\n kr - Korean Radio"
+                printf "\n jp - Japanese Radio"
+                printf "\n mv - Music Video"
+                printf "\n lt - Live TV"
+                printf "\n ln - Live News"
+                printf "\n lc - Live Camera"
+                printf "\n pl - Play List"
+                printf "\n"
+                exit 2
         esac
     done <<< "$urllist"
     grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
@@ -306,7 +338,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
-        shuffle_list "$grouplist" "$randomradio" randomradio
+        shuffle_list "$grouplist" randomradio
         (( $? == 64 )) && continue
         grep_print "$randomradio"
         play "$randomradio"
@@ -333,7 +365,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     if [[ -z $2 ]] ; then
         while true ; do
             locallist=$(grep -c "$SKIPPATTERN" <<< "$locallist")
-            shuffle_list "$locallist" "$randomlocal" randomlocal
+            shuffle_list "$locallist" randomlocal
             (( $? == 64 )) && continue
             grep_print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
@@ -373,7 +405,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n To exit, press Ctrl-c repeatedly."
                     printf "\n"
                     while true ; do
-                        shuffle_list "$localnames" "$randomlocal" randomlocal
+                        shuffle_list "$localnames" randomlocal
                         (( $? == 64 )) && continue
                         grep_print "$randomlocal"
                         $PLAYER "$LOCALMUSICDIR""$randomlocal" &
@@ -502,7 +534,7 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c repeatedly"
             printf "\n"
             while true ; do
-                shuffle_list "$grepnames" "$randomurlname" randomurlname
+                shuffle_list "$grepnames" randomurlname
                 (( $? == 64 )) && continue
                 grep_print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
