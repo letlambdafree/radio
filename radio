@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# radio - Bash shell script for listening radio
+
+# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
 # this script for my favorite music from various sources
 # like radio, youtube, local storage
 #
@@ -75,13 +90,13 @@ PERIODTIME=600
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 playlistnumber=1
 
-# user-defined exit codes
+# user-defined exit-codes
 # 64 - the same item in a row
 
 play() {
     local arg arg0 arg1 arg2 arg3
     (( count++ ))
-    # test-print count "$count"
+    # test_print count "$count"
     if [[ $1 =~ https?:// ]] ; then
         arg=$(awk -F 'http' '{print FS$2}' <<< $1)
     elif [[ $1 =~ /$ ]] ; then
@@ -117,7 +132,7 @@ play() {
     else
         arglist=""$arglist" "$arg""
     fi
-    # test-print arglist "$arglist"
+    # test_print arglist "$arglist"
     if (( $count < $playlistnumber )) ; then
         return
     fi
@@ -131,20 +146,23 @@ play() {
     return 0
 }
 
-grep-print() {
+grep_print() {
     if [[ $1 =~ https?:// ]] ; then
         printf "\n"
-        awk -F 'http' '{print $1}' <<< $1 | \
-            sed 's/^# / /' | grep --color=auto .
+        awk -F 'http' '{print $1}' <<< $1 \
+            | sed 's/^# / /' \
+            | grep --color=auto .
         printf "\n"
     elif [[ $1 =~ /$ ]] ; then
         printf "\n"
-        sed 's/^# / /' <<< $1 | grep --color=auto .
+        sed 's/^# / /' <<< $1 \
+            | grep --color=auto .
         printf "\n"
     elif [[ $1 =~ /mnt/ ]] ; then
         printf "\n"
-        awk -F '/mnt/' '{print $1}' <<< $1 | \
-            sed 's/^# / /' | grep --color=auto .
+        awk -F '/mnt/' '{print $1}' <<< $1 \
+            | sed 's/^# / /' \
+            | grep --color=auto .
         printf "\n"
     else
         printf "\n"
@@ -154,12 +172,12 @@ grep-print() {
     return 0
 }
 
-test-print() {
+test_print() {
     printf "\n\n$1 is $2\n\n"
     return 0
 }
 
-remove-parts() {
+remove_parts() {
     if [[ $1 =~ https?:// ]] ; then
         grepnames=$(awk -F 'http' '{print $1}' <<< $1)
     elif [[ $1 =~ /mnt/ ]] ; then
@@ -168,12 +186,12 @@ remove-parts() {
     return 0
 }
 
-shuffle-radio() {
+shuffle_list() {
     # all items must be selected only once for one-cycle
     local returnstring firstshuffle
     # eval declare -g $3
     if [[ -z "$shufflelist" ]] ; then
-        test-print start-shufflelist "\n$1"
+        test_print start-shufflelist "\n$1"
         firstshuffle=$(shuf -n 1 <<< $1)
         # avoid selecting the same item in a row
         if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
@@ -184,7 +202,7 @@ shuffle-radio() {
             returnstring="$firstshuffle"
         fi
     else
-        test-print shufflelist "\n$shufflelist"
+        test_print shufflelist "\n$shufflelist"
         lastshuffle=$(shuf -n 1 <<< "$shufflelist")
         shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
         returnstring="$lastshuffle"
@@ -198,9 +216,9 @@ while read -r line ; do
     (( x++ ))
     [[ $line =~ ^($RADIOSTARTLINE) ]] && break
 done < "$0"
-# test-print "RADIOSTARTLINE's number" "$x"
+# test_print "RADIOSTARTLINE's number" "$x"
 urllist=$(tail -n +"$(( x + 4 ))" "$0")
-# test-print urllist "$urllist"
+# test_print urllist "$urllist"
 
 x=0
 while read -r line ; do
@@ -209,18 +227,18 @@ while read -r line ; do
 done <<< "$urllist"
 
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-# test-print radiolist "$radiolist"
+# test_print radiolist "$radiolist"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-# test-print urlname "$urlname"
+# test_print urlname "$urlname"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
 if [[ -z $1 ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle-radio "$radiolist" "$randomradio" randomradio
+        shuffle_list "$radiolist" "$randomradio" randomradio
         (( $? == 64 )) && continue
-        grep-print "$randomradio"
+        grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         wait $lastbgpid
@@ -232,9 +250,9 @@ fi
 if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle-radio "$radiolist" "$randomradio" randomradio
+        shuffle_list "$radiolist" "$randomradio" randomradio
         (( $? == 64 )) && continue
-        grep-print "$randomradio"
+        grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -288,9 +306,9 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
-        shuffle-radio "$grouplist" "$randomradio" randomradio
+        shuffle_list "$grouplist" "$randomradio" randomradio
         (( $? == 64 )) && continue
-        grep-print "$randomradio"
+        grep_print "$randomradio"
         play "$randomradio"
         sleep 1
     done
@@ -315,9 +333,9 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     if [[ -z $2 ]] ; then
         while true ; do
             locallist=$(grep -c "$SKIPPATTERN" <<< "$locallist")
-            shuffle-radio "$locallist" "$randomlocal" randomlocal
+            shuffle_list "$locallist" "$randomlocal" randomlocal
             (( $? == 64 )) && continue
-            grep-print "$randomlocal"
+            grep_print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
             lastbgpid=$!
@@ -341,7 +359,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
         greplocalcount=$(grep -ic "$2" <<< "$locallist")
         if (( $greplocalcount == 1 )) ; then
             thelocalname=$(grep -i "$2" <<< "$locallist")
-            grep-print "$thelocalname"
+            grep_print "$thelocalname"
             $PLAYER "$LOCALMUSICDIR""$thelocalname"
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
@@ -355,9 +373,9 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n To exit, press Ctrl-c repeatedly."
                     printf "\n"
                     while true ; do
-                        shuffle-radio "$localnames" "$randomlocal" randomlocal
+                        shuffle_list "$localnames" "$randomlocal" randomlocal
                         (( $? == 64 )) && continue
-                        grep-print "$randomlocal"
+                        grep_print "$randomlocal"
                         $PLAYER "$LOCALMUSICDIR""$randomlocal" &
                         lastbgpid=$!
                         wait $lastbgpid
@@ -368,7 +386,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                 selectedlocalfile="$localfile"
                 break
             done
-            grep-print "$selectedlocalfile"
+            grep_print "$selectedlocalfile"
             $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
             exit 0
         else
@@ -392,7 +410,7 @@ if [[ $1 =~ ^(-t|--test)$ ]] ; then
     cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) &&continue
-        grep-print "$line"
+        grep_print "$line"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
         lastbgpid=$!
         sleep $TESTTIME
@@ -458,23 +476,23 @@ for arg in "$@" ; do
             reverse=""
         fi
     fi
-    # test-print playlistnumber "$playlistnumber"
-    # test-print grepnames "$grepnames"
+    # test_print playlistnumber "$playlistnumber"
+    # test_print grepnames "$grepnames"
 done
-grepnames=$(grep -v "/^#\?$\|^##\+\|^#[^ ]\|^#  \+" <<< "$grepnames" | \
-                sed 's/^# //')
-# grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" | \
-#                 sed 's/^# //')
+grepnames=$(grep -v "/^#\?$\|^##\+\|^#[^ ]\|^#  \+" <<< "$grepnames" \
+                | sed 's/^# //')
+# grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" \
+#               | sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
-# test-print grepcount "$grepcount"
+# test_print grepcount "$grepcount"
 
 if (( $grepcount == 1 )) ; then
-    grep-print "$grepnames"
+    grep_print "$grepnames"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
 elif (( $grepcount > 1 )) ; then
-    remove-parts "$grepnames"
+    remove_parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
         if [[ $REPLY =~ ^("00")$ ]] ; then
@@ -484,9 +502,9 @@ elif (( $grepcount > 1 )) ; then
             printf "\n To exit, press Ctrl-c repeatedly"
             printf "\n"
             while true ; do
-                shuffle-radio "$grepnames" "$randomurlname" randomurlname
+                shuffle_list "$grepnames" "$randomurlname" randomurlname
                 (( $? == 64 )) && continue
-                grep-print "$randomurlname"
+                grep_print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
                 # sleep 1
@@ -496,7 +514,7 @@ elif (( $grepcount > 1 )) ; then
         selectedurl="$url"
         break
     done
-    grep-print "$selectedurl"
+    grep_print "$selectedurl"
     grepline=$(grep -iF "$selectedurl" <<< "$urllist")
     play "$grepline"
     exit 0
@@ -507,8 +525,7 @@ else
     printf "\n"
     exit 1
 fi
-
-
+return 0
 
 ### MY RADIO URLS - from a latte applet in kde.
 #
