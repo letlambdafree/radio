@@ -18,7 +18,11 @@
 # this script for my favorite music from various sources
 # like radio, youtube, local storage
 #
-# Usage: radio [a url-part-name] or radio option [arg ...]
+# Usage: radio [urlname] or radio option [arg ...]
+#
+# radio
+#       - plays a shuffled radio, press 'q' to play the next.
+#         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
 # radio "regex"
 #       - plays a searched item.
@@ -26,43 +30,50 @@
 #         don't need quote for "and" regex searching, only white-space needed.
 #         You can use -v to invert match
 #         you can play random files with @number at the start of search line
-#         but it can't play files with a option like --start=03:04 --end=05:33
+#         but it can't play a file with a option like --start=03:04 --end=05:33
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
-#             radio sia -v lsd - include "sia" but "lsd"
-#             radio @100 sia - 100 random ordered items will be played
+#             radio sia -v lsd - include "sia" but not "lsd"
+#             radio @100 sia - 100 randomly ordered items will be played
 #
-# radio
-#       - plays a random radio, press 'q' to play the next.
+# Optinos:
+#
+# -p | --period
+#       - rotates a shuffled radio in a specific time.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
-# radio {-p|--period}
-#       - rotates a radio in a specific time.
-#         this loops infinitely, press Ctrl-c repeatedly to exit.
-#
-# radio {-a|--all}
+# -a | --all
 #       - displays all urls, choose a url number.
 #
-# radio {-g|--group} {en|kr|jp|mv|lt|ln|lc|pl}
-#       - plays a group, press 'q' to play the next.
-#         this loops randomly and infinitely, press Ctrl-c repeatedly to exit.
+# -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
+#       - plays a shuffled radio in a group, press 'q' to play the next.
+#         this loops infinitely, press Ctrl-c repeatedly to exit.
+#         ex) radio -g jp - play only the Japanese radio randomly
 #
-# radio {-l|--local} ["regex"]
-#       - plays local music files.
-#         this loops randomly and infinitely, press Ctrl-c repeatedly to exit.
+# -l | --local ["regex"]
+#       - plays a shuffled local music.
+#         this loops infinitely, press Ctrl-c repeatedly to exit.
+#         ex) radio -l sia  - play only local files with sia
 #
-# radio {-t|--test}
+# -t | --test
 #       - tests all radios whether work or not.
 #         If failed, it logs on the file named report.
 #
-# radio {-e|--edit}
+# -e | --edit
 #       - edit this script.
 #
-# radio {-h|--help}
+# -h | --help
 #       - prints this help.
+
+
 
 ### TODO
 #
-# Add more urls
+# add more urls
+# add youtube searching directly
+
+
+
+# set -u # avoid a undeclared variable
 
 PS3="
 # for all, press 00
@@ -70,7 +81,7 @@ choose : "
 garg0="$0"
 garg1="$1"
 garg2="$2"
-PROGNAME=${0##*/}
+PROGNAME=${garg0##*/}
 VERSION="0.1"
 PLAYER="mpv"
 LOCALVIDEODIR="/mnt/data/Videos/"
@@ -83,7 +94,7 @@ YOUTUBEENDLINE="### MY YOUTUBE URLS END"
 LOCALSTARTLINE="### MY LOCAL MUSIC"
 LOCALENDLINE="### MY LOCAL MUSIC END"
 TESTENDLINE="### TEST END"
-SCRIPTDIR="${0%/*}"
+SCRIPTDIR="${garg0%/*}"
 REPORTPATH="$SCRIPTDIR/report"
 # add date
 REPORTFIRSTLINE="### ERROR REPORT"
@@ -92,9 +103,8 @@ PERIODTIME=600
 # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 playlistnumber=1
-
-# user-defined exit-codes
-# 64 - the same item in a row
+# error code for the same item in a row
+E_IN_A_ROW=64
 
 test_print() {
     local arg1="$1"
@@ -160,20 +170,20 @@ shuffle_list() {
     local firstshuffle
     # eval declare -g $2
     if [[ -z "$shufflelist" ]] ; then
-        test_print start-shufflelist "$arg1"
+        test_print initial_shufflelist "$arg1"
         firstshuffle=$(shuf -n 1 <<< "$arg1")
         # avoid selecting the same item in a row
         if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
             printf "\n continue \n"
-            return 64 # continue
+            return $E_IN_A_ROW
         else
-            shufflelist=$(grep -v "$firstshuffle" <<< "$arg1")
+            shufflelist=$(grep -vF "$firstshuffle" <<< "$arg1") # needed -F
             arg2="$firstshuffle"
         fi
     else
         test_print shufflelist "$shufflelist"
         lastshuffle=$(shuf -n 1 <<< "$shufflelist")
-        shufflelist=$(grep -v "$lastshuffle" <<< "$shufflelist")
+        shufflelist=$(grep -vF "$lastshuffle" <<< "$shufflelist")
         arg2="$lastshuffle"
     fi
     eval "$2=\$arg2" # bash special form for returning a string
@@ -182,7 +192,7 @@ shuffle_list() {
 
 play() {
     local arg1="$1"
-    local partline partline0 partline1 partline2 partline3
+    local partline namepart optionpart
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~ https?:// ]] ; then
@@ -198,19 +208,15 @@ play() {
         printf "\n"
         exit 1
     fi
-    # only options with --start and --end, otherwise fails
-    if [[ "$partline" =~ --start ]] ; then
-        # with sed
-        partline0=$(sed 's/.*--start/--start/' <<< "$partline")
-        partline1=$(sed 's/ --start.*//' <<< "$partline")
-        partline2=$(sed 's/ --end.*//' <<< "$partline0")
-        partline3=$(sed 's/.*--end/--end/' <<< "$partline0")
-        # with awk
-        # partline0=$(awk -F '--start' '{print FS$2}' <<< "$partline")
-        # partline1=$(awk -F ' --start' '{print $1}' <<< "$partline")
-        # partline2=$(awk -F ' --end' '{print $1}' <<< "$partline0")
-        # partline3=$(awk -F '--end' '{print FS$2}' <<< "$partline0")
-        $PLAYER "$partline1" "$partline2" "$partline3"
+
+    # options with --
+    if [[ "$partline" =~ --[a-zA-Z] ]] ; then
+        # test_print partline "$partline"
+        namepart=${partline%% --*}
+        # test_print namepart "$namepart"
+        optionpart=${partline#"$namepart"}
+        # test_print optionpart "$optionpart"
+        $PLAYER "$namepart" $optionpart # don't quote rest options
         return 0
     fi
     # playlist with random items as much as count
@@ -256,11 +262,11 @@ urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
-if [[ -z $1 ]] ; then
+if [[ -z "$garg1" ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle_list "$radiolist" randomradio
-        (( $? == 64 )) && continue
+        (( $? == $E_IN_A_ROW )) && continue
         grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -274,7 +280,7 @@ if [[ $1 =~ ^(-p|--period)$ ]] ; then
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
         shuffle_list "$radiolist" randomradio
-        (( $? == 64 )) && continue
+        (( $? == $E_IN_A_ROW )) && continue
         grep_print "$randomradio"
         $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
         lastbgpid=$!
@@ -339,7 +345,7 @@ if [[ $1 =~ ^(-g|--group)$ ]] ; then
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
         shuffle_list "$grouplist" randomradio
-        (( $? == 64 )) && continue
+        (( $? == $E_IN_A_ROW )) && continue
         grep_print "$randomradio"
         play "$randomradio"
         sleep 1
@@ -364,9 +370,9 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z $2 ]] ; then
         while true ; do
-            locallist=$(grep -c "$SKIPPATTERN" <<< "$locallist")
+            locallist=$(grep -v "$SKIPPATTERN" <<< "$locallist")
             shuffle_list "$locallist" randomlocal
-            (( $? == 64 )) && continue
+            (( $? == $E_IN_A_ROW )) && continue
             grep_print "$randomlocal"
             randomlocal=$(sed 's/# //' <<< "$randomlocal")
             $PLAYER "$LOCALMUSICDIR""$randomlocal" &
@@ -398,7 +404,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
             readarray -t arr_localnames <<< "$localnames"
             # Is it possible to select multiple items like 2,4,6 or 3-7?
             select localfile in "${arr_localnames[@]}" ; do
-                if [[ $REPLY =~ ^("00")$ ]] ; then
+                if [[ $REPLY =~ ^00$ ]] ; then
                     printf "\n"
                     printf "\n You choose all items."
                     printf "\n They'll be played randomly and infinitely."
@@ -406,7 +412,7 @@ if [[ $1 =~ ^(-l|--local)$ ]] ; then
                     printf "\n"
                     while true ; do
                         shuffle_list "$localnames" randomlocal
-                        (( $? == 64 )) && continue
+                        (( $? == $E_IN_A_ROW )) && continue
                         grep_print "$randomlocal"
                         $PLAYER "$LOCALMUSICDIR""$randomlocal" &
                         lastbgpid=$!
@@ -527,7 +533,7 @@ elif (( $grepcount > 1 )) ; then
     remove_parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
-        if [[ $REPLY =~ ^("00")$ ]] ; then
+        if [[ $REPLY =~ ^00$ ]] ; then
             printf "\n"
             printf "\n You choose all items."
             printf "\n They'll be played randomly and infinitely."
@@ -535,7 +541,7 @@ elif (( $grepcount > 1 )) ; then
             printf "\n"
             while true ; do
                 shuffle_list "$grepnames" randomurlname
-                (( $? == 64 )) && continue
+                (( $? == $E_IN_A_ROW )) && continue
                 grep_print "$randomurlname"
                 grepline=$(grep -iF "$randomurlname" <<< "$urllist")
                 play "$grepline"
@@ -774,5 +780,3 @@ return 0
 # sia/
 #
 ### MY LOCAL MUSIC END
-
-#  LocalWords:  Moana
