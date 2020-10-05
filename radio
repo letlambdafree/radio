@@ -500,6 +500,27 @@ edit_this() {
     fi
 }
 
+help_usage() {
+    if [[ $1 =~ ^(-h|--help)$ ]] ; then
+        x=0
+        while read -r line ; do
+            (( x++ ))
+            [[ $line =~ ^(# Usage) ]] && break
+        done < "$0"
+        helplist=$(tail -n +$(( x - 3 )) "$0")
+        x=0
+        while read -r line ; do
+            (( x++ ))
+            [[ $line =~ (^$) ]] && break
+        done <<< "$helplist"
+        helplist=$(head -n $x <<< "$helplist")
+        printf "\n"
+        sed 's/#\+//' <<< "$helplist"
+        printf "\n"
+        return 0
+    fi
+}
+
 x=0
 while read -r line ; do
     (( x++ ))
@@ -528,30 +549,13 @@ play_group
 play_local
 test_items
 edit_this
+help_usage
 
 
 
 
 
 
-if [[ $1 =~ ^(-h|--help)$ ]] ; then
-    x=0
-    while read -r line ; do
-        (( x++ ))
-        [[ $line =~ ^(# Usage) ]] && break
-    done < "$0"
-    helplist=$(tail -n +$(( x - 3 )) "$0")
-    x=0
-    while read -r line ; do
-        (( x++ ))
-        [[ $line =~ (^$) ]] && break
-    done <<< "$helplist"
-    helplist=$(head -n $x <<< "$helplist")
-    printf "\n"
-    sed 's/#\+//' <<< "$helplist"
-    printf "\n"
-    exit 0
-fi
 make_grepnames
 grepnames=$(grep -v "/^#\?$\|^##\+\|^#[^ ]\|^#  \+" <<< "$grepnames" \
                 | sed 's/^# //')
