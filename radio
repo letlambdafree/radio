@@ -493,6 +493,12 @@ test_items() {
     fi
 }
 
+edit_this() {
+    if [[ $1 =~ ^(-e|--edit)$ ]] ; then
+        $EDITOR $HOME/git/radio/radio
+        exit 0
+    fi
+}
 
 x=0
 while read -r line ; do
@@ -521,15 +527,12 @@ show_all
 play_group
 play_local
 test_items
+edit_this
 
 
 
 
 
-if [[ $1 =~ ^(-e|--edit)$ ]] ; then
-    $EDITOR $HOME/git/radio/radio
-    exit 0
-fi
 
 if [[ $1 =~ ^(-h|--help)$ ]] ; then
     x=0
