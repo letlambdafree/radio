@@ -74,6 +74,9 @@
 #
 # add more urls
 # add youtube searching directly
+# narrow selet
+# load another source file
+#
 
 
 
@@ -226,11 +229,9 @@ remove_parts() {
 shuffle_list() {
     # all items must be selected only once for one-cycle
     local arg1="$1"
-    local arg2="$2"
     local firstshuffle
-    # eval declare -g $2
     if [[ -z "$shufflelist" ]] ; then
-        test_print initial_shufflelist "$arg1"
+        # test_print initial_shufflelist "$arg1"
         firstshuffle=$(shuf -n 1 <<< "$arg1")
         # avoid selecting the same item in a row
         if [[ "$firstshuffle" == "$lastshuffle" ]] ; then
@@ -238,21 +239,21 @@ shuffle_list() {
             return $E_IN_A_ROW
         else
             shufflelist=$(grep -vF "$firstshuffle" <<< "$arg1") # needed -F
-            arg2="$firstshuffle"
+            shuffleradio="$firstshuffle"
         fi
     else
-        test_print shufflelist "$shufflelist"
+        # test_print shufflelist "$shufflelist"
         lastshuffle=$(shuf -n 1 <<< "$shufflelist")
         shufflelist=$(grep -vF "$lastshuffle" <<< "$shufflelist")
-        arg2="$lastshuffle"
+        shuffleradio="$lastshuffle"
     fi
-    eval "$2=\$arg2" # bash special form for returning a string
+    # eval "$2=\$arg2" # bash special form for returning a string
     return 0
 }
 
 play() {
     local arg1="$1"
-    local partline namepart optionpart
+    local partline namepart optionpart lastbgpid
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~ https?:// ]] ; then
@@ -302,16 +303,12 @@ play() {
 }
 
 play_radio() {
-    local lastbgpid
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" randomradio
+        shuffle_list "$radiolist"
         (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
-        lastbgpid=$!
-        wait $lastbgpid
-        sleep 1
+        grep_print "$shuffleradio"
+        play "$shuffleradio"
     done
     return 0
 }
@@ -319,10 +316,10 @@ play_radio() {
 play_period() {
     while true ; do
         radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" randomradio
+        shuffle_list "$radiolist"
         (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
+        grep_print "$shuffleradio"
+        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$shuffleradio") &
         lastbgpid=$!
         sleep $TESTTIME
         # fail playing
@@ -391,10 +388,10 @@ play_group() {
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
-        shuffle_list "$grouplist" randomradio
+        shuffle_list "$grouplist"
         (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        play "$randomradio"
+        grep_print "$shuffleradio"
+        play "$shuffleradio"
         sleep 1
     done
     return 0
@@ -422,10 +419,10 @@ select_list() {
                 printf "\n To exit, press Ctrl-c repeatedly"
                 printf "\n"
                 while true ; do
-                    shuffle_list "$grepnames" randomurlname
+                    shuffle_list "$grepnames"
                     (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$randomurlname"
-                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    grep_print "$shuffleradio"
+                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
                     play "$grepline"
                     # sleep 1
                 done
@@ -450,10 +447,10 @@ select_list() {
                 # test_print REPLY "$REPLY"
                 grepnames=$(sed -n "$REPLY" <<< "$grepnames")
                 while true ; do
-                    shuffle_list "$grepnames" randomurlname
+                    shuffle_list "$grepnames"
                     (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$randomurlname"
-                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    grep_print "$shuffleradio"
+                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
                     play "$grepline"
                     # sleep 1
                 done
@@ -468,10 +465,10 @@ select_list() {
                 printf "\n"
                 while true ; do
                     grepnames=$(grep -i "$REPLY" <<< "$grepnames")
-                    shuffle_list "$grepnames" randomurlname
+                    shuffle_list "$grepnames"
                     (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$randomurlname"
-                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    grep_print "$shuffleradio"
+                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
                     play "$grepline"
                     # sleep 1
                 done
@@ -501,10 +498,10 @@ play_local() {
     if [[ -z "$garg2" ]] ; then
         while true ; do
             locallist=$(grep -v "$SKIPPATTERN" <<< "$locallist")
-            shuffle_list "$locallist" randomlocal
+            shuffle_list "$locallist"
             (( $? == $E_IN_A_ROW )) && continue
-            grep_print "$randomlocal"
-            play "$randomlocal"
+            grep_print "$shuffleradio"
+            play "$shuffleradio"
             # sleep 1
         done
     else
