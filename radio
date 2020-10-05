@@ -78,6 +78,7 @@
 #
 # add more urls
 # add youtube searching directly
+# modify play_local() with select_list()
 
 
 
@@ -439,7 +440,6 @@ play_local() {
         elif (( $greplocalcount > 1 )) ; then
             localnames=$(grep -i "$2" <<< "$locallist")
             readarray -t arr_localnames <<< "$localnames"
-            # Is it possible to select multiple items like 2,4,6 or 3-7?
             select localfile in "${arr_localnames[@]}" ; do
                 if [[ $REPLY =~ ^00$ ]] ; then
                     printf "\n"
@@ -514,61 +514,15 @@ help_usage() {
     return 0
 }
 
-
-
-look_linenumber "$garg0" "^$RADIOSTARTLINE"
-urllist=$(tail -n +"$(( x + 4 ))" "$garg0")
-# test_print urllist "$urllist"
-look_linenumber "$urllist" "^$RADIOENDLINE"
-radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
-# test_print radiolist "$radiolist"
-urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
-# test_print urlname "$urlname"
-radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
-
-case "$garg1" in
-    "")
-        play_radio && exit 0
-        ;;
-    -p|--period)
-        play_period && exit 0
-        ;;
-    -a|--all)
-        show_all && exit 0
-        ;;
-    -g|--group)
-        play_group && exit 0
-        ;;
-    -l|--local)
-        play_local && exit 0
-        ;;
-    -t|--test)
-        test_items && exit 0
-        ;;
-    -e|--edit)
-        edit_this && exit 0
-        ;;
-    -h|--help)
-        help_usage && exit 0
-        ;;
-    # -x|--xxx) # not now
-    #     xxx_private && exit 0
-    #     ;;
-    *)
-        make_grepnames
-        ;;
-esac
-
-grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
-grepcount=$(grep -ic .  <<< "$grepnames")
-# test_print grepcount "$grepcount"
-
-if (( $grepcount == 1 )) ; then
+select_list() {
+    local arg1="$1"
+    local arg2="$2"
+    if (( $arg1 == 1 )) ; then
     grep_print "$grepnames"
     # grep '-F' for only string like "[live] tv"
     grepline=$(grep -iF "$grepnames" <<< "$urllist")
     play "$grepline"
-elif (( $grepcount > 1 )) ; then
+    elif (( $arg1 > 1 )) ; then
     remove_parts "$grepnames"
     readarray -t arr_grepnames <<< "$grepnames"
     select url in "${arr_grepnames[@]}" ; do
@@ -648,6 +602,58 @@ else
     printf "\n"
     exit 1
 fi
+}
+
+
+
+look_linenumber "$garg0" "^$RADIOSTARTLINE"
+urllist=$(tail -n +"$(( x + 4 ))" "$garg0")
+# test_print urllist "$urllist"
+look_linenumber "$urllist" "^$RADIOENDLINE"
+radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
+# test_print radiolist "$radiolist"
+urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
+# test_print urlname "$urlname"
+radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
+
+case "$garg1" in
+    "")
+        play_radio && exit 0
+        ;;
+    -p|--period)
+        play_period && exit 0
+        ;;
+    -a|--all)
+        show_all && exit 0
+        ;;
+    -g|--group)
+        play_group && exit 0
+        ;;
+    -l|--local)
+        play_local && exit 0
+        ;;
+    -t|--test)
+        test_items && exit 0
+        ;;
+    -e|--edit)
+        edit_this && exit 0
+        ;;
+    -h|--help)
+        help_usage && exit 0
+        ;;
+    # -x|--xxx) # not now
+    #     xxx_private && exit 0
+    #     ;;
+    *)
+        make_grepnames
+        ;;
+esac
+
+grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
+grepcount=$(grep -ic .  <<< "$grepnames")
+# test_print grepcount "$grepcount"
+select_list "$grepcount" # "$grepnames"
+
 
 ### MY RADIO URLS - from a latte applet in KDE.
 #
