@@ -58,10 +58,6 @@
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia  - play only local files with sia
 #
-# -y | --youtube ["regex"]
-#       - not implemented yet
-#         search youtube item directly
-#
 # -t | --test
 #       - tests all radios whether work or not.
 #         If failed, it logs on the file named report.
@@ -105,7 +101,6 @@ LOCALENDLINE="### MY LOCAL MUSIC END"
 TESTENDLINE="### TEST END"
 SCRIPTDIR="${garg0%/*}"
 REPORTPATH="$SCRIPTDIR/report"
-# add date
 REPORTFIRSTLINE="### ERROR REPORT"
 TESTTIME=10
 PERIODTIME=600
@@ -609,9 +604,12 @@ case "$garg1" in
     -h|--help)
         help_usage && exit 0
         ;;
-    # -x|--xxx) # not now
+    # -x|--xxx) # not yet
     #     xxx_private && exit 0
     #     ;;
+    # -y|--youtube) # not yet
+    #   search_youtube && exit 0
+    #   ;;
     *)
         make_namelist "$urllist"
         ;;
