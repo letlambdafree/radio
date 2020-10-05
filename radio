@@ -342,29 +342,21 @@ play_group() {
         (( x++ ))
         case "$garg2" in
             en)
-                [[ $line =~ ^"## English Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## English Radio" ]] && break ;;
             kr)
-                [[ $line =~ ^"## Korean Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## Korean Radio" ]] && break ;;
             jp)
-                [[ $line =~ ^"## Japanese Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## Japanese Radio" ]] && break ;;
             mv)
-                [[ $line =~ ^"## Music Video" ]] && break
-                ;;
+                [[ $line =~ ^"## Music Video" ]] && break ;;
             lt)
-                [[ $line =~ ^"## Live TV" ]] && break
-                ;;
+                [[ $line =~ ^"## Live TV" ]] && break ;;
             ln)
-                [[ $line =~ ^"## Live News" ]] && break
-                ;;
+                [[ $line =~ ^"## Live News" ]] && break ;;
             lc)
-                [[ $line =~ ^"## Live Camera" ]] && break
-                ;;
+                [[ $line =~ ^"## Live Camera" ]] && break ;;
             pl)
-                [[ $line =~ ^"## Play List" ]] && break
-                ;;
+                [[ $line =~ ^"## Play List" ]] && break ;;
             *)
                 printf "\n Sorry, there is no \"$2\" group."
                 printf "\n Try again."
@@ -578,38 +570,27 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 case "$garg1" in
     "")
-        play_radio && exit 0
-        ;;
+        play_radio && exit 0 ;;
     -p|--period)
-        play_period && exit 0
-        ;;
+        play_period && exit 0 ;;
     -a|--all)
-        show_all && exit 0
-        ;;
+        show_all && exit 0 ;;
     -g|--group)
-        play_group && exit 0
-        ;;
+        play_group && exit 0 ;;
     -l|--local)
-        play_local && exit 0
-        ;;
+        play_local && exit 0 ;;
     -t|--test)
-        test_items && exit 0
-        ;;
+        test_items && exit 0 ;;
     -e|--edit)
-        edit_this && exit 0
-        ;;
+        edit_this && exit 0 ;;
     -h|--help)
-        help_usage && exit 0
-        ;;
+        help_usage && exit 0 ;;
     # -x|--xxx) # not yet
-    #     xxx_private && exit 0
-    #     ;;
+    #     xxx_private && exit 0 ;;
     # -y|--youtube) # not yet
-    #   search_youtube && exit 0
-    #   ;;
+    #   search_youtube && exit 0 ;;
     *)
-        make_namelist "$urllist"
-        ;;
+        make_namelist "$urllist" ;;
 esac
 
 grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
