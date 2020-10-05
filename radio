@@ -78,13 +78,12 @@
 #
 # add more urls
 # add youtube searching directly
-# modify play_local() with select_list()
 
 
 
 # set -u # avoid a undeclared variable
 
-garg="$@"
+garg=( "$@" ) # array
 garg0="$0"
 garg1="$1"
 garg2="$2"
@@ -157,20 +156,17 @@ test_print() {
 
 grep_print() {
     local arg1="$1"
-    local webline="https?://"
-    local directoryline="/$"
-    local localline="/mnt/"
-    if [[ "$arg1" =~ $webline ]] ; then
+    if [[ "$arg1" =~ https?:/ ]] ; then
         printf "\n"
         awk -F 'http' '{print $1}' <<< "$arg1" \
             | sed 's/^# / /' \
             | grep --color=auto .
         printf "\n"
-    elif [[ "$arg1" =~ $directoryline ]] ; then
+    elif [[ "$arg1" =~ /$ ]] ; then
         printf "\n"
         sed 's/^# / /' <<< "$arg1" | grep --color=auto .
         printf "\n"
-    elif [[ "$arg1" =~ $localline ]] ; then
+    elif [[ "$arg1" =~ /mnt/ ]] ; then
         printf "\n"
         awk -F '/mnt/' '{print $1}' <<< "$arg1" \
             | sed 's/^# / /' \
@@ -184,11 +180,12 @@ grep_print() {
     return 0
 }
 
-make_grepnames() {
+make_namelist() {
     # grep 'and' option
+    local arg1="$1"
     local arg reverse
-    # local arg1="$1"
-    for arg in "$garg" ; do
+    for arg in "${garg[@]}" ; do
+        # test_print arg "$arg"
         if [[ -z $grepnames ]] ; then
             if [[ $arg =~ ^@[0-9] ]] ; then
                 playlistnumber=${arg/@/}
@@ -200,8 +197,10 @@ make_grepnames() {
                     exit 1
                 fi
                 continue
+            elif [[ $arg =~ ^-+[a-z]+ ]] ; then
+                continue
             fi
-            grepnames=$(grep -i "$arg" <<< "$urlname")
+            grepnames=$(grep -i "$arg" <<< "$arg1")
         else
             if [[ $arg == -v ]] ; then
                 reverse="-v"
@@ -212,16 +211,18 @@ make_grepnames() {
                 reverse=""
             fi
         fi
-        # test_print grepnames "$grepnames"
     done
+    # test_print grepnames "$grepnames"
     return 0
 }
 
 remove_parts() {
     local arg1="$1"
-    if [[ "$arg1" =~ https?:// ]] ; then
+    if [[ "$arg1" =~  https?:// ]] ; then
         grepnames=$(awk -F 'http' '{print $1}' <<< "$arg1")
-    elif [[ "$arg1" =~ /mnt/ ]] ; then
+    elif [[ "$arg1" =~ ^/mnt/ ]] ; then
+        grepnames=$(sed 's/.*Music\///g'<<< "$arg1" )
+    elif [[ "$arg1" =~  /mnt/ ]] ; then
         grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$arg1")
     fi
     return 0
@@ -290,13 +291,16 @@ play() {
             namepart=${partline%% --*} # need space for trailing
             # test_print namepart "$namepart"
             optionpart=${partline#"$namepart"}
-            $PLAYER "$namepart" $optionpart # don't quote rest options
+            $PLAYER "$namepart" $optionpart & # don't quote rest options
         else
-            $PLAYER "$partline"
+            $PLAYER "$partline" &
         fi
     else
-        $PLAYER $partlinelist
+        $PLAYER $partlinelist &
     fi
+    lastbgpid=$!
+    wait $lastbgpid
+    # sleep 1
     count=0
     partlinelist=""
     return 0
@@ -401,28 +405,116 @@ play_group() {
     return 0
 }
 
+
+select_list() {
+    local arg1="$1" # count
+    local arg2="$2" # urllist
+    local arg3="$3" # nameslist
+    if (( $arg1 == 1 )) ; then
+        grep_print "$arg3"
+        # grep '-F' for only string like "[live] tv"
+        grepline=$(grep -iF "$arg3" <<< "$arg2")
+        play "$grepline"
+    elif (( $arg1 > 1 )) ; then
+        remove_parts "$arg3"
+        # test_print grepnames "$grepnames"
+        readarray -t arr_names <<< "$grepnames"
+        select url in "${arr_names[@]}" ; do
+            if [[ $REPLY =~ ^00$ ]] ; then
+                printf "\n"
+                printf "\n You choose all items."
+                printf "\n They'll be played randomly and infinitely."
+                printf "\n To exit, press Ctrl-c repeatedly"
+                printf "\n"
+                while true ; do
+                    shuffle_list "$grepnames" randomurlname
+                    (( $? == $E_IN_A_ROW )) && continue
+                    grep_print "$randomurlname"
+                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    play "$grepline"
+                    # sleep 1
+                done
+                exit 0
+            elif [[ $REPLY =~ [0-9]+[-[:space:]]+[0-9]+ ]] ; then
+                printf "\n"
+                printf "\n You select multiple items with number."
+                printf "\n they'll be played randomly and infinitely."
+                printf "\n To exit, press Ctrl-c repeatedly"
+                printf "\n"
+                # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
+                # ex) with space
+                #    5     -5  7  8-   9  --> 5p;7p;8,9p
+                REPLY=$(sed 's/^ \+//g' <<< "$REPLY" \
+                            | sed 's/ \+$//g' \
+                            | sed 's/ \+/ /g' \
+                            | sed 's/ -/-/g' \
+                            | sed 's/- /-/g' \
+                            | sed 's/ /p;/g' \
+                            | sed 's/-/,/g' \
+                            | sed 's/$/p/')
+                # test_print REPLY "$REPLY"
+                grepnames=$(sed -n "$REPLY" <<< "$grepnames")
+                while true ; do
+                    shuffle_list "$grepnames" randomurlname
+                    (( $? == $E_IN_A_ROW )) && continue
+                    grep_print "$randomurlname"
+                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    play "$grepline"
+                    # sleep 1
+                done
+                exit 0
+            elif [[ $REPLY =~ [^0-9] ]] ; then
+                # like sia, (1986)
+                # can search regex
+                printf "\n"
+                printf "\n You select items with non numbers."
+                printf "\n they'll be played randomly and infinitely."
+                printf "\n To exit, press Ctrl-c repeatedly"
+                printf "\n"
+                while true ; do
+                    grepnames=$(grep -i "$REPLY" <<< "$grepnames")
+                    shuffle_list "$grepnames" randomurlname
+                    (( $? == $E_IN_A_ROW )) && continue
+                    grep_print "$randomurlname"
+                    grepline=$(grep -iF "$randomurlname" <<< "$arg2")
+                    play "$grepline"
+                    # sleep 1
+                done
+                exit 0
+            fi
+            selectedurl="$url"
+            break
+        done
+        grep_print "$selectedurl"
+        grepline=$(grep -iF "$selectedurl" <<< "$arg2")
+        play "$grepline"
+        exit 0
+    else
+        printf "\n"
+        printf "\n Sorry, the \"$1\" does not match."
+        printf "\n Try again."
+        printf "\n"
+        exit 1
+    fi
+}
+
 play_local() {
     look_linenumber "$urllist" "^$LOCALSTARTLINE"
     locallist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
     look_linenumber "$locallist" "^##+"
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
-    if [[ -z $2 ]] ; then
+    if [[ -z "$garg2" ]] ; then
         while true ; do
             locallist=$(grep -v "$SKIPPATTERN" <<< "$locallist")
             shuffle_list "$locallist" randomlocal
             (( $? == $E_IN_A_ROW )) && continue
             grep_print "$randomlocal"
-            randomlocal=$(sed 's/# //' <<< "$randomlocal")
-            $PLAYER "$LOCALMUSICDIR""$randomlocal" &
-            lastbgpid=$!
-            wait $lastbgpid
-            sleep 1
+            play "$randomlocal"
+            # sleep 1
         done
     else
-        # radio -l "regex"
-        cd "$LOCALMUSICDIR"
         shopt -s globstar
-        for file in **/* ; do
+        for file in "$LOCALMUSICDIR"**/* ; do
             if [[ $file =~ $LOCALMUSICEXT ]] ; then
                 if [[ -z $localoneline ]] ; then
                     localoneline="$file"
@@ -432,45 +524,11 @@ play_local() {
             fi
         done
         locallist=$(sed s/:/\\n/g <<< $localoneline)
-        greplocalcount=$(grep -ic "$2" <<< "$locallist")
-        if (( $greplocalcount == 1 )) ; then
-            thelocalname=$(grep -i "$2" <<< "$locallist")
-            grep_print "$thelocalname"
-            $PLAYER "$LOCALMUSICDIR""$thelocalname"
-        elif (( $greplocalcount > 1 )) ; then
-            localnames=$(grep -i "$2" <<< "$locallist")
-            readarray -t arr_localnames <<< "$localnames"
-            select localfile in "${arr_localnames[@]}" ; do
-                if [[ $REPLY =~ ^00$ ]] ; then
-                    printf "\n"
-                    printf "\n You choose all items."
-                    printf "\n They'll be played randomly and infinitely."
-                    printf "\n To exit, press Ctrl-c repeatedly."
-                    printf "\n"
-                    while true ; do
-                        shuffle_list "$localnames" randomlocal
-                        (( $? == $E_IN_A_ROW )) && continue
-                        grep_print "$randomlocal"
-                        $PLAYER "$LOCALMUSICDIR""$randomlocal" &
-                        lastbgpid=$!
-                        wait $lastbgpid
-                        sleep 1
-                    done
-                    exit 0
-                fi
-                selectedlocalfile="$localfile"
-                break
-            done
-            grep_print "$selectedlocalfile"
-            $PLAYER "$LOCALMUSICDIR""$selectedlocalfile"
-            exit 0
-        else
-            printf "\n"
-            printf "\n Sorry, the \"$2\" does not match."
-            printf "\n Try again."
-            printf "\n"
-            exit 1
-        fi
+        # test_print locallist "$locallist"
+        make_namelist "$locallist"
+        grepcount=$(grep -ic .  <<< "$grepnames")
+        # test_print greplocalcount "$greplocalcount"
+        select_list "$grepcount" "$locallist" "$grepnames"
     fi
     return 0
 }
@@ -514,96 +572,6 @@ help_usage() {
     return 0
 }
 
-select_list() {
-    local arg1="$1"
-    local arg2="$2"
-    if (( $arg1 == 1 )) ; then
-    grep_print "$grepnames"
-    # grep '-F' for only string like "[live] tv"
-    grepline=$(grep -iF "$grepnames" <<< "$urllist")
-    play "$grepline"
-    elif (( $arg1 > 1 )) ; then
-    remove_parts "$grepnames"
-    readarray -t arr_grepnames <<< "$grepnames"
-    select url in "${arr_grepnames[@]}" ; do
-        if [[ $REPLY =~ ^00$ ]] ; then
-            printf "\n"
-            printf "\n You choose all items."
-            printf "\n They'll be played randomly and infinitely."
-            printf "\n To exit, press Ctrl-c repeatedly"
-            printf "\n"
-            while true ; do
-                shuffle_list "$grepnames" randomurlname
-                (( $? == $E_IN_A_ROW )) && continue
-                grep_print "$randomurlname"
-                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
-                play "$grepline"
-                # sleep 1
-            done
-            exit 0
-        elif [[ $REPLY =~ [0-9]+[-[:space:]]+[0-9]+ ]] ; then
-            printf "\n"
-            printf "\n You select multiple items with number."
-            printf "\n they'll be played randomly and infinitely."
-            printf "\n To exit, press Ctrl-c repeatedly"
-            printf "\n"
-            # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
-            # ex) with space
-            #    5     -5  7  8-   9  --> 5p;7p;8,9p
-            REPLY=$(sed 's/^ \+//g' <<< "$REPLY" \
-                        | sed 's/ \+$//g' \
-                        | sed 's/ \+/ /g' \
-                        | sed 's/ -/-/g' \
-                        | sed 's/- /-/g' \
-                        | sed 's/ /p;/g' \
-                        | sed 's/-/,/g' \
-                        | sed 's/$/p/')
-            test_print REPLY "$REPLY"
-            grepnames=$(sed -n "$REPLY" <<< "$grepnames")
-            while true ; do
-                shuffle_list "$grepnames" randomurlname
-                (( $? == $E_IN_A_ROW )) && continue
-                grep_print "$randomurlname"
-                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
-                play "$grepline"
-                sleep 10
-            done
-            exit 0
-        elif [[ $REPLY =~ [^0-9] ]] ; then
-            # like sia, (1986)
-            # can search regex
-            printf "\n"
-            printf "\n You select items with non numbers."
-            printf "\n they'll be played randomly and infinitely."
-            printf "\n To exit, press Ctrl-c repeatedly"
-            printf "\n"
-            while true ; do
-                grepnames=$(grep -i "$REPLY" <<< "$grepnames")
-                shuffle_list "$grepnames" randomurlname
-                (( $? == $E_IN_A_ROW )) && continue
-                grep_print "$randomurlname"
-                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
-                play "$grepline"
-                # sleep 1
-            done
-            exit 0
-        fi
-        selectedurl="$url"
-        break
-    done
-    grep_print "$selectedurl"
-    grepline=$(grep -iF "$selectedurl" <<< "$urllist")
-    play "$grepline"
-    exit 0
-else
-    printf "\n"
-    printf "\n Sorry, the \"$1\" does not match."
-    printf "\n Try again."
-    printf "\n"
-    exit 1
-fi
-}
-
 
 
 look_linenumber "$garg0" "^$RADIOSTARTLINE"
@@ -645,14 +613,16 @@ case "$garg1" in
     #     xxx_private && exit 0
     #     ;;
     *)
-        make_grepnames
+        make_namelist "$urllist"
         ;;
 esac
 
 grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
+# test_print grepnames "$grepnames"
 grepcount=$(grep -ic .  <<< "$grepnames")
 # test_print grepcount "$grepcount"
-select_list "$grepcount" # "$grepnames"
+select_list "$grepcount" "$urllist" "$grepnames"
+
 
 
 ### MY RADIO URLS - from a latte applet in KDE.
