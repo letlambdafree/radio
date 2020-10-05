@@ -24,16 +24,19 @@
 #       - plays a shuffled radio, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
-# radio "regex"
+# raido "regex"
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only white-space needed.
 #         You can use -v to invert match
-#         you can play random files with @number at the start of search line
-#         but it can't play a file with a option like --start=03:04 --end=05:33
+#         you can select items like 3-5 7 11 15-20
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but not "lsd"
-#             radio @100 sia - 100 randomly ordered items will be played
+# raido @number urlname
+#       - you can play random files with @number at the start of search line
+#         but can't play a file with a option like --start=03:04 --end=05:33
+#         that is, playlist won't be add it
+#         ex) radio @100 sia - 100 randomly ordered items will be played
 #
 # Optinos:
 #
@@ -53,6 +56,10 @@
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia  - play only local files with sia
+#
+# -y | --youtube ["regex"]
+#       - not implemented yet
+#         search youtube item directly
 #
 # -t | --test
 #       - tests all radios whether work or not.
@@ -153,6 +160,37 @@ grep_print() {
     return 0
 }
 
+make_grepnames() {
+    # grep 'and' option
+    local arg reverse
+    for arg in "$@" ; do
+        if [[ -z $grepnames ]] ; then
+            if [[ $arg =~ ^@[0-9] ]] ; then
+                playlistnumber=${arg/@/}
+                if (( $playlistnumber < 1 )) ; then
+                    printf "\n"
+                    printf "\n Sorry, @number is more than 1!"
+                    printf "\n Try again."
+                    printf "\n"
+                    exit 1
+                fi
+                continue
+            fi
+            grepnames=$(grep -i "$arg" <<< "$urlname")
+        else
+            if [[ $arg == -v ]] ; then
+                reverse="-v"
+                continue
+            fi
+            grepnames=$(grep -i $reverse "$arg" <<< "$grepnames")
+            if [[ -n $reverse ]] ; then
+                reverse=""
+            fi
+        fi
+        # test_print grepnames "$grepnames"
+    done
+}
+
 remove_parts() {
     local arg1="$1"
     if [[ "$arg1" =~ https?:// ]] ; then
@@ -208,30 +246,28 @@ play() {
         printf "\n"
         exit 1
     fi
-
-    # options with --
-    if [[ "$partline" =~ --[a-zA-Z] ]] ; then
-        # test_print partline "$partline"
-        namepart=${partline%% --*}
-        # test_print namepart "$namepart"
-        optionpart=${partline#"$namepart"}
-        # test_print optionpart "$optionpart"
-        $PLAYER "$namepart" $optionpart # don't quote rest options
-        return 0
-    fi
-    # playlist with random items as much as count
-    # mpv item1 item2 item3 item4 item5 (can't handle item with --option)
+    # playlist with random items as much as playlistnumber
+    # >$ mpv item1 item2 item3 item4 item5 ...
+    # mpv can't handle item with --option in this case
     if [[ -z "$partlinelist" ]] ; then
-        partlinelist="$partline"
+        [[ "$partline" =~  --[a-zA-Z]+= ]] || partlinelist="$partline"
     else
-        partlinelist=""$partlinelist" "$partline""
+        [[ "$partline" =~  --[a-zA-Z]+= ]] \
+            || partlinelist=""$partlinelist" "$partline""
     fi
     # test_print partlinelist "$partlinelist"
-    if (( $count < $playlistnumber )) ; then
-        return
-    fi
+    (( $count < $playlistnumber )) && return
     if (( $playlistnumber == 1 )) ; then
-        $PLAYER "$partline"
+        # options with --, like --start=00:12 --end=04:16 --volume=120
+        if [[ "$partline" =~  --[a-zA-Z]+= ]] ; then
+            # test_print partline "$partline"
+            namepart=${partline%% --*} # need space for trailing
+            # test_print namepart "$namepart"
+            optionpart=${partline#"$namepart"}
+            $PLAYER "$namepart" $optionpart # don't quote rest options
+        else
+            $PLAYER "$partline"
+        fi
     else
         $PLAYER $partlinelist
     fi
@@ -239,6 +275,111 @@ play() {
     partlinelist=""
     return 0
 }
+
+play_radio() {
+    local lastbgpid
+    if [[ -z "$garg1" ]] ; then
+        while true ; do
+            radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
+            shuffle_list "$radiolist" randomradio
+            (( $? == $E_IN_A_ROW )) && continue
+            grep_print "$randomradio"
+            $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
+            lastbgpid=$!
+            wait $lastbgpid
+            sleep 1
+        done
+    fi
+    return 0
+}
+
+play_period() {
+    if [[ $garg1 =~ ^(-p|--period)$ ]] ; then
+        while true ; do
+            radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
+            shuffle_list "$radiolist" randomradio
+            (( $? == $E_IN_A_ROW )) && continue
+            grep_print "$randomradio"
+            $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
+            lastbgpid=$!
+            sleep $TESTTIME
+            # fail playing
+            (( ! $(ps -A | grep -c $lastbgpid) )) &&continue
+            sleep $PERIODTIME
+            kill $lastbgpid
+            sleep 1
+        done
+        return 0
+    fi
+}
+
+show_all(){
+    [[ $garg1 =~ ^(-a|--all)$ ]] && radio .
+    return 0
+}
+
+play_group() {
+    if [[ $garg1 =~ ^(-g|--group)$ ]] ; then
+        x=0
+        while read -r line ; do
+            (( x++ ))
+            case "$garg2" in
+                en)
+                    [[ $line =~ ^(## English Radio) ]] && break ;;
+                kr)
+                    [[ $line =~ ^(## Korean Radio) ]] && break ;;
+                jp)
+                    [[ $line =~ ^(## Japanese Radio) ]] && break ;;
+                mv)
+                    [[ $line =~ ^(## Music Video) ]] && break ;;
+                lt)
+                    [[ $line =~ ^(## Live TV) ]] && break ;;
+                ln)
+                    [[ $line =~ ^(## Live News) ]] && break ;;
+                lc)
+                    [[ $line =~ ^(## Live Camera) ]] && break ;;
+                pl)
+                    [[ $line =~ ^(## Play List) ]] && break ;;
+                *)
+                    printf "\n Sorry, there is no \"$2\" group."
+                    printf "\n Try again."
+                    printf "\n"
+                    printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
+                    printf "\n"
+                    printf "\n en - English Radio"
+                    printf "\n kr - Korean Radio"
+                    printf "\n jp - Japanese Radio"
+                    printf "\n mv - Music Video"
+                    printf "\n lt - Live TV"
+                    printf "\n ln - Live News"
+                    printf "\n lc - Live Camera"
+                    printf "\n pl - Play List"
+                    printf "\n"
+                    exit 2
+            esac
+        done <<< "$urllist"
+        grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
+        x=0
+        while read -r line ; do
+            (( x++ ))
+            [[ $line =~ ^##+ ]] && break
+        done <<< "$grouplist"
+        grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
+        while true ; do
+            grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
+            shuffle_list "$grouplist" randomradio
+            (( $? == $E_IN_A_ROW )) && continue
+            grep_print "$randomradio"
+            play "$randomradio"
+            sleep 1
+        done
+        return 0
+    fi
+}
+
+
+
+
 
 x=0
 while read -r line ; do
@@ -262,96 +403,12 @@ urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # only radio
-if [[ -z "$garg1" ]] ; then
-    while true ; do
-        radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" randomradio
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
-        lastbgpid=$!
-        wait $lastbgpid
-        sleep 1
-    done
-    exit 0
-fi
+play_radio
+play_period
+show_all
+play_group
 
-if [[ $1 =~ ^(-p|--period)$ ]] ; then
-    while true ; do
-        radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist" randomradio
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$randomradio") &
-        lastbgpid=$!
-        sleep $TESTTIME
-        # fail playing
-        (( ! $(ps -A | grep -c $lastbgpid) )) &&continue
-        sleep $PERIODTIME
-        kill $lastbgpid
-        sleep 1
-    done
-    exit 0
-fi
 
-[[ $1 =~ ^(-a|--all)$ ]] && radio .
-
-if [[ $1 =~ ^(-g|--group)$ ]] ; then
-    x=0
-    while read -r line ; do
-        (( x++ ))
-        case "$2" in
-            en)
-                [[ $line =~ ^(## English Radio) ]] && break ;;
-            kr)
-                [[ $line =~ ^(## Korean Radio) ]] && break ;;
-            jp)
-                [[ $line =~ ^(## Japanese Radio) ]] && break ;;
-            mv)
-                [[ $line =~ ^(## Music Video) ]] && break ;;
-            lt)
-                [[ $line =~ ^(## Live TV) ]] && break ;;
-            ln)
-                [[ $line =~ ^(## Live News) ]] && break ;;
-            lc)
-                [[ $line =~ ^(## Live Camera) ]] && break ;;
-            pl)
-                [[ $line =~ ^(## Play List) ]] && break ;;
-            *)
-                printf "\n Sorry, there is no \"$2\" group."
-                printf "\n Try again."
-                printf "\n"
-                printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
-                printf "\n"
-                printf "\n en - English Radio"
-                printf "\n kr - Korean Radio"
-                printf "\n jp - Japanese Radio"
-                printf "\n mv - Music Video"
-                printf "\n lt - Live TV"
-                printf "\n ln - Live News"
-                printf "\n lc - Live Camera"
-                printf "\n pl - Play List"
-                printf "\n"
-                exit 2
-        esac
-    done <<< "$urllist"
-    grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
-    x=0
-    while read -r line ; do
-        (( x++ ))
-        [[ $line =~ ^##+ ]] && break
-    done <<< "$grouplist"
-    grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
-    while true ; do
-        grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
-        shuffle_list "$grouplist" randomradio
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$randomradio"
-        play "$randomradio"
-        sleep 1
-    done
-    exit 0
-fi
 
 if [[ $1 =~ ^(-l|--local)$ ]] ; then
     x=0
@@ -488,39 +545,9 @@ if [[ $1 =~ ^(-h|--help)$ ]] ; then
     printf "\n"
     exit 0
 fi
-
-# grep 'and' option
-for arg in "$@" ; do
-    if [[ -z $grepnames ]] ; then
-        if [[ $arg =~ ^@[0-9] ]] ; then
-            playlistnumber=${arg/@/}
-            if (( $playlistnumber < 1 )) ; then
-                printf "\n"
-                printf "\n Sorry, @number is more than 1!"
-                printf "\n Try again."
-                printf "\n"
-                exit 1
-            fi
-            continue
-        fi
-        grepnames=$(grep -i "$arg" <<< "$urlname")
-    else
-        if [[ $arg == -v ]] ; then
-            reverse="-v"
-            continue
-        fi
-        grepnames=$(grep -i $reverse "$arg" <<< "$grepnames")
-        if [[ -n $reverse ]] ; then
-            reverse=""
-        fi
-    fi
-    # test_print playlistnumber "$playlistnumber"
-    # test_print grepnames "$grepnames"
-done
+make_grepnames
 grepnames=$(grep -v "/^#\?$\|^##\+\|^#[^ ]\|^#  \+" <<< "$grepnames" \
                 | sed 's/^# //')
-# grepnames=$(sed '/^#\?$\|^##\+\|^#[^ ]\|^#  \+/d' <<< "$grepnames" \
-#               | sed 's/^# //')
 grepcount=$(grep -ic .  <<< "$grepnames")
 # test_print grepcount "$grepcount"
 
@@ -548,6 +575,43 @@ elif (( $grepcount > 1 )) ; then
                 # sleep 1
             done
             exit 0
+        elif [[ $REPLY =~ [0-9]+[-\ ][0-9]+ ]] ; then
+            printf "\n"
+            printf "\n You select multiple items with number."
+            printf "\n they'll be played randomly and infinitely."
+            printf "\n To exit, press Ctrl-c repeatedly"
+            printf "\n"
+            # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
+            REPLY=$(sed 's/ /p;/g' <<< "$REPLY" \
+                        | sed 's/$/p;/g' \
+                        | sed 's/-/,/g')
+            grepnames=$(sed -n "$REPLY" <<< "$grepnames")
+            while true ; do
+                shuffle_list "$grepnames" randomurlname
+                (( $? == $E_IN_A_ROW )) && continue
+                grep_print "$randomurlname"
+                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
+                play "$grepline"
+                # sleep 1
+            done
+            exit 0
+        elif [[ $REPLY =~ [^0-9] ]] ; then
+            # like sia, (1986)
+            printf "\n"
+            printf "\n You select items with non numbers."
+            printf "\n they'll be played randomly and infinitely."
+            printf "\n To exit, press Ctrl-c repeatedly"
+            printf "\n"
+            while true ; do
+                grepnames=$(grep -i "$REPLY" <<< "$grepnames")
+                shuffle_list "$grepnames" randomurlname
+                (( $? == $E_IN_A_ROW )) && continue
+                grep_print "$randomurlname"
+                grepline=$(grep -iF "$randomurlname" <<< "$urllist")
+                play "$grepline"
+                # sleep 1
+            done
+            exit 0
         fi
         selectedurl="$url"
         break
@@ -565,7 +629,7 @@ else
 fi
 return 0
 
-### MY RADIO URLS - from a latte applet in kde.
+### MY RADIO URLS - from a latte applet in KDE.
 #
 # write a symptom without any space after # for error log
 #
@@ -630,10 +694,21 @@ return 0
 # LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
 # LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
 # LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
-# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16
+# Queen - Love of My Life https://www.youtube.com/watch?v=v3xwCkhmies
+# Queen - Love Of My Life (Live, 1979) https://www.youtube.com/watch?v=Idj__EDPCKk
+# Queen - Somebody To Love - HD Live - 1981 Montreal https://www.youtube.com/watch?v=aA2IRoPFIn0
+# Queen - Bohemian Rhapsody (Live at Rock Montreal, 1981) [HD] https://www.youtube.com/watch?v=N0dbGGvsjf8
+# radiohead - Creep https://www.youtube.com/watch?v=XFkzRNyygfk
+# Radiohead - Creep (Best Live Performance) https://www.youtube.com/watch?v=k3_RU30tEIE
+# The Cranberries - Zombie 1999 Live Video https://www.youtube.com/watch?v=8MuhFxaT7zo
+# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16 --volume=180
 # 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
 # 노래얼_김옥희_이 어둠의 이 슬픔_고대 85학번 입학 30주년 기념 모교방문 축제 https://www.youtube.com/watch?v=cmNekU_svwY&list=RDcmNekU_svwY
-# 강지민 - 이 어둠의 이 슬픔 (도시의 그림자) https://www.youtube.com/watch?v=lg6IKzPdoes
+# 강지민 - 이 어둠의 이 슬픔 (도시의 그림자) https://www.youtube.com/watch?v=lg6IKzPdoes --volume=70
+# 심수봉 - 백만송이 장미 (1997년 6월 1일 이소라의 프로포즈) https://www.youtube.com/watch?v=z3Lkc8fEsww
+# 떼창 할 수 밖에 없는 심수봉 - 남자는 배 여자는 항구♬ [유희열의 스케치북/You Heeyeol's Sketchbook] 20191220 https://www.youtube.com/watch?v=uRU58V_59jk
+# 블랙홀(Black Hole) - 깊은 밤의 서정곡 https://www.youtube.com/watch?v=946hIajM-Hc
+
 #--- local music video file ---#
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
