@@ -464,7 +464,34 @@ play_local() {
     fi
 }
 
-
+test_items() {
+    if [[ $1 =~ ^(-t|--test)$ ]] ; then
+        x=0
+        while read -r line ; do
+            (( x++ ))
+            [[ $line =~ ^($TESTENDLINE) ]] && break
+        done <<< "$urllist"
+        testlist=$(head -n +$x <<< "$urllist")
+        cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
+        while read -r line ; do
+            (( $(grep -c "$SKIPPATTERN" <<< "$line") )) &&continue
+            grep_print "$line"
+            $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
+            lastbgpid=$!
+            sleep $TESTTIME
+            if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
+                echo "$line" >> "$REPORTPATH"
+            else
+                kill $lastbgpid
+            fi
+            sleep 1
+        done <<< "$testlist"
+        printf "\n"
+        cat "$REPORTPATH"
+        printf "\n"
+        return 0
+    fi
+}
 
 
 x=0
@@ -488,42 +515,16 @@ urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 # test_print urlname "$urlname"
 radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
-# only radio
 play_radio
 play_period
 show_all
 play_group
 play_local
+test_items
 
 
 
 
-if [[ $1 =~ ^(-t|--test)$ ]] ; then
-    x=0
-    while read -r line ; do
-        (( x++ ))
-        [[ $line =~ ^($TESTENDLINE) ]] && break
-    done <<< "$urllist"
-    testlist=$(head -n +$x <<< "$urllist")
-    cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
-    while read -r line ; do
-        (( $(grep -c "$SKIPPATTERN" <<< "$line") )) &&continue
-        grep_print "$line"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
-        lastbgpid=$!
-        sleep $TESTTIME
-        if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
-            echo "$line" >> "$REPORTPATH"
-        else
-            kill $lastbgpid
-        fi
-        sleep 1
-    done <<< "$testlist"
-    printf "\n"
-    cat "$REPORTPATH"
-    printf "\n"
-    exit 0
-fi
 
 if [[ $1 =~ ^(-e|--edit)$ ]] ; then
     $EDITOR $HOME/git/radio/radio
