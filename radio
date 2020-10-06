@@ -74,7 +74,7 @@
 #
 # add more urls
 # add youtube searching directly
-# narrow selet
+# narrow select - recursive ?
 # load another source file
 #
 
@@ -82,13 +82,14 @@
 
 # set -u # avoid a undeclared variable
 
-garg=( "$@" ) # array
+garg=("$@") # array
 garg0="$0"
 garg1="$1"
 garg2="$2"
 PROGNAME=${garg0##*/}
 VERSION="0.1"
 PS3="
+# 1 3 5-7 8 or regex
 # for all, press 00
 choose : "
 PLAYER="mpv"
@@ -115,14 +116,14 @@ E_IN_A_ROW=64
 
 
 
-look_linenumber() {
+search_linenumber() {
     local arg1="$1"
     local arg2="$2"
     x=0
     if [[ -f "$arg1" ]] ; then
         while read -r line ; do
             (( x++ ))
-            [[ $line =~ $arg2 ]] && break # unquote $arg2 for regex
+            [[ $line =~ $arg2 ]] && break # unquote for regex
         done < "$arg1"
     else
         while read -r line ; do
@@ -130,7 +131,7 @@ look_linenumber() {
             [[ $line =~ $arg2 ]] && break
         done <<< "$arg1"
     fi
-    # test_print look_linenumber $x
+    # test_print search_linenumber $x
     return 0
 }
 
@@ -273,16 +274,16 @@ play() {
     # $ mpv item1 item2 item3 item4 item5 ...
     # mpv can't handle item with --option in this case
     if [[ -z "$partlinelist" ]] ; then
-        [[ "$partline" =~  --[a-zA-Z]+= ]] || partlinelist="$partline"
+        [[ "$partline" =~  --[a-z]+ ]] || partlinelist="$partline"
     else
-        [[ "$partline" =~  --[a-zA-Z]+= ]] \
+        [[ "$partline" =~  --[a-z]+ ]] \
             || partlinelist=""$partlinelist" "$partline""
     fi
     # test_print partlinelist "$partlinelist"
     (( $count < $playlistnumber )) && return
     if (( $playlistnumber == 1 )) ; then
         # options with --, like --start=00:12 --end=04:16 --volume=120
-        if [[ "$partline" =~  --[a-zA-Z]+= ]] ; then
+        if [[ "$partline" =~  --[a-z]+ ]] ; then
             # test_print partline "$partline"
             namepart=${partline%% --*} # need space for trailing
             # test_print namepart "$namepart"
@@ -376,7 +377,7 @@ play_group() {
         esac
     done <<< "$urllist"
     grouplist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
-    look_linenumber "$grouplist" "^##+"
+    search_linenumber "$grouplist" "^##+"
     grouplist=$(head -n "$(( x - 2 ))" <<< "$grouplist")
     while true ; do
         grouplist=$(grep -v "$SKIPPATTERN" <<< "$grouplist")
@@ -389,11 +390,75 @@ play_group() {
     return 0
 }
 
+select_all() {
+    printf "\n"
+    printf "\n You chose all items."
+    printf "\n They'll be played randomly and infinitely."
+    printf "\n To exit, press Ctrl-c repeatedly"
+    printf "\n"
+    while true ; do
+        shuffle_list "$grepnames"
+        (( $? == $E_IN_A_ROW )) && continue
+        grep_print "$shuffleradio"
+        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
+        play "$grepline"
+        # sleep 1
+    done
+    return 0
+}
+
+select_sed() {
+    printf "\n"
+    printf "\n You selected multiple items with number."
+    printf "\n they'll be played randomly and infinitely."
+    printf "\n To exit, press Ctrl-c repeatedly"
+    printf "\n"
+    # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
+    # ex) with space
+    #    5     -5  7  8-   9  --> 5p;7p;8,9p
+    REPLY=$(sed 's/^ \+//g' <<< "$REPLY" \
+                | sed 's/ \+$//g' \
+                | sed 's/ \+/ /g' \
+                | sed 's/ -/-/g' \
+                | sed 's/- /-/g' \
+                | sed 's/ /p;/g' \
+                | sed 's/-/,/g' \
+                | sed 's/$/p/')
+    # test_print REPLY "$REPLY"
+    grepnames=$(sed -n "$REPLY" <<< "$grepnames")
+    while true ; do
+        shuffle_list "$grepnames"
+        (( $? == $E_IN_A_ROW )) && continue
+        grep_print "$shuffleradio"
+        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
+        play "$grepline"
+        # sleep 1
+    done
+    return0
+}
+
+select_regex() {
+    printf "\n"
+    printf "\n You selected items with non numbers."
+    printf "\n they'll be played randomly and infinitely."
+    printf "\n To exit, press Ctrl-c repeatedly"
+    printf "\n"
+    while true ; do
+        grepnames=$(grep -i "$REPLY" <<< "$grepnames")
+        shuffle_list "$grepnames"
+        (( $? == $E_IN_A_ROW )) && continue
+        grep_print "$shuffleradio"
+        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
+        play "$grepline"
+        # sleep 1
+    done
+    return 0
+}
 
 select_list() {
-    local arg1="$1" # count
-    local arg2="$2" # urllist
-    local arg3="$3" # nameslist
+    local arg1="$1" # grepcount
+    local arg2="$2" # inputlist
+    local arg3="$3" # grepnames
     if (( $arg1 == 1 )) ; then
         grep_print "$arg3"
         # grep '-F' for only string like "[live] tv"
@@ -404,68 +469,24 @@ select_list() {
         # test_print grepnames "$grepnames"
         readarray -t arr_names <<< "$grepnames"
         select url in "${arr_names[@]}" ; do
-            if [[ $REPLY =~ ^00$ ]] ; then
-                printf "\n"
-                printf "\n You choose all items."
-                printf "\n They'll be played randomly and infinitely."
-                printf "\n To exit, press Ctrl-c repeatedly"
-                printf "\n"
-                while true ; do
-                    shuffle_list "$grepnames"
-                    (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$shuffleradio"
-                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
-                    play "$grepline"
-                    # sleep 1
-                done
-                exit 0
-            elif [[ $REPLY =~ [0-9]+[-[:space:]]+[0-9]+ ]] ; then
-                printf "\n"
-                printf "\n You select multiple items with number."
-                printf "\n they'll be played randomly and infinitely."
-                printf "\n To exit, press Ctrl-c repeatedly"
-                printf "\n"
-                # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
-                # ex) with space
-                #    5     -5  7  8-   9  --> 5p;7p;8,9p
-                REPLY=$(sed 's/^ \+//g' <<< "$REPLY" \
-                            | sed 's/ \+$//g' \
-                            | sed 's/ \+/ /g' \
-                            | sed 's/ -/-/g' \
-                            | sed 's/- /-/g' \
-                            | sed 's/ /p;/g' \
-                            | sed 's/-/,/g' \
-                            | sed 's/$/p/')
-                # test_print REPLY "$REPLY"
-                grepnames=$(sed -n "$REPLY" <<< "$grepnames")
-                while true ; do
-                    shuffle_list "$grepnames"
-                    (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$shuffleradio"
-                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
-                    play "$grepline"
-                    # sleep 1
-                done
-                exit 0
-            elif [[ $REPLY =~ [^0-9] ]] ; then
-                # like sia, (1986)
-                # can search regex
-                printf "\n"
-                printf "\n You select items with non numbers."
-                printf "\n they'll be played randomly and infinitely."
-                printf "\n To exit, press Ctrl-c repeatedly"
-                printf "\n"
-                while true ; do
-                    grepnames=$(grep -i "$REPLY" <<< "$grepnames")
-                    shuffle_list "$grepnames"
-                    (( $? == $E_IN_A_ROW )) && continue
-                    grep_print "$shuffleradio"
-                    grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
-                    play "$grepline"
-                    # sleep 1
-                done
-                exit 0
-            fi
+            case $REPLY in
+                00)
+                    select_all && exit 0
+                    ;;
+                [0-9]+[-[:space:]]+[0-9]+)
+                    select_sed && exit 0
+                    ;;
+                [^0-9])
+                    select_regex && exit 0
+                    ;;
+                *)
+                    printf "\n"
+                    printf "\n Sorry, something is wrong!"
+                    printf "\n Try again."
+                    printf "\n"
+                    exit 1
+                    ;;
+            esac
             selectedurl="$url"
             break
         done
@@ -483,9 +504,9 @@ select_list() {
 }
 
 play_local() {
-    look_linenumber "$urllist" "^$LOCALSTARTLINE"
+    search_linenumber "$urllist" "^$LOCALSTARTLINE"
     locallist=$(tail -n +"$(( x + 2 ))" <<< "$urllist")
-    look_linenumber "$locallist" "^##+"
+    search_linenumber "$locallist" "^##+"
     locallist=$(head -n "$(( x - 2 ))" <<< "$locallist")
     if [[ -z "$garg2" ]] ; then
         while true ; do
@@ -518,7 +539,7 @@ play_local() {
 }
 
 test_items() {
-    look_linenumber "$urllist" "^$TESTENDLINE"
+    search_linenumber "$urllist" "^$TESTENDLINE"
     testlist=$(head -n +$x <<< "$urllist")
     cat > "$REPORTPATH" <<< "$REPORTFIRSTLINE"
     while read -r line ; do
@@ -546,9 +567,9 @@ edit_this() {
 }
 
 help_usage() {
-    look_linenumber "$garg0" "^# Usage"
+    search_linenumber "$garg0" "^# Usage"
     helplist=$(tail -n +$(( x - 3 )) "$garg0")
-    look_linenumber "$helplist" "^$"
+    search_linenumber "$helplist" "^$"
     helplist=$(head -n $x <<< "$helplist")
     printf "\n"
     sed 's/#\+//' <<< "$helplist"
@@ -558,10 +579,10 @@ help_usage() {
 
 
 
-look_linenumber "$garg0" "^$RADIOSTARTLINE"
+search_linenumber "$garg0" "^$RADIOSTARTLINE"
 urllist=$(tail -n +"$(( x + 4 ))" "$garg0")
 # test_print urllist "$urllist"
-look_linenumber "$urllist" "^$RADIOENDLINE"
+search_linenumber "$urllist" "^$RADIOENDLINE"
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 # test_print radiolist "$radiolist"
 urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
