@@ -434,7 +434,7 @@ select_sed() {
         play "$grepline"
         # sleep 1
     done
-    return0
+    return 0
 }
 
 select_regex() {
@@ -470,7 +470,7 @@ select_list() {
         readarray -t arr_names <<< "$grepnames"
         select url in "${arr_names[@]}" ; do
             case $REPLY in
-                00)
+                ^00$)
                     select_all && exit 0
                     ;;
                 [0-9]+[-[:space:]]+[0-9]+)
