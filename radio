@@ -32,18 +32,8 @@
 #         you can select items like 3-5 7 11 15-20
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but not "lsd"
-# radio @number urlname
-#       - you can play random files with @number at the start of search line
-#         but can't play a file with a option like --start=03:04 --end=05:33
-#         that is, playlist won't be add it
-#         ex) radio @100 sia - mpv plays with a playlist
-#                              (100 randomly ordered sia's items)
 #
 # Options:
-#
-# -p | --period
-#       - rotates a shuffled radio in a specific time.
-#         this loops infinitely, press Ctrl-c repeatedly to exit.
 #
 # -a | --all
 #       - displays all urls, choose a url number.
@@ -186,17 +176,7 @@ make_namelist() {
     for line in ${garg[@]} ; do
         # test_print line "$line"
         if [[ -z $grepnames ]] ; then
-            if [[ $line =~ ^@[0-9] ]] ; then
-                playlistnumber=${line/@/}
-                if (( $playlistnumber < 1 )) ; then
-                    printf "\n"
-                    printf "\n Sorry, @number is more than 1!"
-                    printf "\n Try again."
-                    printf "\n"
-                    exit 1
-                fi
-                continue
-            elif [[ $line =~ ^-+[a-z]+ ]] ; then
+            if [[ $line =~ ^-+[a-z]+ ]] ; then
                 continue
             fi
             grepnames=$(grep -i "$line" <<< "$arg1")
@@ -291,30 +271,14 @@ play() {
         printf "\n"
         exit 1
     fi
-    # playlist with random items as much as playlistnumber
-    # $ mpv item1 item2 item3 item4 item5 ...
-    # mpv can't handle item with --option in this case
-    if [[ -z "$partlinelist" ]] ; then
-        [[ "$partline" =~  --[a-z]+ ]] || partlinelist="$partline"
+    if [[ "$partline" =~  --[a-z]+ ]] ; then
+        # test_print partline "$partline"
+        namepart=${partline%% --*} # need space for trailing
+        # test_print namepart "$namepart"
+        optionpart=${partline#"$namepart"}
+        $PLAYER "$namepart" $optionpart & # don't quote rest options
     else
-        [[ "$partline" =~  --[a-z]+ ]] \
-            || partlinelist=""$partlinelist" "$partline""
-    fi
-    # test_print partlinelist "$partlinelist"
-    (( $count < $playlistnumber )) && return
-    if (( $playlistnumber == 1 )) ; then
-        # options with --, like --start=00:12 --end=04:16 --volume=120
-        if [[ "$partline" =~  --[a-z]+ ]] ; then
-            # test_print partline "$partline"
-            namepart=${partline%% --*} # need space for trailing
-            # test_print namepart "$namepart"
-            optionpart=${partline#"$namepart"}
-            $PLAYER "$namepart" $optionpart & # don't quote rest options
-        else
-            $PLAYER "$partline" &
-        fi
-    else
-        $PLAYER $partlinelist &
+        $PLAYER "$partline" &
     fi
     lastbgpid=$!
     wait $lastbgpid
@@ -331,24 +295,6 @@ play_radio() {
         (( $? == $E_IN_A_ROW )) && continue
         grep_print "$shuffleradio"
         play "$shuffleradio"
-    done
-    return 0
-}
-
-play_period() {
-    while true ; do
-        radiolist=$(grep -v "$SKIPPATTERN" <<< "$radiolist")
-        shuffle_list "$radiolist"
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$shuffleradio"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$shuffleradio") &
-        lastbgpid=$!
-        sleep $TESTTIME
-        # fail playing
-        (( ! $(ps -A | grep -c $lastbgpid) )) &&continue
-        sleep $PERIODTIME
-        kill $lastbgpid
-        sleep 1
     done
     return 0
 }
@@ -545,7 +491,8 @@ play_local() {
                 localoneline+=("$file")
             fi
         done
-        locallist=$(IFS=$'\n'; echo "${localoneline[*]}")
+        locallist=$(printf '%s\n' "${localoneline[@]}")
+        # locallist=$(IFS=$'\n'; echo "${localoneline[*]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
         grepcount=$(grep -ic .  <<< "$grepnames")
@@ -609,9 +556,6 @@ radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 case "$garg1" in
     "")
         play_radio && exit 0
-        ;;
-    -p|--period)
-        play_period && exit 0
         ;;
     -a|--all)
         show_all && exit 0
