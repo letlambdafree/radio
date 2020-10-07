@@ -66,7 +66,6 @@
 # add youtube searching directly
 # narrow select - recursive ?
 # load another source file
-# array
 
 
 
@@ -125,21 +124,40 @@ search_linenumber() {
     return 0
 }
 
+back_trace() {
+    local maxlength format1
+    for k in "${!FUNCNAME[@]}" ; do
+        if (( "${#FUNCNAME[$k]}" > ${maxlength:-0} )) ; then
+            maxlength="${#FUNCNAME[$k]}"
+        fi
+    done
+    format1="\n%-${maxlength}s : %5s"
+    printf "$format1" "LINENO"  "${LINENO}"
+    for k in "${!BASH_LINENO[@]}" ; do
+        printf "$format1" "${FUNCNAME[$k]}" "${BASH_LINENO[$k]}"
+    done
+    printf "\n"
+}
+
 test_print() {
     local arg1="$1"
     local arg2="$2"
     local linesnumber
     linesnumber=$(wc -l <<< "$arg2")
     if (( linesnumber == 1 )) ; then
-        printf "\n\n${arg1} is ${arg2}\n\n"
+        printf "\n"
+        printf "\n${arg1} is ${arg2}"
+        printf "\n"
     elif (( linesnumber > 1 && linesnumber < 5)) ; then
-        printf "\n\n${arg1} is \n${arg2}\n\n"
+        printf "\n"
+        printf "\n${arg1} is \n${arg2}"
         printf "\n"
     else
-        printf "\n\n${arg1} is \n${arg2}\n\n"
-        printf "${linesnumber} lines"
+        printf "\n${arg1} is \n${arg2}"
+        printf "\n${linesnumber} lines"
         printf "\n"
     fi
+    # back_trace
     return 0
 }
 
@@ -256,21 +274,37 @@ play() {
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~  https?:// ]] ; then
-        partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
+        partline=${arg1/*http/http}
+        # partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
     elif [[ "$arg1" =~ /$ ]] ; then
         partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
     elif [[ "$arg1" =~ ^/mnt/ ]] ; then
         partline="$arg1"
     elif [[ "$arg1" =~  /mnt/ ]] ; then
-        partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
+        partline=${arg1/*mnt/mnt}
+        # partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
     else
         printf "\n"
         printf "\n play()"
         printf "\n Sorry, something is wrong!"
-        printf "\n Try again."
         printf "\n"
         exit 1
     fi
+    # if [[ "$arg1" =~  https?:// ]] ; then
+    #     partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
+    # elif [[ "$arg1" =~ /$ ]] ; then
+    #     partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
+    # elif [[ "$arg1" =~ ^/mnt/ ]] ; then
+    #     partline="$arg1"
+    # elif [[ "$arg1" =~  /mnt/ ]] ; then
+    #     partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
+    # else
+    #     printf "\n"
+    #     printf "\n play()"
+    #     printf "\n Sorry, something is wrong!"
+    #     printf "\n"
+    #     exit 1
+    # fi
     if [[ "$partline" =~  --[a-z]+ ]] ; then
         # test_print partline "$partline"
         namepart=${partline%% --*} # need space for trailing
@@ -335,7 +369,6 @@ play_group() {
                 ;;
             *)
                 printf "\n Sorry, there is no \"$2\" group."
-                printf "\n Try again."
                 printf "\n"
                 printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
                 printf "\n"
@@ -463,8 +496,8 @@ select_list() {
         exit 0
     else
         printf "\n"
+        printf "\n select_list()"
         printf "\n Sorry, the \"$1\" does not match."
-        printf "\n Try again."
         printf "\n"
         exit 1
     fi
@@ -492,7 +525,6 @@ play_local() {
             fi
         done
         locallist=$(printf '%s\n' "${localoneline[@]}")
-        # locallist=$(IFS=$'\n'; echo "${localoneline[*]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
         grepcount=$(grep -ic .  <<< "$grepnames")
@@ -549,9 +581,11 @@ urllist=$(tail -n +"$(( x + 4 ))" "$garg0")
 search_linenumber "$urllist" "^$RADIOENDLINE"
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 # test_print radiolist "$radiolist"
-urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
+urlname="${urllist/http*/}"
+# urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 # test_print urlname "$urlname"
-radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
+radioname="${radiolist/http*/}"
+# radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 case "$garg1" in
     "")
