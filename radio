@@ -36,7 +36,7 @@
 # Options:
 #
 # -a | --all
-#       - displays all urls, choose a url number.
+#       - displays all urls, choose a number.
 #
 # -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a shuffled radio in a group, press 'q' to play the next.
@@ -46,7 +46,7 @@
 # -l | --local ["regex"]
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
-#         ex) radio -l sia  - play only local files with sia
+#         ex) radio -l sia - play only local files with sia
 #
 # -t | --test
 #       - tests all radios whether work or not.
@@ -64,14 +64,14 @@
 #
 # add more urls
 # add youtube searching directly
-# narrow select - recursive ?
+# select narrowly and recursively
 # load another source file
 
 
 
 # set -u # avoid a undeclared variable
 
-garg=("$@") # array
+garg=("$@")
 garg0="$0"
 garg1="$1"
 garg2="$2"
@@ -95,13 +95,12 @@ TESTENDLINE="### TEST END"
 SCRIPTDIR="${garg0%/*}"
 REPORTPATH="$SCRIPTDIR/report"
 REPORTFIRSTLINE="### ERROR REPORT"
-TESTTIME=10
+TESTTIME=10 # sec
 PERIODTIME=600
 # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 playlistnumber=1
-# error code for the same item in a row
-E_IN_A_ROW=64
+E_IN_A_ROW=64 # error code for the same item in a row
 
 
 
@@ -126,15 +125,15 @@ search_linenumber() {
 
 back_trace() {
     local maxlength format1
-    for k in "${!FUNCNAME[@]}" ; do
-        if (( "${#FUNCNAME[$k]}" > ${maxlength:-0} )) ; then
-            maxlength="${#FUNCNAME[$k]}"
+    for key in "${!FUNCNAME[@]}" ; do
+        if (( "${#FUNCNAME[$key]}" > ${maxlength:-0} )) ; then
+            maxlength="${#FUNCNAME[$key]}"
         fi
     done
     format1="\n%-${maxlength}s : %5s"
     printf "$format1" "LINENO"  "${LINENO}"
-    for k in "${!BASH_LINENO[@]}" ; do
-        printf "$format1" "${FUNCNAME[$k]}" "${BASH_LINENO[$k]}"
+    for key in "${!BASH_LINENO[@]}" ; do
+        printf "$format1" "${FUNCNAME[$key]}" "${BASH_LINENO[$key]}"
     done
     printf "\n"
 }
@@ -142,21 +141,25 @@ back_trace() {
 test_print() {
     local arg1="$1"
     local arg2="$2"
-    local linesnumber
+    local linesnumber format1
     linesnumber=$(wc -l <<< "$arg2")
     if (( linesnumber == 1 )) ; then
         printf "\n"
         printf "\n${arg1} is ${arg2}"
         printf "\n"
-    elif (( linesnumber > 1 && linesnumber < 5)) ; then
+    elif (( linesnumber > 1 && linesnumber < 10)) ; then
         printf "\n"
         printf "\n${arg1} is \n${arg2}"
         printf "\n"
     else
+        printf "\n"
         printf "\n${arg1} is \n${arg2}"
         printf "\n${linesnumber} lines"
         printf "\n"
     fi
+    # format1="\n%-${maxlength}s : %5s"
+    # printf "$format1" "${FUNCNAME[test_print]}" "${BASH_LINENO[test_print]}"
+    # printf "\n"
     # back_trace
     return 0
 }
@@ -190,8 +193,8 @@ grep_print() {
 make_namelist() {
     # grep 'and' option
     local arg1="$1"
-    local line reverse
-    for line in ${garg[@]} ; do
+    local reverse
+    for line in "${garg[@]}" ; do
         # test_print line "$line"
         if [[ -z $grepnames ]] ; then
             if [[ $line =~ ^-+[a-z]+ ]] ; then
@@ -290,21 +293,6 @@ play() {
         printf "\n"
         exit 1
     fi
-    # if [[ "$arg1" =~  https?:// ]] ; then
-    #     partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
-    # elif [[ "$arg1" =~ /$ ]] ; then
-    #     partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
-    # elif [[ "$arg1" =~ ^/mnt/ ]] ; then
-    #     partline="$arg1"
-    # elif [[ "$arg1" =~  /mnt/ ]] ; then
-    #     partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
-    # else
-    #     printf "\n"
-    #     printf "\n play()"
-    #     printf "\n Sorry, something is wrong!"
-    #     printf "\n"
-    #     exit 1
-    # fi
     if [[ "$partline" =~  --[a-z]+ ]] ; then
         # test_print partline "$partline"
         namepart=${partline%% --*} # need space for trailing
@@ -447,7 +435,7 @@ select_sed() {
 
 select_regex() {
     printf "\n"
-    printf "\n You selected items with non numbers."
+    printf "\n You selected items with no number."
     printf "\n they'll be played randomly and infinitely."
     printf "\n To exit, press Ctrl-c repeatedly"
     printf "\n"
@@ -587,6 +575,9 @@ urlname="${urllist/http*/}"
 radioname="${radiolist/http*/}"
 # radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
+# case use * ? [...] | as matching pattern
+# case don't use regex and variables generally
+# if you need those, use [[ =~ ]]
 case "$garg1" in
     "")
         play_radio && exit 0
