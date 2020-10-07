@@ -30,6 +30,7 @@
 #         don't need quote for "and" regex searching, only white-space needed.
 #         You can use -v to invert match
 #         you can select items like 3-5 7 11 15-20
+#         you can search narrowly
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but not "lsd"
 #
@@ -64,7 +65,6 @@
 #
 # add more urls
 # add youtube searching directly
-# select narrowly and recursively
 # load another source file
 
 
@@ -79,7 +79,7 @@ PROGNAME=${garg0##*/}
 VERSION="0.1"
 PS3="
 # 1 3 5-7 8 or regex
-# for all, press 00
+# 00 for all or confirm
 choose : "
 PLAYER="mpv"
 LOCALVIDEODIR="/mnt/data/Videos/"
@@ -193,21 +193,30 @@ grep_print() {
 make_namelist() {
     # grep 'and' option
     local arg1="$1"
-    local reverse
-    for line in "${garg[@]}" ; do
-        # test_print line "$line"
+    local reverse=""
+    if [[ -n "$REPLY" ]] ; then
+        readarray -t array_REPLY <<< "${REPLY/ /$'\n'}"
+        array_namelist=("${array_REPLY[@]}")
+        # test_print array_namelist "${#array_namelist[@]}"
+        # REPLY=""
+        # sleep 1
+    else
+        array_namelist=("${garg[@]}")
+    fi
+    for line in "${array_namelist[@]}" ; do
         if [[ -z $grepnames ]] ; then
+            # test_print line1 "$line"
             if [[ $line =~ ^-+[a-z]+ ]] ; then
                 continue
             fi
             grepnames=$(grep -i "$line" <<< "$arg1")
         else
-            test_print line "$line"
+            # test_print line2 "$line"
             if [[ $line == -v ]] ; then
-                reverse="-v"
+                reverse="v"
                 continue
             fi
-            grepnames=$(grep -i $reverse "$line" <<< "$grepnames")
+            grepnames=$(grep -i"$reverse" "$line" <<< "$grepnames")
             if [[ -n $reverse ]] ; then
                 reverse=""
             fi
@@ -274,23 +283,22 @@ shuffle_list() {
 play() {
     local arg1="$1"
     local partline namepart optionpart lastbgpid
+    # test_print arg1 "$arg1"
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~  https?:// ]] ; then
         partline=${arg1/*http/http}
-        # partline=$(awk -F 'http' '{print FS$2}' <<< "$arg1")
     elif [[ "$arg1" =~ /$ ]] ; then
         partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
     elif [[ "$arg1" =~ ^/mnt/ ]] ; then
         partline="$arg1"
     elif [[ "$arg1" =~  /mnt/ ]] ; then
-        partline=${arg1/*mnt/mnt}
-        # partline=$(awk -F '/mnt/' '{print FS$2}' <<< "$arg1")
+        partline=${arg1/*mnt//mnt}
     else
         printf "\n"
-        printf "\n play()"
-        printf "\n Sorry, something is wrong!"
+        printf "\n Something is wrong!"
         printf "\n"
+        back_trace
         exit 1
     fi
     if [[ "$partline" =~  --[a-z]+ ]] ; then
@@ -422,6 +430,10 @@ select_sed() {
                 | sed 's/$/p/')
     # test_print REPLY "$REPLY"
     grepnames=$(sed -n "$REPLY" <<< "$grepnames")
+    grepnamescount=$(wc -l <<< "$grepnames")
+    if (( $grepnamescount > 1 )) ; then
+        select_list $grepnamescount "$arg2" "$grepnames"
+    fi
     while true ; do
         shuffle_list "$grepnames"
         (( $? == $E_IN_A_ROW )) && continue
@@ -435,12 +447,17 @@ select_sed() {
 
 select_regex() {
     printf "\n"
-    printf "\n You selected items with no number."
+    printf "\n You selected items with regex."
     printf "\n they'll be played randomly and infinitely."
     printf "\n To exit, press Ctrl-c repeatedly"
     printf "\n"
+    make_namelist "$grepnames"
+    # test_print grepnames "$grepnames"
+    grepnamescount=$(wc -l <<< "$grepnames")
+    if (( $grepnamescount > 1 )) ; then
+        select_list $grepnamescount "$arg2" "$grepnames"
+    fi
     while true ; do
-        grepnames=$(grep -i "$REPLY" <<< "$grepnames")
         shuffle_list "$grepnames"
         (( $? == $E_IN_A_ROW )) && continue
         grep_print "$shuffleradio"
@@ -464,6 +481,7 @@ select_list() {
         remove_parts "$arg3"
         # test_print grepnames "$grepnames"
         readarray -t arr_names <<< "$grepnames"
+        printf "\n" # needed
         select url in "${arr_names[@]}" ; do
             if [[ $REPLY =~ ^00$ ]] ; then
                 select_all
@@ -484,9 +502,9 @@ select_list() {
         exit 0
     else
         printf "\n"
-        printf "\n select_list()"
         printf "\n Sorry, the \"$1\" does not match."
         printf "\n"
+        back_trace
         exit 1
     fi
 }
