@@ -37,7 +37,7 @@
 # Options:
 #
 # -a | --all
-#       - displays all urls, choose a number.
+#       - displays all urls
 #
 # -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a shuffled radio in a group, press 'q' to play the next.
@@ -198,8 +198,6 @@ make_namelist() {
         readarray -t array_REPLY <<< "${REPLY/ /$'\n'}"
         array_namelist=("${array_REPLY[@]}")
         # test_print array_namelist "${#array_namelist[@]}"
-        # REPLY=""
-        # sleep 1
     else
         array_namelist=("${garg[@]}")
     fi
@@ -377,6 +375,7 @@ play_group() {
                 printf "\n lc - Live Camera"
                 printf "\n pl - Play List"
                 printf "\n"
+                back_trace
                 exit 2
         esac
     done <<< "$urllist"
@@ -394,12 +393,14 @@ play_group() {
     return 0
 }
 
-select_all() {
-    printf "\n"
-    printf "\n You chose all items."
-    printf "\n They'll be played randomly and infinitely."
-    printf "\n To exit, press Ctrl-c repeatedly"
-    printf "\n"
+select_one_grepname(){
+    namescount=$(wc -l <<< "$grepnames")
+    if (( $namescount > 1 )) ; then
+        select_list $namescount "$arg2" "$grepnames"
+    fi
+}
+
+select_play() {
     while true ; do
         shuffle_list "$grepnames"
         (( $? == $E_IN_A_ROW )) && continue
@@ -411,11 +412,17 @@ select_all() {
     return 0
 }
 
+select_all() {
+    printf "\n"
+    printf "\n You chose all items."
+    printf "\n"
+    select_play
+    return 0
+}
+
 select_sed() {
     printf "\n"
-    printf "\n You selected multiple items with number."
-    printf "\n they'll be played randomly and infinitely."
-    printf "\n To exit, press Ctrl-c repeatedly"
+    printf "\n You selected multiple items with numbers."
     printf "\n"
     # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
     # ex) with space
@@ -430,41 +437,19 @@ select_sed() {
                 | sed 's/$/p/')
     # test_print REPLY "$REPLY"
     grepnames=$(sed -n "$REPLY" <<< "$grepnames")
-    grepnamescount=$(wc -l <<< "$grepnames")
-    if (( $grepnamescount > 1 )) ; then
-        select_list $grepnamescount "$arg2" "$grepnames"
-    fi
-    while true ; do
-        shuffle_list "$grepnames"
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$shuffleradio"
-        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
-        play "$grepline"
-        # sleep 1
-    done
+    select_one_grepname
+    select_play
     return 0
 }
 
 select_regex() {
     printf "\n"
     printf "\n You selected items with regex."
-    printf "\n they'll be played randomly and infinitely."
-    printf "\n To exit, press Ctrl-c repeatedly"
     printf "\n"
     make_namelist "$grepnames"
     # test_print grepnames "$grepnames"
-    grepnamescount=$(wc -l <<< "$grepnames")
-    if (( $grepnamescount > 1 )) ; then
-        select_list $grepnamescount "$arg2" "$grepnames"
-    fi
-    while true ; do
-        shuffle_list "$grepnames"
-        (( $? == $E_IN_A_ROW )) && continue
-        grep_print "$shuffleradio"
-        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
-        play "$grepline"
-        # sleep 1
-    done
+    select_one_grepname
+    select_play
     return 0
 }
 
@@ -588,10 +573,8 @@ search_linenumber "$urllist" "^$RADIOENDLINE"
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 # test_print radiolist "$radiolist"
 urlname="${urllist/http*/}"
-# urlname=$(awk -F 'http' '{print $1}' <<< "$urllist")
 # test_print urlname "$urlname"
 radioname="${radiolist/http*/}"
-# radioname=$(awk -F 'http' '{print $1}' <<< "$radiolist")
 
 # case use * ? [...] | as matching pattern
 # case don't use regex and variables generally
@@ -835,6 +818,7 @@ select_list "$grepcount" "$urllist" "$grepnames"
 # 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=sgteH34KgM0
 # LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
 # 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
+# 【LIVE】上野城ライブカメラ 桜島と鹿児島市内 ※音付き（作業用にも） / Sakurajima and Kagoshima city in Japan https://www.youtube.com/watch?v=WCzHpvAoYRY
 #
 ## Play List - my favorite songs
 #
