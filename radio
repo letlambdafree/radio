@@ -281,7 +281,7 @@ shuffle_list() {
 play() {
     local arg1="$1"
     local partline namepart optionpart lastbgpid
-    # test_print arg1 "$arg1"
+    test_print arg1 "$arg1"
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~  https?:// ]] ; then
@@ -396,16 +396,17 @@ play_group() {
 select_one_grepname(){
     namescount=$(wc -l <<< "$grepnames")
     if (( $namescount > 1 )) ; then
-        select_list $namescount "$arg2" "$grepnames"
+        select_list "$arg1" "$grepnames"
     fi
 }
 
 select_play() {
+    # test_print arg2 "$arg1"
     while true ; do
         shuffle_list "$grepnames"
         (( $? == $E_IN_A_ROW )) && continue
         grep_print "$shuffleradio"
-        grepline=$(grep -iF "$shuffleradio" <<< "$arg2")
+        grepline=$(grep -iF "$shuffleradio" <<< "$arg1")
         play "$grepline"
         # sleep 1
     done
@@ -456,14 +457,14 @@ select_regex() {
 select_list() {
     local arg1="$1"
     local arg2="$2"
-    local arg3="$3"
-    if (( $arg1 == 1 )) ; then
-        grep_print "$arg3"
+    grepcount=$(grep -ic .  <<< "$grepnames")
+    if (( $grepcount == 1 )) ; then
+        grep_print "$arg2"
         # grep '-F' for only string like "[live] tv"
-        grepline=$(grep -iF "$arg3" <<< "$arg2")
+        grepline=$(grep -iF "$arg2" <<< "$arg1")
         play "$grepline"
-    elif (( $arg1 > 1 )) ; then
-        remove_parts "$arg3"
+    elif (( $grepcount > 1 )) ; then
+        remove_parts "$arg2"
         # test_print grepnames "$grepnames"
         readarray -t arr_names <<< "$grepnames"
         printf "\n" # needed
@@ -482,15 +483,9 @@ select_list() {
             break
         done
         grep_print "$selectedurl"
-        grepline=$(grep -iF "$selectedurl" <<< "$arg2")
+        grepline=$(grep -iF "$selectedurl" <<< "$arg1")
         play "$grepline"
         exit 0
-    else
-        printf "\n"
-        printf "\n Sorry, the \"$1\" does not match."
-        printf "\n"
-        back_trace
-        exit 1
     fi
 }
 
@@ -520,7 +515,7 @@ play_local() {
         make_namelist "$locallist"
         grepcount=$(grep -ic .  <<< "$grepnames")
         # test_print greplocalcount "$greplocalcount"
-        select_list "$grepcount" "$locallist" "$grepnames"
+        select_list "$locallist" "$grepnames"
     fi
     return 0
 }
@@ -614,9 +609,8 @@ esac
 
 grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
 # test_print grepnames "$grepnames"
-grepcount=$(grep -ic .  <<< "$grepnames")
 # test_print grepcount "$grepcount"
-select_list "$grepcount" "$urllist" "$grepnames"
+select_list "$urllist" "$grepnames"
 
 
 
