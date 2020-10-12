@@ -166,6 +166,7 @@ test_print() {
 grep_print() {
     local arg1="$1"
     local format1="\n \e[1;31m%s\e[0m\n\n"
+    arg1=$(sed 's/^# / /' <<< "$arg1")
     if [[ "$arg1" =~ https?:/ ]] ; then
         printf "$format1" \
                "$(sed 's/http.*//' <<< "$arg1")"
@@ -206,6 +207,11 @@ make_namelist() {
             [[ -n $reverse ]] && reverse=""
         fi
     done
+    if [[ -z "$grepnames" ]] ; then
+        printf "\n \e[1;31m%s\e[0m\n\n" \
+               "No match with regex"
+        exit 65
+    fi
     # test_print "make_namelist()'s grepnames" "$grepnames"
     return 0
 }
@@ -225,7 +231,7 @@ remove_parts() {
 print_shufflelist() {
     local arg1="$1"
     local print_names=""
-    local print_grepname print_grepnames
+    local print_name print_names
     for line in "$arg1" ; do
         if [[ "$line" =~  https?:// ]] ; then
             print_name=$(sed 's/ http.*//' <<< "$line")
@@ -439,6 +445,7 @@ select_regex() {
     make_namelist "$grepnames"
     # test_print grepnames "$grepnames"
     select_one_grepname
+    sleep 10
     select_play
     return 0
 }
@@ -467,9 +474,17 @@ select_list() {
             elif [[ $REPLY =~ [^0-9] ]] ; then
                 select_regex
                 exit 0
+            elif [[ $REPLY =~ ^[0-9]+$ ]] ; then
+                selected="$line"
+                break
+            else
+                printf "\n \e[1;31m%s\e[0m\n\n" \
+                       "Something is wrong!"
+                back_trace
+                exit 1
             fi
-            selected="$line"
-            break
+            # selected="$line"
+            # break
         done
         grep_print "$selected"
         grepline=$(grep -iF "$selected" <<< "$arg1")
@@ -658,6 +673,7 @@ select_list "$urllist" "$grepnames"
 # radiohead - Creep https://www.youtube.com/watch?v=XFkzRNyygfk
 # Radiohead - Creep (Best Live Performance) https://www.youtube.com/watch?v=k3_RU30tEIE
 # The Cranberries - Zombie 1999 Live Video https://www.youtube.com/watch?v=8MuhFxaT7zo
+# This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
 # 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16 --volume=180
 # 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
 # 노래얼_김옥희_이 어둠의 이 슬픔_고대 85학번 입학 30주년 기념 모교방문 축제 https://www.youtube.com/watch?v=cmNekU_svwY&list=RDcmNekU_svwY
@@ -666,7 +682,7 @@ select_list "$urllist" "$grepnames"
 # 떼창 할 수 밖에 없는 심수봉 - 남자는 배 여자는 항구♬ [유희열의 스케치북/You Heeyeol's Sketchbook] 20191220 https://www.youtube.com/watch?v=uRU58V_59jk
 # 블랙홀(Black Hole) - 깊은 밤의 서정곡 https://www.youtube.com/watch?v=946hIajM-Hc
 
-#--- local music video file ---#
+#===== local music video file
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
@@ -720,7 +736,7 @@ select_list "$urllist" "$grepnames"
 # TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
 # Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
 #
-## Live Camera - often change url address for restart
+## Live Camera - often change url address or off the camera
 #
 # 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
@@ -785,8 +801,9 @@ select_list "$urllist" "$grepnames"
 # LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
 # 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
 # 【LIVE】上野城ライブカメラ 桜島と鹿児島市内 ※音付き（作業用にも） / Sakurajima and Kagoshima city in Japan https://www.youtube.com/watch?v=WCzHpvAoYRY
+# 【Live Stream】久里浜遠望カメラ　神奈川県横須賀市　The Sky of Yokosuka, Japan https://www.youtube.com/watch?v=L-oKanVICT8
 #
-## Play List - my favorite songs
+## Play List - my favorite list
 #
 # 심수봉 노래 모음 https://www.youtube.com/watch?v=-03cg8u5fdU
 # 정태춘, 박은옥 히트곡 모음 듣기ㅣ북한강에서, 촛불 https://www.youtube.com/watch?v=TuukzC2chdo
@@ -795,7 +812,6 @@ select_list "$urllist" "$grepnames"
 # 해바라기 - 노래모음 베스트 20곡 https://www.youtube.com/watch?v=zGsIgF3UBpU
 # 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
 # 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
-# This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
 # 도시의 그림자(Shadow of City) - 도시의 그림자 (Full Album) https://www.youtube.com/watch?v=LW14PKtNvws
 # ♣등려군 노래 모음 11곡♣ https://www.youtube.com/watch?v=tIoLOB1fRgo
 #
@@ -803,7 +819,7 @@ select_list "$urllist" "$grepnames"
 
 ### TEST END
 
-### MY LOCAL MUSIC - my favorite music directories in my computer.
+### MY LOCAL MUSIC - my favorite music directories in my local computer.
 #
 # 아이유 - 꽃갈피 둘/
 # 김광석 [2005 Best]/
