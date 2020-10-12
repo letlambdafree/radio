@@ -75,10 +75,9 @@ garg=("$@")
 garg0="$0"
 garg1="$1"
 garg2="$2"
-PROGNAME=${garg0##*/}
+PROGNAME="${garg0##*/}"
 VERSION="0.1"
 PS3="
-# 1 3 5-7 8 or regex
 # 00 for all or confirm
 choose : "
 PLAYER="mpv"
@@ -144,48 +143,26 @@ test_print() {
     local linesnumber format1
     linesnumber=$(wc -l <<< "$arg2")
     if (( linesnumber == 1 )) ; then
-        printf "\n"
-        printf "\n${arg1} is ${arg2}"
-        printf "\n"
+        printf "\n%s is %s\n" "$arg1" "$arg2"
     elif (( linesnumber > 1 && linesnumber < 10)) ; then
-        printf "\n"
-        printf "\n${arg1} is \n${arg2}"
-        printf "\n"
+        printf "\n%s is \n%s\n" "$arg1" "$arg2"
     else
-        printf "\n"
-        printf "\n${arg1} is \n${arg2}"
-        printf "\n${linesnumber} lines"
-        printf "\n"
+        printf "\n%s is \n%s\n%s lines\n" "$arg1" "$arg2" $linesnumber
     fi
-    # format1="\n%-${maxlength}s : %5s"
-    # printf "$format1" "${FUNCNAME[test_print]}" "${BASH_LINENO[test_print]}"
-    # printf "\n"
     # back_trace
     return 0
 }
-
 grep_print() {
     local arg1="$1"
+    local format1="\n \e[1;31m%s\e[0m\n\n"
     if [[ "$arg1" =~ https?:/ ]] ; then
-        printf "\n"
-        awk -F 'http' '{print $1}' <<< "$arg1" \
-            | sed 's/^# / /' \
-            | grep --color=auto .
-        printf "\n"
+        printf "$format1" "$(sed 's/http.*//' <<< "$arg1")"
     elif [[ "$arg1" =~ /$ ]] ; then
-        printf "\n"
-        sed 's/^# / /' <<< "$arg1" | grep --color=auto .
-        printf "\n"
+        printf "$format1" "$arg1"
     elif [[ "$arg1" =~ /mnt/ ]] ; then
-        printf "\n"
-        awk -F '/mnt/' '{print $1}' <<< "$arg1" \
-            | sed 's/^# / /' \
-            | grep --color=auto .
-        printf "\n"
+        printf "$format1" "$(sed 's/\/mnt\/.*//' <<< "$arg1")"
     else
-        printf "\n"
-        grep --color=auto . <<< "$arg1"
-        printf "\n"
+        printf "$format1" "$arg1"
     fi
     return 0
 }
@@ -195,8 +172,8 @@ make_namelist() {
     local arg1="$1"
     local reverse=""
     if [[ -n "$REPLY" ]] ; then
-        readarray -t array_REPLY <<< "${REPLY/ /$'\n'}"
-        array_namelist=("${array_REPLY[@]}")
+        readarray -t array_namelist <<< "${REPLY/ /$'\n'}"
+        # array_namelist=("${array_REPLY[@]}")
         # test_print array_namelist "${#array_namelist[@]}"
     else
         array_namelist=("${garg[@]}")
@@ -204,9 +181,7 @@ make_namelist() {
     for line in "${array_namelist[@]}" ; do
         if [[ -z $grepnames ]] ; then
             # test_print line1 "$line"
-            if [[ $line =~ ^-+[a-z]+ ]] ; then
-                continue
-            fi
+            [[ $line =~ ^-+[a-z]+ ]] && continue
             grepnames=$(grep -i "$line" <<< "$arg1")
         else
             # test_print line2 "$line"
@@ -215,9 +190,7 @@ make_namelist() {
                 continue
             fi
             grepnames=$(grep -i"$reverse" "$line" <<< "$grepnames")
-            if [[ -n $reverse ]] ; then
-                reverse=""
-            fi
+            [[ -n $reverse ]] && reverse=""
         fi
     done
     # test_print "make_namelist()'s grepnames" "$grepnames"
@@ -238,18 +211,23 @@ remove_parts() {
 
 print_shufflelist() {
     local arg1="$1"
-    local print_grepnames
-    # test_print arg1 "$arg1"
-    if [[ "$arg1" =~  https?:// ]] ; then
-        print_grepnames=$(awk -F 'http' '{print $1}' <<< "$arg1")
-    elif [[ "$arg1" =~ ^/mnt/ ]] ; then
-        print_grepnames=$(sed 's/.*Music\///g'<<< "$arg1" )
-    elif [[ "$arg1" =~  /mnt/ ]] ; then
-        print_grepnames=$(awk -F '/mnt/' '{print $1}' <<< "$arg1")
-    else
-        print_grepnames="$arg1"
-    fi
-    test_print shufflelist "${shufflelist:-"$arg1"}"
+    local print_grepname print_grepnames
+    for line in "$arg1" ; do
+        if [[ "$line" =~  https?:// ]] ; then
+            print_name=$(sed 's/http.*//' <<< "$line")
+        elif [[ "$line" =~ ^/mnt/ ]] ; then
+            print_name=$(sed 's/.*\/Music\///'<<< "$line")
+        elif [[ "$line" =~  /mnt/ ]] ; then
+            print_name=$(sed 's/\/mnt\/.*//' <<< "$line")
+        else
+            print_name="$line"
+        fi
+        print_names="${print_names}""${print_names:+\n}""$print_name"
+    done
+    # linesnumber=$(wc -l <<< "$print_names")
+    # test_print linesnumber "$linesnumber"
+    print_names=$(sed 's/^# //' <<< "$print_names")
+    test_print shufflelist "$print_names"
     return 0
 }
 
@@ -281,7 +259,7 @@ shuffle_list() {
 play() {
     local arg1="$1"
     local partline namepart optionpart lastbgpid
-    test_print arg1 "$arg1"
+    # test_print arg1 "$arg1"
     (( count++ ))
     # test_print count "$count"
     if [[ "$arg1" =~  https?:// ]] ; then
@@ -293,9 +271,7 @@ play() {
     elif [[ "$arg1" =~  /mnt/ ]] ; then
         partline=${arg1/*mnt//mnt}
     else
-        printf "\n"
-        printf "\n Something is wrong!"
-        printf "\n"
+        printf "\n Something is wrong!\n"
         back_trace
         exit 1
     fi
@@ -338,34 +314,24 @@ play_group() {
         (( x++ ))
         case "$garg2" in
             en)
-                [[ $line =~ ^"## English Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## English Radio" ]] && break ;;
             kr)
-                [[ $line =~ ^"## Korean Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## Korean Radio" ]] && break ;;
             jp)
-                [[ $line =~ ^"## Japanese Radio" ]] && break
-                ;;
+                [[ $line =~ ^"## Japanese Radio" ]] && break ;;
             mv)
-                [[ $line =~ ^"## Music Video" ]] && break
-                ;;
+                [[ $line =~ ^"## Music Video" ]] && break ;;
             lt)
-                [[ $line =~ ^"## Live TV" ]] && break
-                ;;
+                [[ $line =~ ^"## Live TV" ]] && break ;;
             ln)
-                [[ $line =~ ^"## Live News" ]] && break
-                ;;
+                [[ $line =~ ^"## Live News" ]] && break ;;
             lc)
-                [[ $line =~ ^"## Live Camera" ]] && break
-                ;;
+                [[ $line =~ ^"## Live Camera" ]] && break ;;
             pl)
-                [[ $line =~ ^"## Play List" ]] && break
-                ;;
+                [[ $line =~ ^"## Play List" ]] && break ;;
             *)
-                printf "\n Sorry, there is no \"$2\" group."
-                printf "\n"
-                printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
-                printf "\n"
+                printf "\n Sorry, there is no \"$2\" group.\n"
+                printf "\n Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}\n"
                 printf "\n en - English Radio"
                 printf "\n kr - Korean Radio"
                 printf "\n jp - Japanese Radio"
@@ -373,8 +339,7 @@ play_group() {
                 printf "\n lt - Live TV"
                 printf "\n ln - Live News"
                 printf "\n lc - Live Camera"
-                printf "\n pl - Play List"
-                printf "\n"
+                printf "\n pl - Play List\n"
                 back_trace
                 exit 2
         esac
@@ -395,9 +360,7 @@ play_group() {
 
 select_one_grepname(){
     namescount=$(wc -l <<< "$grepnames")
-    if (( $namescount > 1 )) ; then
-        select_list "$arg1" "$grepnames"
-    fi
+    (( $namescount > 1 )) && select_list "$arg1" "$grepnames"
 }
 
 select_play() {
@@ -414,25 +377,19 @@ select_play() {
 }
 
 select_all() {
-    printf "\n"
-    printf "\n You chose all items."
-    printf "\n"
+    printf "\n %s\n" "You chose all items."
     select_play
     return 0
 }
 
 select_sed() {
-    printf "\n"
-    printf "\n You selected multiple items with numbers."
-    printf "\n"
+    printf "\n %s\n" "You selected multiple items with numbers."
     # like 3-5 7 11 15-20 --> 3,5p;11;15,20p for sed
     # ex) with space
     #    5     -5  7  8-   9  --> 5p;7p;8,9p
-    REPLY=$(sed 's/^ \+//g' <<< "$REPLY" \
-                | sed 's/ \+$//g' \
+    REPLY=$(sed 's/^ \+\| \+$//g' <<< "$REPLY" \
                 | sed 's/ \+/ /g' \
-                | sed 's/ -/-/g' \
-                | sed 's/- /-/g' \
+                | sed 's/ -\|- /-/g' \
                 | sed 's/ /p;/g' \
                 | sed 's/-/,/g' \
                 | sed 's/$/p/')
@@ -444,9 +401,7 @@ select_sed() {
 }
 
 select_regex() {
-    printf "\n"
-    printf "\n You selected items with regex."
-    printf "\n"
+    printf "\n %s\n" "You selected items with regex."
     make_namelist "$grepnames"
     # test_print grepnames "$grepnames"
     select_one_grepname
@@ -513,8 +468,6 @@ play_local() {
         locallist=$(printf '%s\n' "${localoneline[@]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
-        grepcount=$(grep -ic .  <<< "$grepnames")
-        # test_print greplocalcount "$greplocalcount"
         select_list "$locallist" "$grepnames"
     fi
     return 0
@@ -527,7 +480,7 @@ test_items() {
     while read -r line ; do
         (( $(grep -c "$SKIPPATTERN" <<< "$line") )) &&continue
         grep_print "$line"
-        $PLAYER $(awk -F 'http' '{print FS$2}' <<< "$line") &
+        $PLAYER $(sed 's/.*http/http/' <<< "$line") &
         lastbgpid=$!
         sleep $TESTTIME
         if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
@@ -537,9 +490,7 @@ test_items() {
         fi
         sleep 1
     done <<< "$testlist"
-    printf "\n"
-    cat "$REPORTPATH"
-    printf "\n"
+    printf "\n %s\n" "$(cat "$REPORTPATH")"
     return 0
 }
 
@@ -553,9 +504,7 @@ help_usage() {
     helplist=$(tail -n +$(( x - 3 )) "$garg0")
     search_linenumber "$helplist" "^$"
     helplist=$(head -n $x <<< "$helplist")
-    printf "\n"
-    sed 's/#\+//' <<< "$helplist"
-    printf "\n"
+    printf "\n %s\n" "$(sed 's/#\+//' <<< "$helplist")"
     return 0
 }
 
@@ -567,49 +516,35 @@ urllist=$(tail -n +"$(( x + 4 ))" "$garg0")
 search_linenumber "$urllist" "^$RADIOENDLINE"
 radiolist=$(head -n +"$(( x - 2 ))" <<< "$urllist")
 # test_print radiolist "$radiolist"
-urlname="${urllist/http*/}"
-# test_print urlname "$urlname"
-radioname="${radiolist/http*/}"
 
 # case use * ? [...] | as matching pattern
 # case don't use regex and variables generally
 # if you need those, use [[ =~ ]]
 case "$garg1" in
     "")
-        play_radio && exit 0
-        ;;
+        play_radio && exit 0 ;;
     -a|--all)
-        show_all && exit 0
-        ;;
+        show_all && exit 0 ;;
     -g|--group)
-        play_group && exit 0
-        ;;
+        play_group && exit 0 ;;
     -l|--local)
-        play_local && exit 0
-        ;;
+        play_local && exit 0 ;;
     -t|--test)
-        test_items && exit 0
-        ;;
+        test_items && exit 0 ;;
     -e|--edit)
-        edit_this && exit 0
-        ;;
+        edit_this && exit 0 ;;
     -h|--help)
-        help_usage && exit 0
-        ;;
+        help_usage && exit 0 ;;
     # -x|--xxx) # not yet
-    #     xxx_private && exit 0
-    #   ;;
+    #     xxx_private && exit 0 ;;
     # -y|--youtube) # not yet
-    #   search_youtube && exit 0
-    #   ;;
+    #   search_youtube && exit 0 ;;
     *)
-        make_namelist "$urllist"
-        ;;
+        make_namelist "$urllist" ;;
 esac
 
 grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
 # test_print grepnames "$grepnames"
-# test_print grepcount "$grepcount"
 select_list "$urllist" "$grepnames"
 
 
