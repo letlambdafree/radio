@@ -18,7 +18,7 @@
 # this script for my favorite music from various sources
 # like radio, youtube, local storage
 #
-# Usage: radio [urlname] or radio option [arg ...]
+# Usage: radio [name] or radio option [arg ...]
 #
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
@@ -38,27 +38,27 @@
 #
 # Options:
 #
-# -a | --all
+# -a|--all
 #       - displays all urls
 #
-# -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
+# -g|--group {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a shuffled radio in a group, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -g jp - play only the Japanese radio randomly
 #
-# -l | --local ["regex"]
+# -l|--local ["regex"]
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia - play only local files with sia
 #
-# -t | --test
+# -t|--test
 #       - tests all radios whether work or not.
 #         If failed, it logs on the file named report.
 #
-# -e | --edit
+# -e|--edit
 #       - edit this script.
 #
-# -h | --help
+# -h| --help
 #       - prints this help.
 
 
@@ -78,6 +78,7 @@ garg0="$0"
 garg1="$1"
 garg2="$2"
 PROGNAME="${garg0##*/}"
+BASH_VERSION="5.0.18(1)-release"
 VERSION="0.1"
 PS3="
 # 00 for all or confirm
