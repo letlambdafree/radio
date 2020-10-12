@@ -133,10 +133,12 @@ back_trace() {
     done
     format1="\n%-${maxlength}s : %5s"
     printf "$format1" \
-           "LINENO"  "${LINENO}"
+           "LINENO" \
+           "${LINENO}"
     for key in "${!BASH_LINENO[@]}" ; do
         printf "$format1" \
-               "${FUNCNAME[$key]}" "${BASH_LINENO[$key]}"
+               "${FUNCNAME[$key]}" \
+               "${BASH_LINENO[$key]}"
     done
     printf "\n"
 }
@@ -148,10 +150,13 @@ test_print() {
     linesnumber=$(wc -l <<< "$arg2")
     if (( linesnumber == 1 )) ; then
         printf "\n%s is %s\n" \
-               "$arg1" "$arg2"
+               "$arg1" \
+               "$arg2"
     else (( linesnumber > 1 ))
         printf "\n%s is \n%s\n%s lines\n" \
-               "$arg1" "$arg2" $linesnumber
+               "$arg1" \
+               "$arg2" \
+               $linesnumber
     fi
     # back_trace
     return 0
@@ -341,7 +346,9 @@ play_group() {
                 [[ $line =~ ^"## Play List" ]] && break ;;
             *)
                 printf "\n \e[1;34m%s\e[1;31m%s \e[1;34m%s\e[0m\n" \
-                       "There is no " "\"$garg2\"" "group."
+                       "There is no " \
+                       "\"$garg2\"" \
+                       "group."
                 printf "\n %s" \
                        "Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
                 printf "\n %s" \
@@ -406,7 +413,7 @@ select_all() {
 select_sed() {
     printf "\n %s\n" \
            "You selected multiple items with - and numbers."
-    # ex) transform for sed
+    # transform for sed
     #  3-5 7 11 15-20         --> 3,5p;7p;11p;15,20p
     #    3     -5  7  8-   9  --> 3,5p;7p;8,9p
     #   -  2     6  -         --> 1,2p;6,{endline}p
@@ -491,7 +498,8 @@ play_local() {
                 localoneline+=("$file")
             fi
         done
-        locallist=$(printf '%s\n' "${localoneline[@]}")
+        locallist=$(printf '%s\n' \
+                           "${localoneline[@]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
         select_list "$locallist" "$grepnames"
