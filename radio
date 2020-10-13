@@ -53,6 +53,9 @@
 # -x|--xxx ["regex"]
 #       - plays a XXX
 #
+# -y|--youtube ["regex"]
+#       - searches youtube and plays a searched url directly on the terminal
+#
 # -t|--test
 #       - tests all radios whether work or not.
 #         If failed, it logs on the file named report.
@@ -68,7 +71,6 @@
 ### TODO
 #
 # add more urls
-# add youtube searching directly
 
 
 
@@ -99,7 +101,8 @@ SCRIPTPATH=$(realpath "$garg0")
 SCRIPTDIR="${SCRIPTPATH%/*}"
 REPORTPATH=""$SCRIPTDIR"/report"
 REPORTFIRSTLINE="### ERROR REPORT"
-XXXFILE=""$SCRIPTDIR"/private"
+XXXFILE=""$SCRIPTDIR"/xxx"
+NOTSODEEPPATH="~/git/notsodeep/notsodeep"
 TESTTIME=10 # sec
 PERIODTIME=600
 # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
@@ -149,6 +152,7 @@ back_trace() {
 test_print() {
     local arg1="$1"
     local arg2="$2"
+    linesnumber=$(wc -l <<< "$arg2")
     printf "\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m" \
            "$arg1" "$arg2"
     printf "\n\e[1;38;5;40m%s lines\e[0m\n" \
@@ -550,13 +554,58 @@ help_usage() {
     return 0
 }
 
+bypass_site() {
+    # bypass for blocked sites
+    if (( ! $(ps -A | grep -c "notsodeep") )) ; then
+        sudo iptables \
+             -A INPUT \
+             -p tcp \
+             --tcp-flags SYN,ACK SYN,ACK \
+             --sport 443 \
+             -j NFQUEUE \
+             --queue-num 200 \
+             --queue-bypass
+        sudo "$NOTSODEEPPATH" &
+    fi
+}
+
+
 play_xxx() {
+    bypass_site
     xxxlist=$(grep . < "$XXXFILE")
     # test_print xxxlist "$xxxlist"
     make_namelist "$xxxlist"
     grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
     # test_print grepnames "$grepnames"
     select_list "$xxxlist" "$grepnames"
+    # sudo pkill notsodeep
+    return 0
+}
+
+search_youtube() { # uses youtube-dl
+    local search_no=10
+    local g_arg=("${garg[@]}") ; unset g_arg[0]
+    local search_item="${g_arg[@]}"
+    local searched search_title search_url searchlist arr_title arr_url i
+    test_print g_arg[@] "${g_arg[@]}"
+    test_print search_item "$search_item"
+    searched=$(youtube-dl -j ytsearch$search_no:"$search_item")
+    search_title=$(grep -oP '\"title\": \".*?\"' <<< "$searched" \
+                        | sed 's/"title": \|"//g')
+    test_print search_title "$search_title"
+    search_url=$(grep -oP '\"webpage_url\": \"http.*?\"' <<< "$searched" \
+                      | sed 's/"webpage_url": \|"//g')
+    test_print search_urls "$search_url"
+    readarray -t arr_title <<< "$search_title"
+    readarray -t arr_url <<< "$search_url"
+    for item in "${arr_title[@]}" ; do
+        ((i++))
+        searchlist+=$(printf "${searchlist:+\n}%s %s" \
+                             "${arr_title[((i-1))]}" "${arr_url[((i-1))]}")
+    done
+    test_print searchlist "$searchlist"
+    grepnames="$search_title"
+    select_list "$searchlist" "$grepnames"
     return 0
 }
 
@@ -589,8 +638,8 @@ case "$garg1" in
         help_usage && exit 0 ;;
     -x|--xxx)
         play_xxx && exit 0 ;;
-    # -y|--youtube) # not yet
-    #   search_youtube && exit 0 ;;
+    -y|--youtube) # not yet
+      search_youtube && exit 0 ;;
     *)
         make_namelist "$urllist" ;;
 esac
@@ -601,14 +650,9 @@ select_list "$urllist" "$grepnames"
 
 
 
-# rule :
-#
 # ### - source
-#     - must have one # after this line
 # ##  - group
-#     - must have one # after this line
 # #   - url
-#     - must have one space after #
 
 ### MY RADIO URLS - from a latte applet in KDE.
 #
@@ -650,7 +694,7 @@ select_list "$urllist" "$grepnames"
 # Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
 #
 ### MY RADIO URLS END
-
+#
 ### MY YOUTUBE URLS - need a youtube-dl to play a url.
 #
 ## Music Video
@@ -699,7 +743,6 @@ select_list "$urllist" "$grepnames"
 # Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
 # Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
 # Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
-# Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
 # Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
 # Les.Miserables 2012 - The Confrontation /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=43:20 --end=45:10
@@ -708,6 +751,7 @@ select_list "$urllist" "$grepnames"
 # Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
 # Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
 #===== ani-opening
+# Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Neon Genesis Evangelion (A Cruel Angel's Thesis) Anime Intro Opening Theme HD BluRay (Best Quality) https://www.youtube.com/watch?v=nU21rCWkuJw
 # Read or Die Opening https://www.youtube.com/watch?v=jsBpraFks0Y
 #
@@ -825,9 +869,9 @@ select_list "$urllist" "$grepnames"
 # ♣등려군 노래 모음 11곡♣ https://www.youtube.com/watch?v=tIoLOB1fRgo
 #
 ### MY YOUTUBE URLS END
-
+#
 ### TEST END
-
+#
 ### MY LOCAL MUSIC - my favorite music directories in my local computer.
 #
 # 아이유 - 꽃갈피 둘/
