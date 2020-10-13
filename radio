@@ -50,6 +50,8 @@
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia - play only local files with sia
+# -x|--xxx ["regex"]
+#       - plays a XXX
 #
 # -t|--test
 #       - tests all radios whether work or not.
@@ -67,7 +69,6 @@
 #
 # add more urls
 # add youtube searching directly
-# load another source file
 
 
 
@@ -94,9 +95,11 @@ YOUTUBEENDLINE="### MY YOUTUBE URLS END"
 LOCALSTARTLINE="### MY LOCAL MUSIC"
 LOCALENDLINE="### MY LOCAL MUSIC END"
 TESTENDLINE="### TEST END"
-SCRIPTDIR="${garg0%/*}"
-REPORTPATH="$SCRIPTDIR/report"
+SCRIPTPATH=$(realpath "$garg0")
+SCRIPTDIR="${SCRIPTPATH%/*}"
+REPORTPATH=""$SCRIPTDIR"/report"
 REPORTFIRSTLINE="### ERROR REPORT"
+XXXFILE=""$SCRIPTDIR"/private"
 TESTTIME=10 # sec
 PERIODTIME=600
 # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
@@ -547,6 +550,16 @@ help_usage() {
     return 0
 }
 
+play_xxx() {
+    xxxlist=$(grep . < "$XXXFILE")
+    # test_print xxxlist "$xxxlist"
+    make_namelist "$xxxlist"
+    grepnames=$(grep -v "$SKIPPATTERN" <<< "$grepnames" | sed 's/^# //')
+    # test_print grepnames "$grepnames"
+    select_list "$xxxlist" "$grepnames"
+    return 0
+}
+
 
 
 search_linenumber "$garg0" "^$RADIOSTARTLINE"
@@ -574,8 +587,8 @@ case "$garg1" in
         edit_this && exit 0 ;;
     -h|--help)
         help_usage && exit 0 ;;
-    # -x|--xxx) # not yet
-    #     xxx_private && exit 0 ;;
+    -x|--xxx)
+        play_xxx && exit 0 ;;
     # -y|--youtube) # not yet
     #   search_youtube && exit 0 ;;
     *)
