@@ -102,7 +102,8 @@ PERIODTIME=600
 # basic regex: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIPPATTERN="^#\?$\|^##\+\|^#[^ ]\|^#  \+"
 playlistnumber=1
-E_IN_A_ROW=64 # error code for the same item in a row
+E_IN_A_ROW=64 # for the same item in a row
+E_NO_MATCH_REGEX=65 # for no match with regex
 
 
 
@@ -126,20 +127,18 @@ search_linenumber() {
 }
 
 back_trace() {
-    local maxlength format1
+    local maxlength
+    local format1="\n%-${maxlength}s : %5s"
     for key in "${!FUNCNAME[@]}" ; do
         if (( "${#FUNCNAME[$key]}" > ${maxlength:-0} )) ; then
             maxlength="${#FUNCNAME[$key]}"
         fi
     done
-    format1="\n%-${maxlength}s : %5s"
-    printf "$format1" \
-           "LINENO" \
-           "${LINENO}"
+    # printf "format1" \
+    #        "LINENO" "${LINENO}"
     for key in "${!BASH_LINENO[@]}" ; do
-        printf "$format1" \
-               "${FUNCNAME[$key]}" \
-               "${BASH_LINENO[$key]}"
+        printf "format1" \
+               "${FUNCNAME[$key]}" "${BASH_LINENO[$key]}"
     done
     printf "\n"
 }
@@ -147,18 +146,10 @@ back_trace() {
 test_print() {
     local arg1="$1"
     local arg2="$2"
-    local linesnumber
-    linesnumber=$(wc -l <<< "$arg2")
-    if (( linesnumber == 1 )) ; then
-        printf "\n%s is %s\n" \
-               "$arg1" \
-               "$arg2"
-    else (( linesnumber > 1 ))
-        printf "\n%s is \n%s\n%s lines\n" \
-               "$arg1" \
-               "$arg2" \
-               $linesnumber
-    fi
+    printf "\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m" \
+           "$arg1" "$arg2"
+    printf "\n\e[1;38;5;40m%s lines\e[0m\n" \
+           $linesnumber
     # back_trace
     return 0
 }
@@ -353,9 +344,7 @@ play_group() {
                 [[ $line =~ ^"## Play List" ]] && break ;;
             *)
                 printf "\n \e[1;34m%s\e[1;31m%s \e[1;34m%s\e[0m\n" \
-                       "There is no " \
-                       "\"$garg2\"" \
-                       "group."
+                       "There is no " "\"$garg2\"" "group."
                 printf "\n %s" \
                        "Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}"
                 printf "\n %s" \
@@ -474,17 +463,15 @@ select_list() {
             elif [[ $REPLY =~ [^0-9] ]] ; then
                 select_regex
                 exit 0
-            elif [[ $REPLY =~ ^[0-9]+$ ]] ; then
+            elif [[ -n "$line" ]] ; then
                 selected="$line"
                 break
             else
-                printf "\n \e[1;31m%s\e[0m\n\n" \
+                printf "\n \e[1;31m%s\e[0m\n" \
                        "Something is wrong!"
                 back_trace
                 exit 1
             fi
-            # selected="$line"
-            # break
         done
         grep_print "$selected"
         grepline=$(grep -iF "$selected" <<< "$arg1")
@@ -601,9 +588,16 @@ select_list "$urllist" "$grepnames"
 
 
 
-### MY RADIO URLS - from a latte applet in KDE.
+# rule :
 #
-# write a symptom without any space after # for error log
+# ### - source
+#     - must have one # after this line
+# ##  - group
+#     - must have one # after this line
+# #   - url
+#     - must have one space after #
+
+### MY RADIO URLS - from a latte applet in KDE.
 #
 ## English Radio
 #
@@ -681,18 +675,17 @@ select_list "$urllist" "$grepnames"
 # 심수봉 - 백만송이 장미 (1997년 6월 1일 이소라의 프로포즈) https://www.youtube.com/watch?v=z3Lkc8fEsww
 # 떼창 할 수 밖에 없는 심수봉 - 남자는 배 여자는 항구♬ [유희열의 스케치북/You Heeyeol's Sketchbook] 20191220 https://www.youtube.com/watch?v=uRU58V_59jk
 # 블랙홀(Black Hole) - 깊은 밤의 서정곡 https://www.youtube.com/watch?v=946hIajM-Hc
-
 #===== local music video file
 # Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
 # Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
 # Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
 # Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=09:13 --end=12:38
 # Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
-# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
-# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 .0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
-# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
-# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
-# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
+# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
+# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
+# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
+# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
+# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
 # Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
 # Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
 # Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
@@ -701,6 +694,9 @@ select_list "$urllist" "$grepnames"
 # Les.Miserables 2012 - On My Own / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
 # Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
 # Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
+#===== ani-opening
+# Neon Genesis Evangelion (A Cruel Angel's Thesis) Anime Intro Opening Theme HD BluRay (Best Quality) https://www.youtube.com/watch?v=nU21rCWkuJw
+# Read or Die Opening https://www.youtube.com/watch?v=jsBpraFks0Y
 #
 ## Live TV
 #
