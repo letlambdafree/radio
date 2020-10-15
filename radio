@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# radio - Bash shell script for listening radio
+# radio - Bash shell script for listening radio basically
 
 # Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
 
@@ -19,6 +19,8 @@
 # like radio, youtube, local storage
 #
 # Usage: radio [name] or radio option [arg ...]
+#
+# in 'select function', you can search narrowly, regex, sed and default option
 #
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
@@ -50,11 +52,15 @@
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia - play only local files with sia
-# -x|--xxx ["regex"]
-#       - plays a XXX
 #
-# -y|--youtube ["regex"]
-#       - searches youtube and plays a searched url directly on the terminal
+# -x|--xxx ["regex"]
+#       - plays a XXX for private
+#       - asks your password for bypassing a block site
+#
+# -y|--youtube wordA [wordB ... ]
+#       - searches words in youtube and plays a searched url directly
+#       - searches 'and' option (with title and description)
+#       - I use youtube-dl now, maybe curl later
 #
 # -t|--test
 #       - tests all radios whether work or not.
@@ -70,7 +76,7 @@
 
 ### TODO
 #
-# add more urls
+# add more favorite urls
 
 
 
@@ -555,7 +561,7 @@ help_usage() {
 }
 
 bypass_site() {
-    # bypass for blocked sites
+    # bypass for the blocked sites
     if (( ! $(ps -A | grep -c "notsodeep") )) ; then
         sudo iptables \
              -A INPUT \
@@ -570,7 +576,7 @@ bypass_site() {
 }
 
 
-play_xxx() {
+play_xxx() { # private
     bypass_site
     xxxlist=$(grep . < "$XXXFILE")
     # test_print xxxlist "$xxxlist"
@@ -583,28 +589,30 @@ play_xxx() {
 }
 
 search_youtube() { # uses youtube-dl
-    local search_no=10
-    local g_arg=("${garg[@]}") ; unset g_arg[0]
-    local search_item="${g_arg[@]}"
+    local g_arg=("${garg[@]}") ; unset g_arg[0] #remove a option agument
+    local search_items="${g_arg[*]}"
+    local search_limits=100 # 8 secs for 10 limits
     local searched search_title search_url searchlist arr_title arr_url i
-    test_print g_arg[@] "${g_arg[@]}"
-    test_print search_item "$search_item"
-    searched=$(youtube-dl -j ytsearch$search_no:"$search_item")
-    search_title=$(grep -oP '\"title\": \".*?\"' <<< "$searched" \
-                        | sed 's/"title": \|"//g')
-    test_print search_title "$search_title"
-    search_url=$(grep -oP '\"webpage_url\": \"http.*?\"' <<< "$searched" \
-                      | sed 's/"webpage_url": \|"//g')
-    test_print search_urls "$search_url"
+    # test_print g_arg[*] "${g_arg[*]}"
+    # test_print search_items "$search_items"
+    searched=$(youtube-dl -j ytsearch$search_limits:"$search_items")
+    search_title=$(grep -oP '"title": ".*?",' <<< "$searched" \
+                       | sed 's/"title": //' \
+                       | sed 's/^"//' \
+                       | sed 's/",$//')
+    search_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$searched" \
+                     | sed 's/"webpage_url": //' \
+                     | sed 's/^"//' \
+                     | sed 's/",$//')
     readarray -t arr_title <<< "$search_title"
     readarray -t arr_url <<< "$search_url"
-    for item in "${arr_title[@]}" ; do
-        ((i++))
+    for title in "${arr_title[@]}" ; do
         searchlist+=$(printf "${searchlist:+\n}%s %s" \
-                             "${arr_title[((i-1))]}" "${arr_url[((i-1))]}")
+                             "$title" "${arr_url[$i]}")
+        ((i++))
     done
-    test_print searchlist "$searchlist"
-    grepnames="$search_title"
+    # test_print searchlist "$searchlist"
+    grepnames="$search_title" # for applying to a existed function
     select_list "$searchlist" "$grepnames"
     return 0
 }
