@@ -57,10 +57,9 @@
 #       - plays a XXX for private
 #       - asks your password for bypassing a block site
 #
-# -y|--youtube wordA [wordB ... ]
-#       - searches words in youtube and plays a searched url directly
-#       - searches 'and' option (with title and description)
-#       - I use youtube-dl now, maybe curl later
+# -y|--youtube keyword or phase
+#       - searches word in youtube and plays searched urls
+#       - I use youtube-dl
 #
 # -t|--test
 #       - tests all radios whether work or not.
@@ -106,6 +105,10 @@ TESTENDLINE="### TEST END"
 SCRIPTPATH=$(realpath "$garg0")
 SCRIPTDIR="${SCRIPTPATH%/*}"
 REPORTPATH=""$SCRIPTDIR"/report"
+YOUTUBESEARCH=""$SCRIPTDIR"/youtube_search"
+YOUTUBERESULT=""$SCRIPTDIR"/youtube_result"
+ARRAYYOUTUBERESULT=""$SCRIPTDIR"/arr_youtube_result"
+ARRAYYOUTUBESEARCH=""$SCRIPTDIR"/arr_youtube_search"
 REPORTFIRSTLINE="### ERROR REPORT"
 XXXFILE=""$SCRIPTDIR"/xxx"
 NOTSODEEPPATH="~/git/notsodeep/notsodeep"
@@ -588,32 +591,69 @@ play_xxx() { # private
     return 0
 }
 
-search_youtube() { # uses youtube-dl
-    local g_arg=("${garg[@]}") ; unset g_arg[0] #remove a option agument
-    local search_items="${g_arg[*]}"
-    local search_limits=100 # 8 secs for 10 limits
-    local searched search_title search_url searchlist arr_title arr_url i
-    # test_print g_arg[*] "${g_arg[*]}"
-    # test_print search_items "$search_items"
-    searched=$(youtube-dl -j ytsearch$search_limits:"$search_items")
-    search_title=$(grep -oP '"title": ".*?",' <<< "$searched" \
+youtube_search() { # uses youtube-dl, associative array
+    local search_phrase="${garg[@]:1}"
+    local search_limit=100 # 8 secs for 10 limits
+    local max_cache=10
+    local result result_title result_url result_list
+    local arr_title arr_url i
+    declare -a arr_search
+    declare -A ARR_result
+    [[ -e "$ARRAYYOUTUBESEARCH" ]] && source "$ARRAYYOUTUBESEARCH"
+    [[ -e "$ARRAYYOUTUBERESULT" ]] && source "$ARRAYYOUTUBERESULT"
+    # test_print search_phrase "$search_phrase"
+    if [[ -z $search_phrase ]] ; then
+        printf "\n\e[1;31m%s\e[0m\n" \
+               "Youtube_search needs a keyword or phrase"
+        test_print cached_phrase "$(sed 's/ /\n/g' <<< ${!ARR_result[@]})"
+        exit 2
+    fi
+    if [[ "$garg2" == -d ]] ; then  # -d delete the searched
+        unset ARR_result["${garg[@]:2}"]
+        declare -p ARR_result > "$ARRAYYOUTUBERESULT"
+        exit 0
+    fi
+    if [[ "$garg2" == -n ]] ; then # -n new fresh search
+        search_phrase="${garg[@]:2}"
+    else
+        for search in "${!ARR_result[@]}" ; do
+            if [[ "$search" == "$search_phrase" ]] ; then
+                result="${ARR_result["$search"]}"
+                break
+            fi
+        done
+    fi
+    if [[ -z $result ]] ; then
+        result=$(youtube-dl -j ytsearch$search_limit:"$search_phrase")
+        if [[ -n $result ]] ; then
+            if (( "${#ARR_result[@]}" >= $max_cache )) ; then
+                unset ARR_result["${arr_search[-$max_cache]}"]
+                unset arr_search[-$max_cache]
+            fi
+            ARR_result+=([$search_phrase]="$result") # "" ?
+            arr_search+=("$search_phrase")
+            declare -p arr_search > "$ARRAYYOUTUBESEARCH"
+            declare -p ARR_result > "$ARRAYYOUTUBERESULT"
+        fi
+    fi
+    result_title=$(grep -oP '"title": ".*?",' <<< "$result" \
                        | sed 's/"title": //' \
                        | sed 's/^"//' \
                        | sed 's/",$//')
-    search_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$searched" \
+    result_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$result" \
                      | sed 's/"webpage_url": //' \
                      | sed 's/^"//' \
                      | sed 's/",$//')
-    readarray -t arr_title <<< "$search_title"
-    readarray -t arr_url <<< "$search_url"
+    readarray -t arr_title <<< "$result_title"
+    readarray -t arr_url <<< "$result_url"
     for title in "${arr_title[@]}" ; do
-        searchlist+=$(printf "${searchlist:+\n}%s %s" \
+        result_list+=$(printf "${result_list:+\n}%s %s" \
                              "$title" "${arr_url[$i]}")
         ((i++))
     done
-    # test_print searchlist "$searchlist"
-    grepnames="$search_title" # for applying to a existed function
-    select_list "$searchlist" "$grepnames"
+    # test_print result_list "$result_list"
+    grepnames="$result_title" # for applying to a existed function
+    select_list "$result_list" "$grepnames"
     return 0
 }
 
@@ -647,7 +687,7 @@ case "$garg1" in
     -x|--xxx)
         play_xxx && exit 0 ;;
     -y|--youtube) # not yet
-      search_youtube && exit 0 ;;
+      youtube_search && exit 0 ;;
     *)
         make_namelist "$urllist" ;;
 esac
