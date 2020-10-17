@@ -57,7 +57,7 @@
 #       - plays a XXX for private
 #       - asks your password for bypassing a block site
 #
-# -y|--youtube keyword or phase
+# -y|--youtube [search_phase]
 #       - searches word in youtube and plays searched urls
 #       - I use youtube-dl
 #
@@ -161,11 +161,17 @@ back_trace() {
 test_print() {
     local arg1="$1"
     local arg2="$2"
+    local arg3="$3"
     linesnumber=$(wc -l <<< "$arg2")
     printf "\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m" \
            "$arg1" "$arg2"
-    printf "\n\e[1;38;5;40m%s lines\e[0m\n" \
-           $linesnumber
+    if (( $arg3 )) ; then
+        printf "\n\e[1;38;5;40m%s items\e[0m\n" \
+               $arg3
+    else
+        printf "\n\e[1;38;5;40m%s lines\e[0m\n" \
+               $linesnumber
+    fi
     # back_trace
     return 0
 }
@@ -596,24 +602,25 @@ youtube_search() { # uses youtube-dl, associative array
     local search_limit=100 # 8 secs for 10 limits
     local max_cache=10
     local result result_title result_url result_list
-    local arr_title arr_url i
+    local arr_title arr_url i cached_phrase
     declare -a arr_search
     declare -A ARR_result
     [[ -e "$ARRAYYOUTUBESEARCH" ]] && source "$ARRAYYOUTUBESEARCH"
     [[ -e "$ARRAYYOUTUBERESULT" ]] && source "$ARRAYYOUTUBERESULT"
     # test_print search_phrase "$search_phrase"
     if [[ -z $search_phrase ]] ; then
-        printf "\n\e[1;31m%s\e[0m\n" \
-               "Youtube_search needs a keyword or phrase"
-        test_print cached_phrase "$(sed 's/ /\n/g' <<< ${!ARR_result[@]})"
+        for line in "${!ARR_result[@]}" ; do
+            cached_phrase+=$(printf "${cached_phrase:+ }'%s'" "$line")
+        done
+        test_print cached_phrase "$cached_phrase" "${#ARR_result[@]}"
         exit 2
     fi
-    if [[ "$garg2" == -d ]] ; then  # -d delete the searched
+    if [[ "$garg2" == -d ]] ; then  # -d delete the cached_phrase
         unset ARR_result["${garg[@]:2}"]
         declare -p ARR_result > "$ARRAYYOUTUBERESULT"
         exit 0
     fi
-    if [[ "$garg2" == -n ]] ; then # -n new fresh search
+    if [[ "$garg2" == -n ]] ; then # -n renew the cached_phrase
         search_phrase="${garg[@]:2}"
     else
         for search in "${!ARR_result[@]}" ; do
