@@ -163,30 +163,26 @@ test_print() {
     local arg2="$2"
     local arg3="$3"
     local itemsnumber
+    local format1="\n\e[1;38;5;40m%s item\e[0m\n"
+    local format2="\n\e[1;38;5;40m%s items\e[0m\n"
+    local format3="\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m"
     [[ -n "$arg2" ]] && itemsnumber=$(wc -l <<< "$arg2")
-    printf "\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m" \
-           "$arg1" "$arg2"
+    printf "$format3" "$arg1" "$arg2"
     if (( $arg3 )) ; then
         if (( $arg3 == 1 )) ; then
-            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
-                   $arg3
+            printf "$format1" $arg3
         elif (( $arg3 > 1 )) ; then
-            printf "\n\e[1;38;5;40m%s items\e[0m\n" \
-                   $arg3
+            printf "$format2" $arg3
         else
-            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
-                   "no"
+            printf "$format1" "no"
         fi
     else
         if (( $linesnumber == 1 )) ; then
-            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
-                   $itemsnumber
+            printf "$format1" $itemsnumber
         elif (( $linesnumber > 1 )) ; then
-            printf "\n\e[1;38;5;40m%s items\e[0m\n" \
-                   $itemsnumber
+            printf "$format2" $itemsnumber
         else
-            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
-                   "no"
+            printf "$format1" "no"
         fi
     fi
     # back_trace
