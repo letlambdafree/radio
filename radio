@@ -608,17 +608,18 @@ play_xxx() { # private
     return 0
 }
 
-youtube_search() { # uses youtube-dl, associative array
+youtube_search() { # uses youtube-dl
     local search_phrase="${garg[@]:1}"
     local search_limit=100 # 8 secs for 10 limits, so need file cache
     local max_cache=1000
     local youtube_prefix="https://www.youtube.com/watch?v="
     local result result_title result_url result_list
-    local arr_title arr_url i j cached_phrase
+    local arr_title arr_url
+    local i cached_phrase delete_matched
     if [[ -e "$ARRAYYOUTUBESEARCH" ]] ; then
         source "$ARRAYYOUTUBESEARCH"
     else
-        declare -a arr_search
+        declare -A ARR_search
     fi
     if [[ -e "$ARRAYYOUTUBERESULT" ]] ; then
         source "$ARRAYYOUTUBERESULT"
@@ -632,22 +633,32 @@ youtube_search() { # uses youtube-dl, associative array
         test_print cached_phrase "$cached_phrase" ${#ARR_result[@]}
         exit 2
     elif [[ "$garg2" == -d ]] ; then  # -d delete the cached_phrase
-        unset ARR_result["${garg[@]:2}"]
-        for line in "${arr_search[@]}" ; do
-            if [[  "$line" == "${garg[@]:2}" ]] ; then
-                unset arr_search[j]
+        for line in "${!ARR_result[@]}" ; do
+            if [[ "$line" == "${garg[@]:2}" ]] ; then
+                delete_matched=1
+                unset ARR_result["${garg[@]:2}"]
+                unset ARR_search["${garg[@]:2}"]
+                declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
+                declare -p ARR_result > "$ARRAYYOUTUBERESULT"
                 break
             fi
-            ((j++))
         done
-        declare -p arr_search > "$ARRAYYOUTUBESEARCH"
-        declare -p ARR_result > "$ARRAYYOUTUBERESULT"
-        exit 0
+        if (( ! ${delete_matched:-0} )) ; then
+            printf "\n \e[1;31m%s\e[0m\n\n" \
+                   "not matched with '"${garg[@]:2}"'"
+            exit 1
+        else
+            printf "\n \e[1;31m%s\e[0m\n\n" \
+                   "success for deletion with '"${garg[@]:2}"'"
+            exit 0
+        fi
     elif [[ "$garg2" == -c ]] ; then  # -c search in the cached_phrases
         search_phrase="${garg[@]:2}"
         for search in "${!ARR_result[@]}" ; do
             if [[ "$search" == "$search_phrase" ]] ; then
                 result="${ARR_result["$search"]}"
+                ARR_search["$search_phrase"]\
+                          =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
                 break
             fi
         done
@@ -658,10 +669,15 @@ youtube_search() { # uses youtube-dl, associative array
         fi
     elif [[ "$garg2" == -n ]] ; then # -n renew the cached_phrase
         search_phrase="${garg[@]:2}"
+        ARR_search["$search_phrase"]\
+                  =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
     else
         for search in "${!ARR_result[@]}" ; do
             if [[ "$search" == "$search_phrase" ]] ; then
                 result="${ARR_result["$search"]}"
+                ARR_search["$search_phrase"]\
+                          =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
+                declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
                 break
             fi
         done
@@ -670,13 +686,27 @@ youtube_search() { # uses youtube-dl, associative array
         result=$(youtube-dl --get-title --get-id \
                  ytsearch$search_limit:"$search_phrase")
         if [[ -n $result ]] ; then
-            if (( "${#ARR_result[@]}" >= $max_cache )) ; then
-                unset ARR_result["${arr_search[-$max_cache]}"]
-                unset arr_search[-$max_cache]
+            if (( ${#ARR_result[@]} >= $max_cache )) ; then
+                for key in "${!ARR_search[@]}" ; do
+                    if (( ${ARR_search["$key"]} \
+                              <= ${min_rate:-${ARR_search["$key"]}} )) ; then
+                        min_rate=${ARR_search["$key"]}
+                        min_key="$key"
+                    fi
+                done
+                unset ARR_result["$min_key"]
+                unset ARR_search["$min_key"]
+                printf "\n \e[1;31m%s - %s\e[0m\n" \
+                       "'${min_key}' has been removed" \
+                       "$min_rate rated."
             fi
-            ARR_result+=([$search_phrase]="$result")
-            arr_search+=("$search_phrase")
-            declare -p arr_search > "$ARRAYYOUTUBESEARCH"
+            ARR_result+=(["$search_phrase"]="$result")
+            if [[ -n ${ARR_search["$search_phrase"]} ]] ; then
+                ARR_search+=(["$search_phrase"]=${ARR_search["$search_phrase"]})
+            else
+                ARR_search+=(["$search_phrase"]=1)
+            fi
+            declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
             declare -p ARR_result > "$ARRAYYOUTUBERESULT"
         fi
     fi
@@ -686,7 +716,9 @@ youtube_search() { # uses youtube-dl, associative array
     readarray -t arr_url <<< "$result_url"
     for title in "${arr_title[@]}" ; do
         result_list+=$(printf "${result_list:+\n}%s %s%s" \
-                             "$title" "$youtube_prefix""${arr_url[$i]}")
+                              "$title" \
+                              "$youtube_prefix" \
+                              "${arr_url[$i]}")
         ((i++))
     done
     # test_print result_list "$result_list"
