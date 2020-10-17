@@ -162,11 +162,10 @@ test_print() {
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
-    local itemsnumber
+    local itemsnumber=0
     local format1="\n\e[1;38;5;40m%s item\e[0m\n"
     local format2="\n\e[1;38;5;40m%s items\e[0m\n"
     local format3="\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m"
-    [[ -n "$arg2" ]] && itemsnumber=$(wc -l <<< "$arg2")
     printf "$format3" "$arg1" "$arg2"
     if (( $arg3 )) ; then
         if (( $arg3 == 1 )) ; then
@@ -177,9 +176,10 @@ test_print() {
             printf "$format1" "no"
         fi
     else
-        if (( $linesnumber == 1 )) ; then
+        [[ -n "$arg2" ]] && itemsnumber=$(wc -l <<< "$arg2")
+        if (( $itemsnumber == 1 )) ; then
             printf "$format1" $itemsnumber
-        elif (( $linesnumber > 1 )) ; then
+        elif (( $itemsnumber > 1 )) ; then
             printf "$format2" $itemsnumber
         else
             printf "$format1" "no"
@@ -582,8 +582,7 @@ help_usage() {
     return 0
 }
 
-bypass_site() {
-    # bypass for the blocked sites
+bypass_site() { # bypass for the blocked sites
     if (( ! $(ps -A | grep -c "notsodeep") )) ; then
         sudo iptables \
              -A INPUT \
@@ -596,7 +595,6 @@ bypass_site() {
         sudo "$NOTSODEEPPATH" &
     fi
 }
-
 
 play_xxx() { # private
     bypass_site
@@ -612,28 +610,53 @@ play_xxx() { # private
 
 youtube_search() { # uses youtube-dl, associative array
     local search_phrase="${garg[@]:1}"
-    local search_limit=100 # 8 secs for 10 limits
-    local max_cache=10
+    local search_limit=100 # 8 secs for 10 limits, so need file cache
+    local max_cache=1000
+    local youtube_prefix="https://www.youtube.com/watch?v="
     local result result_title result_url result_list
-    local arr_title arr_url i cached_phrase
-    declare -a arr_search
-    declare -A ARR_result
-    [[ -e "$ARRAYYOUTUBESEARCH" ]] && source "$ARRAYYOUTUBESEARCH"
-    [[ -e "$ARRAYYOUTUBERESULT" ]] && source "$ARRAYYOUTUBERESULT"
-    # test_print search_phrase "$search_phrase"
-    if [[ -z $search_phrase ]] ; then
-        for line in "${!ARR_result[@]}" ; do
-            cached_phrase+=$(printf "${cached_phrase:+ }'%s'" "$line")
-        done
-        test_print cached_phrase "$cached_phrase" "${#ARR_result[@]}"
-        exit 2
+    local arr_title arr_url i j cached_phrase
+    if [[ -e "$ARRAYYOUTUBESEARCH" ]] ; then
+        source "$ARRAYYOUTUBESEARCH"
+    else
+        declare -a arr_search
     fi
-    if [[ "$garg2" == -d ]] ; then  # -d delete the cached_phrase
+    if [[ -e "$ARRAYYOUTUBERESULT" ]] ; then
+        source "$ARRAYYOUTUBERESULT"
+    else
+        declare -A ARR_result
+    fi
+    if [[ -z "$garg2" ]] ; then
+        for line in "${!ARR_result[@]}" ; do
+            cached_phrase+="${cached_phrase:+ }'$line'"
+        done
+        test_print cached_phrase "$cached_phrase" ${#ARR_result[@]}
+        exit 2
+    elif [[ "$garg2" == -d ]] ; then  # -d delete the cached_phrase
         unset ARR_result["${garg[@]:2}"]
+        for line in "${arr_search[@]}" ; do
+            if [[  "$line" == "${garg[@]:2}" ]] ; then
+                unset arr_search[j]
+                break
+            fi
+            ((j++))
+        done
+        declare -p arr_search > "$ARRAYYOUTUBESEARCH"
         declare -p ARR_result > "$ARRAYYOUTUBERESULT"
         exit 0
-    fi
-    if [[ "$garg2" == -n ]] ; then # -n renew the cached_phrase
+    elif [[ "$garg2" == -c ]] ; then  # -c search in the cached_phrases
+        search_phrase="${garg[@]:2}"
+        for search in "${!ARR_result[@]}" ; do
+            if [[ "$search" == "$search_phrase" ]] ; then
+                result="${ARR_result["$search"]}"
+                break
+            fi
+        done
+        if [[ -z $result ]] ; then
+            printf "\n \e[1;31m%s\e[0m\n\n" \
+                   "There is no cached_phrase."
+            exit 2
+        fi
+    elif [[ "$garg2" == -n ]] ; then # -n renew the cached_phrase
         search_phrase="${garg[@]:2}"
     else
         for search in "${!ARR_result[@]}" ; do
@@ -644,31 +667,26 @@ youtube_search() { # uses youtube-dl, associative array
         done
     fi
     if [[ -z $result ]] ; then
-        result=$(youtube-dl -j ytsearch$search_limit:"$search_phrase")
+        result=$(youtube-dl --get-title --get-id \
+                 ytsearch$search_limit:"$search_phrase")
         if [[ -n $result ]] ; then
             if (( "${#ARR_result[@]}" >= $max_cache )) ; then
                 unset ARR_result["${arr_search[-$max_cache]}"]
                 unset arr_search[-$max_cache]
             fi
-            ARR_result+=([$search_phrase]="$result") # "" ?
+            ARR_result+=([$search_phrase]="$result")
             arr_search+=("$search_phrase")
             declare -p arr_search > "$ARRAYYOUTUBESEARCH"
             declare -p ARR_result > "$ARRAYYOUTUBERESULT"
         fi
     fi
-    result_title=$(grep -oP '"title": ".*?",' <<< "$result" \
-                       | sed 's/"title": //' \
-                       | sed 's/^"//' \
-                       | sed 's/",$//')
-    result_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$result" \
-                     | sed 's/"webpage_url": //' \
-                     | sed 's/^"//' \
-                     | sed 's/",$//')
+    result_title=$(sed -n 1~2p <<< "$result")
+    result_url=$(sed -n 2~2p <<< "$result")
     readarray -t arr_title <<< "$result_title"
     readarray -t arr_url <<< "$result_url"
     for title in "${arr_title[@]}" ; do
-        result_list+=$(printf "${result_list:+\n}%s %s" \
-                             "$title" "${arr_url[$i]}")
+        result_list+=$(printf "${result_list:+\n}%s %s%s" \
+                             "$title" "$youtube_prefix""${arr_url[$i]}")
         ((i++))
     done
     # test_print result_list "$result_list"
@@ -706,7 +724,7 @@ case "$garg1" in
         help_usage && exit 0 ;;
     -x|--xxx)
         play_xxx && exit 0 ;;
-    -y|--youtube) # not yet
+    -y|--youtube)
       youtube_search && exit 0 ;;
     *)
         make_namelist "$urllist" ;;
