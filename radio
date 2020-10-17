@@ -162,15 +162,32 @@ test_print() {
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
-    linesnumber=$(wc -l <<< "$arg2")
+    local itemsnumber
+    [[ -n "$arg2" ]] && itemsnumber=$(wc -l <<< "$arg2")
     printf "\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m" \
            "$arg1" "$arg2"
     if (( $arg3 )) ; then
-        printf "\n\e[1;38;5;40m%s items\e[0m\n" \
-               $arg3
+        if (( $arg3 == 1 )) ; then
+            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
+                   $arg3
+        elif (( $arg3 > 1 )) ; then
+            printf "\n\e[1;38;5;40m%s items\e[0m\n" \
+                   $arg3
+        else
+            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
+                   "no"
+        fi
     else
-        printf "\n\e[1;38;5;40m%s lines\e[0m\n" \
-               $linesnumber
+        if (( $linesnumber == 1 )) ; then
+            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
+                   $itemsnumber
+        elif (( $linesnumber > 1 )) ; then
+            printf "\n\e[1;38;5;40m%s items\e[0m\n" \
+                   $itemsnumber
+        else
+            printf "\n\e[1;38;5;40m%s item\e[0m\n" \
+                   "no"
+        fi
     fi
     # back_trace
     return 0
