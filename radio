@@ -615,50 +615,52 @@ youtube_search() { # uses youtube-dl
     local youtube_prefix="https://www.youtube.com/watch?v="
     local result result_title result_url result_list
     local arr_title arr_url
-    local i cached_phrase delete_matched
+    local i cached_phrase search_rate
+    local delete_phrase delete_matched update_matched
     if [[ -e "$ARRAYYOUTUBESEARCH" ]] ; then
         source "$ARRAYYOUTUBESEARCH"
     else
-        declare -A ARR_search
+        declare -A arr_search
     fi
     if [[ -e "$ARRAYYOUTUBERESULT" ]] ; then
         source "$ARRAYYOUTUBERESULT"
     else
-        declare -A ARR_result
+        declare -A arr_result
     fi
     if [[ -z "$garg2" ]] ; then
-        for line in "${!ARR_result[@]}" ; do
+        for line in "${!arr_result[@]}" ; do
             cached_phrase+="${cached_phrase:+ }'$line'"
         done
-        test_print cached_phrase "$cached_phrase" ${#ARR_result[@]}
+        test_print cached_phrase "$cached_phrase" ${#arr_result[@]}
         exit 2
     elif [[ "$garg2" == -d ]] ; then  # -d delete the cached_phrase
-        for line in "${!ARR_result[@]}" ; do
-            if [[ "$line" == "${garg[@]:2}" ]] ; then
+        delete_phrase="${garg[@]:2}"
+        for line in "${!arr_result[@]}" ; do
+            if [[ "$line" == "$delete_phrase" ]] ; then
                 delete_matched=1
-                unset ARR_result["${garg[@]:2}"]
-                unset ARR_search["${garg[@]:2}"]
-                declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
-                declare -p ARR_result > "$ARRAYYOUTUBERESULT"
+                unset arr_result["$delete_phrase"]
+                unset arr_search["$delete_phrase"]
+                declare -p arr_search > "$ARRAYYOUTUBESEARCH"
+                declare -p arr_result > "$ARRAYYOUTUBERESULT"
                 break
             fi
         done
-        if (( ! ${delete_matched:-0} )) ; then
+        if (( $delete_matched )) ; then
             printf "\n \e[1;31m%s\e[0m\n\n" \
-                   "not matched with '"${garg[@]:2}"'"
-            exit 1
+                   "success for deletion with '$delete_phrase'"
+            exit 0
         else
             printf "\n \e[1;31m%s\e[0m\n\n" \
-                   "success for deletion with '"${garg[@]:2}"'"
-            exit 0
+                   "not matched with '$delete_phrase'"
+            exit 1
         fi
     elif [[ "$garg2" == -c ]] ; then  # -c search in the cached_phrases
         search_phrase="${garg[@]:2}"
-        for search in "${!ARR_result[@]}" ; do
-            if [[ "$search" == "$search_phrase" ]] ; then
-                result="${ARR_result["$search"]}"
-                ARR_search["$search_phrase"]\
-                          =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
+        for line in "${!arr_result[@]}" ; do
+            if [[ "$line" == "$search_phrase" ]] ; then
+                result="${arr_result[$line]}"
+                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
+                arr_search["$search_phrase"]=$search_rate
                 break
             fi
         done
@@ -667,62 +669,86 @@ youtube_search() { # uses youtube-dl
                    "There is no cached_phrase."
             exit 2
         fi
-    elif [[ "$garg2" == -n ]] ; then # -n renew the cached_phrase
+    elif [[ "$garg2" == -u ]] ; then # -u update the cached_phrase
         search_phrase="${garg[@]:2}"
-        ARR_search["$search_phrase"]\
-                  =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
+        for line in "${!arr_result[@]}" ; do
+            if [[ "$line" == "$search_phrase" ]] ; then
+                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
+                arr_search["$search_phrase"]=$search_rate
+                update_matched=1
+                break
+            fi
+        done
+        if (( ! $update_matched )) ; then
+            printf "\n \e[1;31m%s\e[0m\n\n" \
+                   "not matched with '$update_phrase'"
+            exit 1
+        fi
     else
-        for search in "${!ARR_result[@]}" ; do
+        for search in "${!arr_result[@]}" ; do
             if [[ "$search" == "$search_phrase" ]] ; then
-                result="${ARR_result["$search"]}"
-                ARR_search["$search_phrase"]\
-                          =$(( ${ARR_search["$search_phrase"]} + 1 )) # rate
-                declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
+                result="${arr_result["$search"]}"
+                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
+                arr_search["$search_phrase"]=$search_rate
                 break
             fi
         done
     fi
     if [[ -z $result ]] ; then
-        result=$(youtube-dl --get-title --get-id \
-                 ytsearch$search_limit:"$search_phrase")
+        result=$(youtube-dl -j ytsearch$search_limit:"$search_phrase")
         if [[ -n $result ]] ; then
-            if (( ${#ARR_result[@]} >= $max_cache )) ; then
-                for key in "${!ARR_search[@]}" ; do
-                    if (( ${ARR_search["$key"]} \
-                              <= ${min_rate:-${ARR_search["$key"]}} )) ; then
-                        min_rate=${ARR_search["$key"]}
+            if (( ${#arr_result[@]} >= $max_cache )) ; then
+                for key in "${!arr_search[@]}" ; do
+                    if (( ${arr_search["$key"]} \
+                              <= ${min_rate:-${arr_search["$key"]}} )) ; then
+                        min_rate=${arr_search["$key"]}
                         min_key="$key"
                     fi
                 done
-                unset ARR_result["$min_key"]
-                unset ARR_search["$min_key"]
+                unset arr_result["$min_key"]
+                unset arr_search["$min_key"]
                 printf "\n \e[1;31m%s - %s\e[0m\n" \
                        "'${min_key}' has been removed" \
                        "$min_rate rated."
             fi
-            ARR_result+=(["$search_phrase"]="$result")
-            if [[ -n ${ARR_search["$search_phrase"]} ]] ; then
-                ARR_search+=(["$search_phrase"]=${ARR_search["$search_phrase"]})
+            arr_result+=(["$search_phrase"]="$result")
+            if [[ -n ${arr_search["$search_phrase"]} ]] ; then
+                arr_search+=(["$search_phrase"]\
+                                 =${arr_search["$search_phrase"]})
             else
-                ARR_search+=(["$search_phrase"]=1)
+                arr_search+=(["$search_phrase"]=1)
             fi
-            declare -p ARR_search > "$ARRAYYOUTUBESEARCH"
-            declare -p ARR_result > "$ARRAYYOUTUBERESULT"
         fi
     fi
-    result_title=$(sed -n 1~2p <<< "$result")
-    result_url=$(sed -n 2~2p <<< "$result")
+    result_date=$(grep -oP '"upload_date": ".*?",' <<< "$result" \
+                       | sed 's/"upload_date": //' \
+                       | sed 's/^"//' \
+                       | sed 's/",$//')
+    result_title=$(grep -oP '"title": ".*?",' <<< "$result" \
+                       | sed 's/"title": //' \
+                       | sed 's/^"//' \
+                       | sed 's/",$//')
+    result_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$result" \
+                     | sed 's/"webpage_url": //' \
+                     | sed 's/^"//' \
+                     | sed 's/",$//')
+    readarray -t arr_date <<< "$result_date"
     readarray -t arr_title <<< "$result_title"
     readarray -t arr_url <<< "$result_url"
     for title in "${arr_title[@]}" ; do
-        result_list+=$(printf "${result_list:+\n}%s %s%s" \
+        result_list+=$(printf "${result_list:+\n}%s %s %s" \
+                              "${arr_date[$i]}" \
                               "$title" \
-                              "$youtube_prefix" \
                               "${arr_url[$i]}")
         ((i++))
     done
+    result_list=$(sort <<< "$result_list")
+    grepnames=$(sed 's/[0-9]\{8\} //' <<< "$result_list" \
+                    | sed 's/ http.*//')
     # test_print result_list "$result_list"
-    grepnames="$result_title" # for applying to a existed function
+    # test_print grepnames "$grepnames"
+    declare -p arr_search > "$ARRAYYOUTUBESEARCH"
+    declare -p arr_result > "$ARRAYYOUTUBERESULT"
     select_list "$result_list" "$grepnames"
     return 0
 }
