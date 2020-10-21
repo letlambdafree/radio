@@ -616,7 +616,7 @@ youtube_search() { # uses youtube-dl
     local result result_title result_url result_list
     local arr_title arr_url
     local i cached_phrase search_rate
-    local delete_phrase delete_matched update_matched
+    local delete_phrase delete_matched update_matched lastdate
     if [[ -e "$ARRAYYOUTUBESEARCH" ]] ; then
         source "$ARRAYYOUTUBESEARCH"
     else
@@ -713,24 +713,25 @@ youtube_search() { # uses youtube-dl
             fi
             arr_result+=(["$search_phrase"]="$result")
             if [[ -n ${arr_search["$search_phrase"]} ]] ; then
-                arr_search+=(["$search_phrase"]\
-                                 =${arr_search["$search_phrase"]})
+                arr_search+=(["$search_phrase"]=${arr_search["$search_phrase"]})
             else
                 arr_search+=(["$search_phrase"]=1)
             fi
         fi
     fi
+    if [[ -z $result ]] ; then
+        printf "\n \e[1;31m%s\e[0m\n" \
+               "json-dump failed."
+        exit 1
+    fi
     result_date=$(grep -oP '"upload_date": ".*?",' <<< "$result" \
-                       | sed 's/"upload_date": //' \
-                       | sed 's/^"//' \
+                       | sed 's/^".*": "//' \
                        | sed 's/",$//')
     result_title=$(grep -oP '"title": ".*?",' <<< "$result" \
-                       | sed 's/"title": //' \
-                       | sed 's/^"//' \
+                       | sed 's/^".*": "//' \
                        | sed 's/",$//')
     result_url=$(grep -oP '"webpage_url": "http.*?",' <<< "$result" \
-                     | sed 's/"webpage_url": //' \
-                     | sed 's/^"//' \
+                     | sed 's/^".*": "//' \
                      | sed 's/",$//')
     readarray -t arr_date <<< "$result_date"
     readarray -t arr_title <<< "$result_title"
@@ -743,8 +744,11 @@ youtube_search() { # uses youtube-dl
         ((i++))
     done
     result_list=$(sort <<< "$result_list")
-    grepnames=$(sed 's/[0-9]\{8\} //' <<< "$result_list" \
+    readarray -t arr_result_list <<< "$result_list"
+    lastdate=${arr_result_list[-1]::8}
+    grepnames=$(sed 's/^[0-9]\{8\} //' <<< "$result_list" \
                     | sed 's/ http.*//')
+    grepnames="$grepnames (Last updated: $lastdate)"
     # test_print result_list "$result_list"
     # test_print grepnames "$grepnames"
     declare -p arr_search > "$ARRAYYOUTUBESEARCH"
