@@ -616,7 +616,8 @@ youtube_search() { # uses youtube-dl
     local result result_title result_url result_list
     local arr_title arr_url
     local i cached_phrase search_rate
-    local delete_phrase delete_matched update_matched lastdate
+    local delete_phrase delete_matched update_matched
+    local lastline lastdate
     if [[ -e "$ARRAYYOUTUBESEARCH" ]] ; then
         source "$ARRAYYOUTUBESEARCH"
     else
@@ -744,8 +745,8 @@ youtube_search() { # uses youtube-dl
         ((i++))
     done
     result_list=$(sort <<< "$result_list")
-    readarray -t arr_result_list <<< "$result_list"
-    lastdate=${arr_result_list[-1]::8}
+    lastline=$(tail -n 1 <<< "$result_list")
+    lastdate=${lastline::8}
     grepnames=$(sed 's/^[0-9]\{8\} //' <<< "$result_list" \
                     | sed 's/ http.*//')
     grepnames="$grepnames (Last updated: $lastdate)"
