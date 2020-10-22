@@ -191,20 +191,28 @@ test_print() {
 
 grep_print() {
     local arg1="$1"
+    local arg2="$2"
     local format1="\n \e[1;31m%s\e[0m\n\n"
     arg1=$(sed 's/^# / /' <<< "$arg1")
     if [[ "$arg1" =~ https?:/ ]] ; then
         printf "$format1" \
-               "$(sed 's/http.*//' <<< "$arg1")"
+               "$(sed 's/http.*//' <<< $arg1)"
     elif [[ "$arg1" =~ /$ ]] ; then
         printf "$format1" \
                "$arg1"
     elif [[ "$arg1" =~ /mnt/ ]] ; then
         printf "$format1" \
-               "$(sed 's/\/mnt\/.*//' <<< "$arg1")"
+               "$(sed 's/\/mnt\/.*//' <<< $arg1)"
     else
-        printf "$format1" \
-               "$arg1"
+        if [[ $arg2 =~ ^[0-9]{8}$ ]] ; then
+            printf "\n \e[1;31m%s\n\n %s%d\e[0m\n\n" \
+                   "$arg1" \
+                   "upload_date: " \
+                   $arg2
+        else
+            printf "$format1" \
+                   "$arg1"
+        fi
     fi
     return 0
 }
@@ -479,7 +487,6 @@ select_list() {
     local arg2="$2"
     grepcount=$(grep -ic .  <<< "$grepnames")
     if (( $grepcount == 1 )) ; then
-        grep_print "$arg2"
         # grep '-F' for only string like "[live] tv"
         grepline=$(grep -iF "$arg2" <<< "$arg1")
         play "$grepline"
@@ -508,8 +515,16 @@ select_list() {
                 exit 1
             fi
         done
-        grep_print "$selected"
+
+        # grep_line=$(grep -iF "$selected" <<< "$arg1")
+        # grep_date=$(grep -o "^[0-9]\{8\}" <<< "$grep_line")
+        # test_print grep_date $grep_date
+        # grep_print "$selected $grep_date"
+
+        # grep_print "$selected"
         grepline=$(grep -iF "$selected" <<< "$arg1")
+        grep_date=$(grep -o "^[0-9]\{8\}" <<< "$grepline")
+        grep_print "$selected" "$grep_date"
         play "$grepline"
         exit 0
     fi
@@ -696,12 +711,12 @@ youtube_search() { # uses youtube-dl
         done
     fi
     if [[ -z $result ]] ; then
+        # youtube-dl fail Unicode like Korean
         result=$(youtube-dl -j ytsearch$search_limit:"$search_phrase")
         if [[ -n $result ]] ; then
             if (( ${#arr_result[@]} >= $max_cache )) ; then
                 for key in "${!arr_search[@]}" ; do
-                    if (( ${arr_search["$key"]} \
-                              <= ${min_rate:-${arr_search["$key"]}} )) ; then
+                    if (( ${arr_search["$key"]} <= ${min_rate:-1000} )) ; then
                         min_rate=${arr_search["$key"]}
                         min_key="$key"
                     fi
@@ -745,15 +760,16 @@ youtube_search() { # uses youtube-dl
         ((i++))
     done
     result_list=$(sort <<< "$result_list")
-    lastline=$(tail -n 1 <<< "$result_list")
-    lastdate=${lastline::8}
-    grepnames=$(sed 's/^[0-9]\{8\} //' <<< "$result_list" \
-                    | sed 's/ http.*//')
-    grepnames="$grepnames (Last updated: $lastdate)"
+    lastdate=$(tail -n 1 <<< "$result_list" | grep -o "^[0-9]\{8\}")
+    grepnames=$(sed 's/^[0-9]\{8\} //' <<< "$result_list" | sed 's/ http.*//')
     # test_print result_list "$result_list"
     # test_print grepnames "$grepnames"
     declare -p arr_search > "$ARRAYYOUTUBESEARCH"
     declare -p arr_result > "$ARRAYYOUTUBERESULT"
+    PS3="
+# Last updated: $lastdate
+# 00 for all or confirm
+choose : "
     select_list "$result_list" "$grepnames"
     return 0
 }
