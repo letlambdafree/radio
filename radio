@@ -15,12 +15,13 @@
 # GNU General Public License at <http://www.gnu.org/licenses/> for
 # more details.
 
-# this script for my favorite music from various sources
+# this script for my personal purpose like playing music from various sources
 # like radio, youtube, local storage
+# and can search youtube directly and play the media in terminal
 #
 # Usage: radio [name] or radio option [arg ...]
 #
-# in 'select function', you can search narrowly, regex, sed and default option
+# in 'select', you can search narrowly, regex, range and default option
 #
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
@@ -31,10 +32,10 @@
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
 #         don't need quote for "and" regex searching, only need white-space.
-#         You can use -v to invert match
-#         you can select items like 3-5 7 11 15-20, -2 6- ,  2  - 7  8  , etc
-#         you can search narrowly until only one chosen or all chosen
-#         press 00 or space to select all items
+#         use -v for inverting match
+#         select items like 3-5 7 11 15-20, -2 6- ,  2  - 7  8
+#         search narrowly until only one chosen or all chosen
+#         press 00 to select all items
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
 #             radio sia -v lsd - include "sia" but not "lsd"
 #
@@ -46,20 +47,25 @@
 # -g|--group {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a shuffled radio in a group, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
-#         ex) radio -g jp - play only the Japanese radio randomly
+#         ex) radio -g jp : play only the Japanese radio randomly
 #
 # -l|--local ["regex"]
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
-#         ex) radio -l sia - play only local files with sia
+#         ex) radio -l sia : play only local files with sia
 #
 # -x|--xxx ["regex"]
 #       - plays a XXX for private
 #       - asks your password for bypassing a block site
 #
-# -y|--youtube [search_phase]
-#       - searches word in youtube and plays searched urls
-#       - I use youtube-dl
+# -y|--youtube [option] [phrase]
+#       - searches a phrase in youtube and plays the urls
+#       - if no option and no phrase, display the cached phrases
+#       - use alias : alias yt='radio -y', then yt battlestar galactica
+#       - options
+#         -d : delete the cached phrase
+#         -u : update the cached phrase
+#         -c : only search in the cached phrases
 #
 # -t|--test
 #       - tests all radios whether work or not.
@@ -633,14 +639,13 @@ play_xxx() { # private
 }
 
 youtube_search() { # uses youtube-dl
-    local search_phrase="${garg[@]:1}"
-    local search_limit=100 # 8 secs for 10 limits, so need file cache
+    local s_phrase="${garg[@]:1}"
+    local s_limit=100 # 8 secs for 10 limits, so need file cache
     local max_cache=10000
-    local youtube_prefix="https://www.youtube.com/watch?v="
-    local result result_title result_url result_list
+    local yt_prefix="https://www.youtube.com/watch?v="
+    local result r_date r_view_count r_average_rating r_title r_url r_list
     local arr_title arr_url
-    local i cached_phrases search_rate
-    local delete_phrase delete_matched update_matched
+    local i c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate
     if [[ -e $ARR_YOUTUBE_SEARCH ]] ; then
         source "$ARR_YOUTUBE_SEARCH"
@@ -654,38 +659,38 @@ youtube_search() { # uses youtube-dl
     fi
     if [[ -z $garg2 ]] ; then
         for line in "${!arr_result[@]}" ; do
-            cached_phrases+="${cached_phrases:+ }'$line'"
+            c_phrase+="${c_phrase:+ }'$line'"
         done
-        test_print cached_phrases "$cached_phrases" ${#arr_result[@]}
+        test_print c_phrase "$c_phrase" ${#arr_result[@]}
         exit 2
     elif [[ $garg2 == -d ]] ; then  # -d delete the cached_phrase
-        delete_phrase="${garg[@]:2}"
+        d_phrase="${garg[@]:2}"
         for line in "${!arr_result[@]}" ; do
-            if [[ $line == $delete_phrase ]] ; then
-                delete_matched=1
-                unset arr_result["$delete_phrase"]
-                unset arr_search["$delete_phrase"]
+            if [[ $line == $d_phrase ]] ; then
+                d_matched=1
+                unset arr_result["$d_phrase"]
+                unset arr_search["$d_phrase"]
                 declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
                 declare -p arr_result > "$ARR_YOUTUBE_RESULT"
                 break
             fi
         done
-        if (( $delete_matched )) ; then
+        if (( $d_matched )) ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   "success for deletion with '$delete_phrase'"
+                   "success for deletion with '$d_phrase'"
             exit 0
         else
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   "not matched with '$delete_phrase'"
+                   "not matched with '$d_phrase'"
             exit 1
         fi
-    elif [[ $garg2 == -c ]] ; then  # -c search in the cached_phrases
-        search_phrase="${garg[@]:2}"
+    elif [[ $garg2 == -c ]] ; then  # -c search in the c_phrase
+        s_phrase="${garg[@]:2}"
         for line in "${!arr_result[@]}" ; do
-            if [[ $line == $search_phrase ]] ; then
+            if [[ $line == $s_phrase ]] ; then
                 result="${arr_result[$line]}"
-                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
-                arr_search["$search_phrase"]=$search_rate
+                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
+                arr_search["$s_phrase"]=$s_rate
                 break
             fi
         done
@@ -695,37 +700,37 @@ youtube_search() { # uses youtube-dl
             exit 2
         fi
     elif [[ $garg2 == -u ]] ; then # -u update the cached_phrase
-        search_phrase="${garg[@]:2}"
+        s_phrase="${garg[@]:2}"
         for line in "${!arr_result[@]}" ; do
-            if [[ $line == $search_phrase ]] ; then
-                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
-                arr_search["$search_phrase"]=$search_rate
-                update_matched=1
+            if [[ $line == $s_phrase ]] ; then
+                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
+                arr_search["$s_phrase"]=$s_rate
+                u_matched=1
                 break
             fi
         done
-        if (( ! $update_matched )) ; then
+        if (( ! $u_matched )) ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    "not matched with '$update_phrase'"
             exit 1
         fi
     else
         for search in "${!arr_result[@]}" ; do
-            if [[ $search == $search_phrase ]] ; then
+            if [[ $search == $s_phrase ]] ; then
                 result="${arr_result["$search"]}"
-                search_rate=$(( ${arr_search["$search_phrase"]} + 1 ))
-                arr_search["$search_phrase"]=$search_rate
+                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
+                arr_search["$s_phrase"]=$s_rate
                 break
             fi
         done
     fi
     if [[ -z $result ]] ; then
         # youtube-dl fail Unicode like Korean
-        result=$(youtube-dl -j ytsearch$search_limit:"$search_phrase")
+        result=$(youtube-dl -j ytsearch$s_limit:"$s_phrase")
         if [[ -n $result ]] ; then
             if (( ${#arr_result[@]} >= $max_cache )) ; then
                 for key in "${!arr_search[@]}" ; do
-                    if (( ${arr_search["$key"]} <= ${min_rate:-1000} )) ; then
+                    if (( ${arr_search["$key"]} <= ${min_rate:-10} )) ; then
                         min_rate=${arr_search["$key"]}
                         min_key="$key"
                     fi
@@ -736,11 +741,11 @@ youtube_search() { # uses youtube-dl
                        "'${min_key}' has been removed" \
                        "$min_rate rated."
             fi
-            arr_result+=(["$search_phrase"]="$result")
-            if [[ -n ${arr_search["$search_phrase"]} ]] ; then
-                arr_search+=(["$search_phrase"]=${arr_search["$search_phrase"]})
+            arr_result+=(["$s_phrase"]="$result")
+            if [[ -n ${arr_search["$s_phrase"]} ]] ; then
+                arr_search+=(["$s_phrase"]=${arr_search["$s_phrase"]})
             else
-                arr_search+=(["$search_phrase"]=1)
+                arr_search+=(["$s_phrase"]=1)
             fi
         fi
     fi
@@ -749,28 +754,28 @@ youtube_search() { # uses youtube-dl
                'json-dump failed.'
         exit 1
     fi
-    result_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
+    r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
                        | sed 's/^".*": "//' \
                        | sed 's/",$//')
-    result_title=$(grep -oP '"title": ".*?",' <<< $result \
+    r_title=$(grep -oP '"title": ".*?",' <<< $result \
                        | sed 's/^".*": "//' \
                        | sed 's/",$//')
-    result_url=$(grep -oP '"webpage_url": ".*?",' <<< $result \
+    r_url=$(grep -oP '"webpage_url": ".*?",' <<< $result \
                      | sed 's/^".*": "//' \
                      | sed 's/",$//')
-    result_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
+    r_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
                              | sed 's/^".*": //' \
                              | sed 's/,$//')
-    result_average_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
+    r_average_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
                              | sed 's/^".*": //' \
                              | sed 's/,$//')
-    readarray -t arr_date <<< $result_date
-    readarray -t arr_title <<< $result_title
-    readarray -t arr_url <<< $result_url
-    readarray -t arr_view_count <<< $result_view_count
-    readarray -t arr_average_rating <<< $result_average_rating
+    readarray -t arr_date <<< $r_date
+    readarray -t arr_title <<< $r_title
+    readarray -t arr_url <<< $r_url
+    readarray -t arr_view_count <<< $r_view_count
+    readarray -t arr_average_rating <<< $r_average_rating
     for title in "${arr_title[@]}" ; do
-        result_list+=$(printf "${result_list:+\n}%d %d %s %s %s" \
+        r_list+=$(printf "${r_list:+\n}%d %d %s %s %s" \
                               ${arr_date[$i]} \
                               ${arr_view_count[$i]} \
                               ${arr_average_rating[$i]} \
@@ -778,18 +783,18 @@ youtube_search() { # uses youtube-dl
                               "${arr_url[$i]}")
         ((i++))
     done
-    result_list=$(sort <<< $result_list)
-    lastdate=$(tail -n 1 <<< $result_list | grep -o '^[0-9]\{8\}')
-    grepnames=$(sed 's/^[0-9]\{8\} [0-9]\+ [0-9.]\+ //' <<< $result_list \
+    r_list=$(sort <<< $r_list)
+    lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
+    grepnames=$(sed 's/^[0-9]\{8\} [0-9]\+ [0-9.]\+ //' <<< $r_list \
                     | sed 's/ http.*//')
-    # test_print result_list "$result_list"
+    # test_print r_list "$r_list"
     # test_print grepnames "$grepnames"
     declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
     PS3="
 Last uploaded: $lastdate
 choose : "
-    select_list "$result_list" "$grepnames"
+    select_list "$r_list" "$grepnames"
     return 0
 }
 
