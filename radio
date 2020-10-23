@@ -92,26 +92,26 @@ PS3='
 # 00 for all
 choose : '
 PLAYER=mpv
-LOCALVIDEODIR=/mnt/data/Videos/
-LOCALMUSICDIR=/mnt/data/Music/
-LOCALMUSICEXT='.*\.(mp3|flac)$'
-RADIOSTARTLINE='### MY RADIO URLS'
-RADIOENDLINE='### MY RADIO URLS END'
-YOUTUBESTARTLINE='### MY YOUTUBE URLS'
-YOUTUBEENDLINE='### MY YOUTUBE URLS END'
-LOCALSTARTLINE='### MY LOCAL MUSIC'
-LOCALENDLINE='### MY LOCAL MUSIC END'
-TESTENDLINE='### TEST END'
-SCRIPTPATH="$(realpath "$garg0")" # test
-SCRIPTDIR="${SCRIPTPATH%/*}"
-REPORTPATH="$SCRIPTDIR/report"
-ARR_YOUTUBE_RESULT="$SCRIPTDIR/arr_youtube_result"
-ARR_YOUTUBE_SEARCH="$SCRIPTDIR/arr_youtube_search"
-REPORTFIRSTLINE='### ERROR REPORT'
-XXXFILE="$SCRIPTDIR/xxx"
+LOCAL_VIDEO_DIR=/mnt/data/Videos/
+LOCAL_MUSIC_DIR=/mnt/data/Music/
+LOCAL_MUSIC_EXT='.*\.(mp3|flac)$'
+RADIO_START_LINE='### MY RADIO URLS'
+RADIO_END_LINE='### MY RADIO URLS END'
+YOUTUBE_START_LINE='### MY YOUTUBE URLS'
+YOUTUBE_END_LINE='### MY YOUTUBE URLS END'
+LOCAL_START_LINE='### MY LOCAL MUSIC'
+LOCAL_END_LINE='### MY LOCAL MUSIC END'
+TEST_END_LINE='### TEST END'
+SCRIPT_PATH="$(realpath "$garg0")" # test
+SCRIPT_DIR="${SCRIPT_PATH%/*}"
+REPORT_PATH="$SCRIPT_DIR/report"
+ARR_YOUTUBE_RESULT="$SCRIPT_DIR/arr_youtube_result"
+ARR_YOUTUBE_SEARCH="$SCRIPT_DIR/arr_youtube_search"
+REPORT_START_LINE='### ERROR REPORT'
+XXX_FILE_PATH="$SCRIPT_DIR/xxx"
 NOTSODEEP_PATH="$HOME/git/notsodeep/notsodeep"
-TESTTIME=10 # sec
-PERIODTIME=600
+TEST_TIME=10 # sec
+PERIOD_TIME=600
 # basic regex for grep and sed: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64 # for the same item in a row
@@ -321,7 +321,7 @@ play() {
     if [[ $arg1 =~  https?:// ]] ; then
         partline=${arg1/*http/http}
     elif [[ $arg1 =~ /$ ]] ; then
-        partline="$LOCALMUSICDIR"$(sed 's/^# //' <<< "$arg1")
+        partline="$LOCAL_MUSIC_DIR"$(sed 's/^# //' <<< "$arg1")
     elif [[ $arg1 =~ ^/mnt/ ]] ; then
         partline="$arg1"
     elif [[ $arg1 =~  /mnt/ ]] ; then
@@ -541,7 +541,7 @@ select_list() {
 }
 
 play_local() {
-    search_linenumber "$urllist" "^$LOCALSTARTLINE"
+    search_linenumber "$urllist" "^$LOCAL_START_LINE"
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
     locallist=$(head -n $((x-2)) <<< $locallist)
@@ -555,8 +555,8 @@ play_local() {
         done
     else
         shopt -s globstar
-        for file in "$LOCALMUSICDIR"**/* ; do
-            if [[ $file =~ $LOCALMUSICEXT ]] ; then
+        for file in "$LOCAL_MUSIC_DIR"**/* ; do
+            if [[ $file =~ $LOCAL_MUSIC_EXT ]] ; then
                 localoneline+=( "$file" ) # need " "
             fi
         done
@@ -570,24 +570,24 @@ play_local() {
 }
 
 test_items() {
-    search_linenumber "$urllist" "^$TESTENDLINE"
+    search_linenumber "$urllist" "^$TEST_END_LINE"
     testlist=$(head -n +$x <<< "$urllist")
-    cat > "$REPORTPATH" <<< $REPORTFIRSTLINE
+    cat > "$REPORT_PATH" <<< $REPORT_START_LINE
     while read -r line ; do
         (( $(grep -c "$SKIP_PATTERN" <<< $line) )) &&continue
         playing_print "$line"
         $PLAYER $(sed 's/.*http/http/' <<< $line) &
         lastbgpid=$!
-        sleep $TESTTIME
+        sleep $TEST_TIME
         if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
-            echo "$line" >> "$REPORTPATH"
+            echo "$line" >> "$REPORT_PATH"
         else
             kill $lastbgpid
         fi
         sleep 1
     done <<< $testlist
     printf '\n %s\n' \
-           "$(cat $REPORTPATH)"
+           "$(cat $REPORT_PATH)"
     return 0
 }
 
@@ -622,7 +622,7 @@ bypass_site() { # bypass for the blocked sites
 
 play_xxx() { # private
     bypass_site
-    xxxlist="$XXXFILE"
+    xxxlist="$XXX_FILE_PATH"
     # test_print xxxlist "$xxxlist"
     make_namelist "$xxxlist"
     grepnames=$(grep -v "$SKIP_PATTERN" <<< $grepnames | sed 's/^# //')
@@ -795,10 +795,10 @@ choose : "
 
 
 
-search_linenumber "$garg0" "^$RADIOSTARTLINE"
+search_linenumber "$garg0" "^$RADIO_START_LINE"
 urllist=$(tail -n +$((x+4)) "$garg0")
 # test_print urllist "$urllist"
-search_linenumber "$urllist" "^$RADIOENDLINE"
+search_linenumber "$urllist" "^$RADIO_END_LINE"
 radiolist=$(head -n +$((x-2)) <<< $urllist)
 # test_print radiolist "$radiolist"
 
