@@ -21,7 +21,7 @@
 #
 # Usage: radio [name] or radio option [arg ...]
 #
-# in 'select', you can search narrowly, regex, range and default option
+# in 'select()', you can search narrowly, regex, range and default option
 #
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
@@ -37,7 +37,7 @@
 #         search narrowly until only one chosen or all chosen
 #         press 00 to select all items
 #         ex) radio "sia\|live\|tv" cam "mango\|full"
-#             radio sia -v lsd - include "sia" but not "lsd"
+#             radio sia -v lsd : include "sia" but not "lsd"
 #
 # Options:
 #
@@ -56,7 +56,7 @@
 #
 # -x|--xxx ["regex"]
 #       - plays a XXX for private
-#       - asks your password for bypassing a block site
+#       - asks your password for bypassing a blocked site
 #
 # -y|--youtube [option] [phrase]
 #       - searches a phrase in youtube and plays the urls
@@ -82,6 +82,8 @@
 ### TODO
 #
 # add more favorite urls
+# radio -l sia end list error
+# variables naming
 
 
 
@@ -393,21 +395,21 @@ play_group() {
     while read -r line ; do
         ((x++))
         case "$garg2" in
-            en)
+            en | enligh)
                 [[ $line =~ ^'## English Radio' ]] && break ;;
-            kr)
+            kr | korean)
                 [[ $line =~ ^'## Korean Radio' ]] && break ;;
-            jp)
+            jp | japanese)
                 [[ $line =~ ^'## Japanese Radio' ]] && break ;;
-            mv)
+            mv | musicvideo)
                 [[ $line =~ ^'## Music Video' ]] && break ;;
-            lt)
+            lt | livetv)
                 [[ $line =~ ^'## Live TV' ]] && break ;;
-            ln)
+            ln | livenews)
                 [[ $line =~ ^'## Live News' ]] && break ;;
-            lc)
+            lc | livecam)
                 [[ $line =~ ^'## Live Camera' ]] && break ;;
-            pl)
+            pl | playlist)
                 [[ $line =~ ^'## Play List' ]] && break ;;
             *)
                 printf '\n \e[1;34m%s\e[1;31m%s \e[1;34m%s\e[0m\n' \
@@ -501,7 +503,6 @@ select_regex() {
     make_namelist "$grepnames"
     # test_print grepnames "$grepnames"
     select_one_grepname
-    sleep 10
     select_play
     return 0
 }
@@ -1061,7 +1062,7 @@ select_list "$urllist" "$grepnames"
 #
 ### TEST END
 #
-### MY LOCAL MUSIC - my favorite music directories in my local computer.
+### MY LOCAL MUSIC - my music directories in my local computer.
 #
 # 아이유 - 꽃갈피 둘/
 # 김광석 [2005 Best]/
