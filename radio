@@ -41,24 +41,24 @@
 #
 # Options:
 #
-# -a|--all
+# -a | --all
 #       - displays all urls
 #
-# -g|--group {en|kr|jp|mv|lt|ln|lc|pl}
+# -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
 #       - plays a shuffled radio in a group, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -g jp : play only the Japanese radio randomly
 #
-# -l|--local ["regex"]
+# -l | --local ["regex"]
 #       - plays a shuffled local music.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
 #         ex) radio -l sia : play only local files with sia
 #
-# -x|--xxx ["regex"]
+# -x | --xxx ["regex"]
 #       - plays a XXX for private
 #       - asks your password for bypassing a blocked site
 #
-# -y|--youtube [option] [phrase]
+# -y | --youtube [option] [phrase]
 #       - searches a phrase in youtube and plays the urls
 #       - if no option and no phrase, display the cached phrases
 #       - use alias : alias yt='radio -y', then yt battlestar galactica
@@ -67,14 +67,14 @@
 #         -u : update the cached phrase
 #         -c : only search in the cached phrases
 #
-# -t|--test
+# -t | --test
 #       - tests all radios whether work or not.
 #         If failed, it logs on the file named report.
 #
-# -e|--edit
+# -e | --edit
 #       - edit this script.
 #
-# -h| --help
+# -h | --help
 #       - prints this help.
 
 
@@ -82,7 +82,7 @@
 ### TODO
 #
 # add more favorite urls
-# radio -l sia end list error
+# local play_all loop error
 # variables naming
 
 
@@ -298,11 +298,12 @@ shuffle_list() {
     local firstshuffle
     if [[ -z $shufflelist ]] ; then
         print_shufflelist "$arg1"
+        # [[ -z $arg1 ]] && exit 1
         firstshuffle=$(shuf -n 1 <<< "$arg1")
         # avoid selecting the same item in a row
         if [[ $firstshuffle == $lastshuffle ]] ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   continue
+                   'continue'
             return $E_IN_A_ROW
         else
             shufflelist=$(grep -vF "$firstshuffle" <<< "$arg1") # needed -F
@@ -394,8 +395,11 @@ play_group() {
     x=0
     while read -r line ; do
         ((x++))
+        test_print urllist $urllist
+        test_print x $x
+        sleep 1
         case "$garg2" in
-            en | enligh)
+            en | english)
                 [[ $line =~ ^'## English Radio' ]] && break ;;
             kr | korean)
                 [[ $line =~ ^'## Korean Radio' ]] && break ;;
@@ -437,7 +441,8 @@ play_group() {
                 # back_trace
                 exit 2
         esac
-    done <<< $urllist
+    done <<< "$urllist"
+    # test_print x $x
     grouplist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$grouplist" "^##+"
     grouplist=$(head -n $((x-2)) <<< $grouplist)
@@ -457,12 +462,23 @@ select_one_grepname() {
 }
 
 select_play() {
+    local shuffle_line _lines n_chars min_char
     # test_print arg2 "$arg1"
     while true ; do
         shuffle_list "$grepnames"
         (( $? == $E_IN_A_ROW )) && continue
-        grepline=$(grep -iF "$shuffleradio" <<< $arg1)
-        play "$grepline"
+        shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
+        _lines=$(wc -l <<< $shuffle_line) # need remove extra line
+        if (( $_lines > 1 )) ; then
+            for line in "$shuffle_line" ; do
+                n_chars=$(wc -c <<< $line)
+                if (( $n_chars <= ${min_chars:-$n_chars} )) ; then
+                    min_chars=$n_chars
+                    shuffle_line="$line"
+                fi
+            done
+        fi
+        play "$shuffle_line"
         # sleep 1
     done
     return 0
@@ -510,6 +526,8 @@ select_regex() {
 select_list() {
     local arg1="$1"
     local arg2="$2"
+    local pattern1="[0-9]*[-\ ]+[0-9]*"
+    local pattern2="[^0-9\ -]+"
     grepcount=$(grep -ic .  <<< $grepnames)
     if (( $grepcount == 1 )) ; then
         # grep '-F' for only string like "[live] tv"
@@ -524,7 +542,7 @@ select_list() {
             if [[ $REPLY =~ ^00$ ]] ; then
                 select_all
                 exit 0
-            elif [[ $REPLY =~ [0-9]*[-\ ]+[0-9]* ]] ; then
+            elif [[ $REPLY =~ $pattern1 && ! $REPLY =~ $pattern2 ]] ; then
                 select_sed
                 exit 0
             elif [[ $REPLY =~ [^0-9] ]] ; then
@@ -642,7 +660,7 @@ play_xxx() { # private
 youtube_search() { # uses youtube-dl
     local s_phrase="${garg[@]:1}"
     local s_limit=100 # 8 secs for 10 limits, so need file cache
-    local max_cache=10000
+    local max_cache=1000
     local yt_prefix="https://www.youtube.com/watch?v="
     local result r_date r_view_count r_average_rating r_title r_url r_list
     local arr_title arr_url
@@ -726,8 +744,19 @@ youtube_search() { # uses youtube-dl
         done
     fi
     if [[ -z $result ]] ; then
-        # youtube-dl fail Unicode like Korean
-        result=$(youtube-dl -j ytsearch$s_limit:"$s_phrase")
+        c=0
+        while true ; do
+            ((c++)) # often fail to json-dump
+            result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
+            if [[ -n $result ]] ; then
+                break
+            fi
+            printf '\n\e[1;38;5;190m %s\e[0m%s\n' \
+                   "'${c}'" \
+                   "th trying to dump youtube"
+            # sleep 1
+        done
+        result=$(printf %b "$result") # Unicode-to-utf8 conversion, need %b
         if [[ -n $result ]] ; then
             if (( ${#arr_result[@]} >= $max_cache )) ; then
                 for key in "${!arr_search[@]}" ; do
@@ -776,7 +805,7 @@ youtube_search() { # uses youtube-dl
     readarray -t arr_view_count <<< $r_view_count
     readarray -t arr_average_rating <<< $r_average_rating
     for title in "${arr_title[@]}" ; do
-        r_list+=$(printf "${r_list:+\n}%d %d %s %s %s" \
+        r_list+=$(printf "${r_list:+\n}%s %s %s %s %s" \
                               ${arr_date[$i]} \
                               ${arr_view_count[$i]} \
                               ${arr_average_rating[$i]} \
@@ -802,7 +831,7 @@ choose : "
 
 
 search_linenumber "$garg0" "^$RADIO_START_LINE"
-urllist=$(tail -n +$((x+4)) "$garg0")
+urllist=$(tail -n +$((x+2)) "$garg0")
 # test_print urllist "$urllist"
 search_linenumber "$urllist" "^$RADIO_END_LINE"
 radiolist=$(head -n +$((x-2)) <<< $urllist)
