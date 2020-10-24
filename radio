@@ -121,7 +121,7 @@ yt_prefix="https://www.youtube.com/watch?v="
 TEST_TIME=10 # sec
 PERIOD_TIME=600
 # playlist_number=1
-# basic regex for grep and sed: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
+# basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64 # for the same item in a row
 E_NO_MATCH_REGEX=65 # for no match with regex
@@ -324,38 +324,24 @@ shuffle_list() {
 
 play() {
     local arg1="$1"
-    local execute_part name_part option_part last_bg_pid
-    local sed_pattern1 sed_pattern2 sed_pattern3
+    local execute_part name_part head_part option_part last_bg_pid
+    local sed_pattern sed_pattern1 sed_pattern2 sed_pattern3 sed_pattern4
     local playing_date playing_view_count
     local playing_average_rating playing_title
     # local execute_part_list
     test_print arg1 "$arg1" # test
     ((count++))
     # test_print count "$count"
+    # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
+    arg1=$(sed 's/^# //' <<< $arg1)
     if [[ $arg1 =~  https?:// ]] ; then
-        execute_part="${arg1/*http/http}"
-        test_print execute_part "$execute_part"
+        name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]] ; then
-        execute_part="$LOCAL_MUSIC_DIR""$(sed 's/^# //' <<< $arg1)"
+        name_part="$arg1"
     elif [[ $arg1 =~ ^/mnt/ ]] ; then
-        execute_part="$arg1"
+        name_part=$(sed 's!^/mnt/.*/.*/!!' <<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]] ; then
-        execute_part="${arg1/*mnt//mnt}"
-    else
-        printf '\n \e[1;31m%s\e[0m\n\n' \
-               'Something is wrong!'
-        back_trace
-        exit 1
-    fi
-    # ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
-    if [[ $arg1 =~  https?:// ]] ; then
-        name_part=$(sed 's! https\?://.*!!' <<< $arg1 | sed 's/^# //')
-    elif [[ $arg1 =~ /$ ]] ; then
-        name_part=$(sed 's/^# //' <<< $arg1)
-    elif [[ $arg1 =~ ^/mnt/ ]] ; then
-        name_part=$(sed 's!^/mnt/.*/.*/!!' <<< $arg1 | sed 's/^# //')
-    elif [[ $arg1 =~  /mnt/ ]] ; then
-        name_part=$(sed 's! /mnt/.*!!' <<< $arg1 | sed 's/^# //')
+        name_part=$(sed 's! /mnt/.*!!' <<< $arg1)
     else
         printf '\n \e[1;31m%s\e[0m\n\n' \
                'Something is wrong!'
@@ -363,14 +349,31 @@ play() {
         exit 1
     fi
     test_print name_part "$name_part"
+    if [[ $arg1 =~  https?:// ]] ; then
+        execute_part=${arg1/*http/http}
+    elif [[ $arg1 =~ /$ ]] ; then
+        execute_part="$LOCAL_MUSIC_DIR""$arg1"
+    elif [[ $arg1 =~ ^/mnt/ ]] ; then
+        execute_part="$arg1"
+    elif [[ $arg1 =~  /mnt/ ]] ; then
+        execute_part=${arg1/*mnt//mnt}
+    else
+        printf '\n \e[1;31m%s\e[0m\n\n' \
+               'Something is wrong!'
+        back_trace
+        exit 1
+    fi
+    test_print execute_part "$execute_part"
     if [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
-        sed_pattern1='s/^[0-9]\{8\} \([0-9]\+\) .*/\1/'
-        sed_pattern2='s/^[0-9]\{8\} [0-9]\+ \([0-9.]\+\) .*/\1/'
-        playing_date=$(grep -o '^[0-9]\{8\}' <<< $name_part)
-        playing_view_count=$(sed "$sed_pattern1" <<< $name_part)
-        playing_average_rating=$(sed "$sed_pattern2" <<< $name_part)
-        sed_pattern3='s/^[0-9]\{8\} [0-9]\+ [0-9.]\+ \(.*\)/\1/'
-        playing_title=$(sed "$sed_pattern3" <<< $name_part)
+        sed_pattern='^\([0-9]\{8\}\) \([0-9]\+\) \([0-9.]\+\) \(.*\)'
+        sed_pattern1="s/$sed_pattern/\1/"
+        sed_pattern2="s/$sed_pattern/\2/"
+        sed_pattern3="s/$sed_pattern/\3/"
+        sed_pattern4="s/$sed_pattern/\4/"
+        playing_date=$(sed "$sed_pattern1" <<< $name_part)
+        playing_view_count=$(sed "$sed_pattern2" <<< $name_part)
+        playing_average_rating=$(sed "$sed_pattern3" <<< $name_part)
+        playing_title=$(sed "$sed_pattern4" <<< $name_part)
         playing_print "$playing_title" \
                       $playing_date \
                       $playing_view_count \
@@ -381,10 +384,12 @@ play() {
 
     if [[ $execute_part =~  --[a-z]+ ]] ; then
         # test_print execute_part "$execute_part"
-        name_part=${execute_part%% --*} # need space for trailing
-        # test_print name_part "$name_part"
-        option_part=${execute_part#"$name_part"}
-        $PLAYER "$name_part" $option_part & # don't quote rest options
+        head_part=${execute_part%% --*} # need space for trailing
+        # test_print head_part "$head_part"
+        option_part=${execute_part#"$head_part" } # need quotes
+        # test_print head_part "$head_part"
+        # test_print option_part "$option_part"
+        $PLAYER "$head_part" $option_part & # don't quote options
     else
         $PLAYER "$execute_part" &
     fi
