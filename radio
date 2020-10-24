@@ -124,6 +124,7 @@ PERIOD_TIME=600
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64 # for the same item in a row
 E_NO_MATCH_REGEX=65 # for no match with regex
+E_FAIL_DUMP_YOUTUBE=66 # for fail youtube dump
 
 
 
@@ -662,6 +663,7 @@ youtube_search() { # uses youtube-dl
     local s_limit=100 # 8 secs for 10, so need cache
     local max_cache=1000
     local display_c_Phrase_limit=100
+    local try_dump_limit=100
     local yt_prefix="https://www.youtube.com/watch?v="
     local result r_list
     local r_date r_view_count r_average_rating r_title r_url
@@ -754,6 +756,11 @@ youtube_search() { # uses youtube-dl
     if [[ -z $result ]] ; then
         while [[ -z $result ]] ; do # json-dump often fails
             ((c++))
+            if (( $c > $try_dump_limit )) ; then
+                printf '\n \e[1;31m%s\e[0m\n' \
+                       "Fail to dump. try later!"
+                exit 66
+            fi
             printf '\n\e[1;38;5;90m %s\e[0m%s\n' \
                    "'${c}'" \
                    "th trying ..."
