@@ -83,7 +83,6 @@
 #
 # add more favorite urls
 # local play_all loop error
-# variables naming
 
 
 
@@ -118,8 +117,10 @@ ARR_YOUTUBE_SEARCH="$SCRIPT_DIR/arr_youtube_search"
 REPORT_START_LINE='### ERROR REPORT'
 XXX_FILE_PATH="$SCRIPT_DIR/xxx"
 NOTSODEEP_PATH="$HOME/git/notsodeep/notsodeep"
+yt_prefix="https://www.youtube.com/watch?v="
 TEST_TIME=10 # sec
 PERIOD_TIME=600
+# playlist_number=1
 # basic regex for grep and sed: ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64 # for the same item in a row
@@ -233,7 +234,7 @@ make_namelist() {
     local arg1="$1"
     local reverse=
     if [[ -n $REPLY ]] ; then
-        readarray -t array_namelist <<< "${REPLY/ /$'\n'}"
+        readarray -t array_namelist <<< ${REPLY/ /$'\n'} # test
     else
         array_namelist=( "${garg[@]}" ) # need double quotes like 'lsd sia'
     fi
@@ -241,14 +242,14 @@ make_namelist() {
         if [[ -z $grepnames ]] ; then
             # test_print line1 "$line"
             [[ $line =~ ^-+[a-z]+ ]] && continue
-            grepnames=$(grep -i "$line" <<< "$arg1")
+            grepnames=$(grep -i "$line" <<< $arg1)
         else
             # test_print line2 "$line"
             if [[ $line == -v ]] ; then
                 reverse=v
                 continue
             fi
-            grepnames=$(grep -i$reverse "$line" <<< "$grepnames")
+            grepnames=$(grep -i$reverse "$line" <<< $grepnames)
             [[ -n $reverse ]] && reverse=
         fi
     done
@@ -263,11 +264,11 @@ make_namelist() {
 remove_parts() {
     local arg1="$1"
     if [[ "$arg1" =~  https?:// ]] ; then
-        grepnames=$(sed 's/ http.*//' <<< "$arg1")
+        grepnames=$(sed 's/ http.*//' <<< $arg1)
     elif [[ "$arg1" =~ ^/mnt/ ]] ; then
-        grepnames=$(sed 's/.*\/Music\///g'<<< "$arg1" )
+        grepnames=$(sed 's/.*\/Music\///g'<<< $arg1)
     elif [[ "$arg1" =~  /mnt/ ]] ; then
-        grepnames=$(sed 's/\/mnt\/.*//' <<< "$arg1")
+        grepnames=$(sed 's/\/mnt\/.*//' <<< $arg1)
     elif [[ "$arg1" =~  /$ ]] ; then
         grepnames="$arg1"
     fi
@@ -296,24 +297,25 @@ print_shufflelist() {
 shuffle_list() {
     # all items must be selected only once for one-cycle
     local arg1="$1"
-    local firstshuffle
+    local firstshuffle lastshuffle
+    # test_print arg1 "$arg1"
+    [[ -z $arg1 ]] && exit 1
     if [[ -z $shufflelist ]] ; then
         print_shufflelist "$arg1"
-        # [[ -z $arg1 ]] && exit 1
-        firstshuffle=$(shuf -n 1 <<< "$arg1")
+        firstshuffle=$(shuf -n 1 <<< $arg1)
         # avoid selecting the same item in a row
         if [[ $firstshuffle == $lastshuffle ]] ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    'continue'
             return $E_IN_A_ROW
         else
-            shufflelist=$(grep -vF "$firstshuffle" <<< "$arg1") # needed -F
+            shufflelist=$(grep -vF "$firstshuffle" <<< $arg1) # needed -F
             shuffleradio="$firstshuffle"
         fi
     else
         print_shufflelist "$shufflelist"
-        lastshuffle=$(shuf -n 1 <<< "$shufflelist")
-        shufflelist=$(grep -vF "$lastshuffle" <<< "$shufflelist")
+        lastshuffle=$(shuf -n 1 <<< $shufflelist)
+        shufflelist=$(grep -vF "$lastshuffle" <<< $shufflelist)
         shuffleradio="$lastshuffle"
     fi
     # eval "$2=\$arg2" # bash special form for returning a string
@@ -322,58 +324,75 @@ shuffle_list() {
 
 play() {
     local arg1="$1"
-    local partline namepart optionpart lastbgpid
-    local sed_pattern1 sed_pattern2
-    local playing_date playing_view_count playing_average_rating playing_title
-    # test_print arg1 "$arg1"
+    local execute_part name_part option_part last_bg_pid
+    local sed_pattern1 sed_pattern2 sed_pattern3
+    local playing_date playing_view_count
+    local playing_average_rating playing_title
+    # local execute_part_list
+    test_print arg1 "$arg1" # test
     ((count++))
     # test_print count "$count"
     if [[ $arg1 =~  https?:// ]] ; then
-        partline=${arg1/*http/http}
+        execute_part="${arg1/*http/http}"
+        test_print execute_part "$execute_part"
     elif [[ $arg1 =~ /$ ]] ; then
-        partline="$LOCAL_MUSIC_DIR"$(sed 's/^# //' <<< "$arg1")
+        execute_part="$LOCAL_MUSIC_DIR""$(sed 's/^# //' <<< $arg1)"
     elif [[ $arg1 =~ ^/mnt/ ]] ; then
-        partline="$arg1"
+        execute_part="$arg1"
     elif [[ $arg1 =~  /mnt/ ]] ; then
-        partline=${arg1/*mnt//mnt}
+        execute_part="${arg1/*mnt//mnt}"
     else
         printf '\n \e[1;31m%s\e[0m\n\n' \
                'Something is wrong!'
         back_trace
         exit 1
     fi
-
-    remove_parts "$arg1"
-
+    # ‘\?’, ‘\+’, ‘\{’, ‘\|’, ‘\(’, and ‘\)’
+    if [[ $arg1 =~  https?:// ]] ; then
+        name_part=$(sed 's! https\?://.*!!' <<< $arg1 | sed 's/^# //')
+    elif [[ $arg1 =~ /$ ]] ; then
+        name_part=$(sed 's/^# //' <<< $arg1)
+    elif [[ $arg1 =~ ^/mnt/ ]] ; then
+        name_part=$(sed 's!^/mnt/.*/.*/!!' <<< $arg1 | sed 's/^# //')
+    elif [[ $arg1 =~  /mnt/ ]] ; then
+        name_part=$(sed 's! /mnt/.*!!' <<< $arg1 | sed 's/^# //')
+    else
+        printf '\n \e[1;31m%s\e[0m\n\n' \
+               'Something is wrong!'
+        back_trace
+        exit 1
+    fi
+    test_print name_part "$name_part"
     if [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
         sed_pattern1='s/^[0-9]\{8\} \([0-9]\+\) .*/\1/'
         sed_pattern2='s/^[0-9]\{8\} [0-9]\+ \([0-9.]\+\) .*/\1/'
-        playing_date=$(grep -o '^[0-9]\{8\}' <<< $grepnames)
-        playing_view_count=$(sed "$sed_pattern1" <<< $grepnames)
-        playing_average_rating=$(sed "$sed_pattern2" <<< $grepnames)
-        playing_title=${grepnames#*$playing_average_rating }
+        playing_date=$(grep -o '^[0-9]\{8\}' <<< $name_part)
+        playing_view_count=$(sed "$sed_pattern1" <<< $name_part)
+        playing_average_rating=$(sed "$sed_pattern2" <<< $name_part)
+        sed_pattern3='s/^[0-9]\{8\} [0-9]\+ [0-9.]\+ \(.*\)/\1/'
+        playing_title=$(sed "$sed_pattern3" <<< $name_part)
         playing_print "$playing_title" \
                       $playing_date \
                       $playing_view_count \
                       $playing_average_rating
     else
-        playing_print "$grepnames"
+        playing_print "$name_part"
     fi
 
-    if [[ $partline =~  --[a-z]+ ]] ; then
-        # test_print partline "$partline"
-        namepart=${partline%% --*} # need space for trailing
-        # test_print namepart "$namepart"
-        optionpart=${partline#"$namepart"}
-        $PLAYER "$namepart" $optionpart & # don't quote rest options
+    if [[ $execute_part =~  --[a-z]+ ]] ; then
+        # test_print execute_part "$execute_part"
+        name_part=${execute_part%% --*} # need space for trailing
+        # test_print name_part "$name_part"
+        option_part=${execute_part#"$name_part"}
+        $PLAYER "$name_part" $option_part & # don't quote rest options
     else
-        $PLAYER "$partline" &
+        $PLAYER "$execute_part" &
     fi
-    lastbgpid=$!
-    wait $lastbgpid
+    last_bg_pid=$!
+    wait $last_bg_pid
     # sleep 1
     count=0
-    partlinelist=
+    # execute_part_list=
     return 0
 }
 
@@ -396,9 +415,9 @@ play_group() {
     x=0
     while read -r line ; do
         ((x++))
-        test_print urllist $urllist
-        test_print x $x
-        sleep 1
+        # test_print urllist $urllist
+        # test_print x $x
+        # sleep 1
         case "$garg2" in
             en | english)
                 [[ $line =~ ^'## English Radio' ]] && break ;;
@@ -596,6 +615,7 @@ play_local() {
 }
 
 test_items() {
+    local lastbgpid
     search_linenumber "$urllist" "^$TEST_END_LINE"
     testlist=$(head -n +$x <<< "$urllist")
     cat > "$REPORT_PATH" <<< $REPORT_START_LINE
@@ -664,7 +684,6 @@ youtube_search() { # uses youtube-dl
     local max_cache=1000
     local display_c_Phrase_limit=100
     local try_dump_limit=100
-    local yt_prefix="https://www.youtube.com/watch?v="
     local result r_list
     local r_date r_view_count r_average_rating r_title r_url
     local arr_title arr_url
