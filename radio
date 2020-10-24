@@ -659,13 +659,16 @@ play_xxx() { # private
 
 youtube_search() { # uses youtube-dl
     local s_phrase="${garg[@]:1}"
-    local s_limit=100 # 8 secs for 10 limits, so need file cache
+    local s_limit=100 # 8 secs for 10, so need cache
     local max_cache=1000
+    local display_c_Phrase_limit=100
     local yt_prefix="https://www.youtube.com/watch?v="
-    local result r_date r_view_count r_average_rating r_title r_url r_list
+    local result r_list
+    local r_date r_view_count r_average_rating r_title r_url
     local arr_title arr_url
-    local i c_phrase s_rate d_phrase d_matched u_matched
+    local c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate
+    local i j c
     if [[ -e $ARR_YOUTUBE_SEARCH ]] ; then
         source "$ARR_YOUTUBE_SEARCH"
     else
@@ -678,6 +681,11 @@ youtube_search() { # uses youtube-dl
     fi
     if [[ -z $garg2 ]] ; then
         for line in "${!arr_result[@]}" ; do
+            ((j++))
+            if (( j > $display_c_Phrase_limit )) ; then
+                c_phrase+="${c_phrase:+ }'$line' ..."
+                break
+            fi
             c_phrase+="${c_phrase:+ }'$line'"
         done
         test_print c_phrase "$c_phrase" ${#arr_result[@]}
@@ -744,45 +752,33 @@ youtube_search() { # uses youtube-dl
         done
     fi
     if [[ -z $result ]] ; then
-        c=0
-        while true ; do
-            ((c++)) # often fail to json-dump
-            result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
-            if [[ -n $result ]] ; then
-                break
-            fi
-            printf '\n\e[1;38;5;190m %s\e[0m%s\n' \
+        while [[ -z $result ]] ; do # json-dump often fails
+            ((c++))
+            printf '\n\e[1;38;5;90m %s\e[0m%s\n' \
                    "'${c}'" \
-                   "th trying to dump youtube"
-            # sleep 1
+                   "th trying ..."
+            result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
-        result=$(printf %b "$result") # Unicode-to-utf8 conversion, need %b
-        if [[ -n $result ]] ; then
-            if (( ${#arr_result[@]} >= $max_cache )) ; then
-                for key in "${!arr_search[@]}" ; do
-                    if (( ${arr_search["$key"]} <= ${min_rate:-10} )) ; then
-                        min_rate=${arr_search["$key"]}
-                        min_key="$key"
-                    fi
-                done
-                unset arr_result["$min_key"]
-                unset arr_search["$min_key"]
-                printf '\n \e[1;31m%s - %s\e[0m\n' \
-                       "'${min_key}' has been removed" \
-                       "$min_rate rated."
-            fi
-            arr_result+=(["$s_phrase"]="$result")
-            if [[ -n ${arr_search["$s_phrase"]} ]] ; then
-                arr_search+=(["$s_phrase"]=${arr_search["$s_phrase"]})
-            else
-                arr_search+=(["$s_phrase"]=1)
-            fi
+        result=$(printf %b "$result") # Unicode-to-utf8, need %b
+        if (( ${#arr_result[@]} >= $max_cache )) ; then
+            for key in "${!arr_search[@]}" ; do
+                if (( ${arr_search["$key"]} <= ${min_rate:-10} )) ; then
+                    min_rate=${arr_search["$key"]}
+                    min_key="$key"
+                fi
+            done
+            unset arr_result["$min_key"]
+            unset arr_search["$min_key"]
+            printf '\n \e[1;31m%s - %s\e[0m\n' \
+                   "'${min_key}' has been removed" \
+                   "$min_rate rated."
         fi
-    fi
-    if [[ -z $result ]] ; then
-        printf '\n \e[1;31m%s\e[0m\n' \
-               'json-dump failed.'
-        exit 1
+        arr_result+=(["$s_phrase"]="$result")
+        if [[ -n ${arr_search["$s_phrase"]} ]] ; then
+            arr_search+=(["$s_phrase"]=${arr_search["$s_phrase"]})
+        else
+            arr_search+=(["$s_phrase"]=1)
+        fi
     fi
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
                        | sed 's/^".*": "//' \
@@ -966,7 +962,7 @@ select_list "$urllist" "$grepnames"
 # Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
 # Les.Miserables 2012 - The Confrontation /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=43:20 --end=45:10
 # Les.Miserables 2012 - Paris / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:06:42 --end=1:09:36
-# Les.Miserables 2012 - On My Own / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
+# Les.Miserables 2012 - On My Own /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
 # Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
 # Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
 #===== ani-opening
