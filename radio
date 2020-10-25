@@ -249,21 +249,21 @@ make_namelist() {
         array_namelist=( "${garg[@]}" ) # need double quotes like 'lsd sia'
     fi
     for line in "${array_namelist[@]}" ; do
-        if [[ -z $grepnames ]] ; then
+        if [[ -z $input_lines ]] ; then
             # test_print line1 "$line"
             [[ $line =~ ^-+[a-z]+ ]] && continue
-            grepnames=$(grep -i "$line" <<< $arg1)
+            input_lines=$(grep -i "$line" <<< $arg1)
         else
             # test_print line2 "$line"
             if [[ $line == -v ]] ; then
                 reverse=v
                 continue
             fi
-            grepnames=$(grep -i$reverse "$line" <<< $grepnames)
+            input_lines=$(grep -i$reverse "$line" <<< $input_lines)
             [[ -n $reverse ]] && reverse=
         fi
     done
-    if [[ -z $grepnames ]] ; then
+    if [[ -z $input_lines ]] ; then
         printf '\n \e[1;31m%s\e[0m\n\n' \
                'No match with regex'
         exit 65
@@ -274,13 +274,13 @@ make_namelist() {
 remove_parts() { # name_part for select()
     local arg1="$1"
     if [[ $arg1 =~  https?:// ]] ; then
-        grepnames=$(sed 's/ http.*//' <<< $arg1)
+        input_lines=$(sed 's/ http.*//' <<< $arg1)
     elif [[ $arg1 =~ ^/mnt/ ]] ; then
-        grepnames=$(sed 's!.*/Music/!!g'<<< $arg1)
+        input_lines=$(sed 's!.*/Music/!!g'<<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]] ; then
-        grepnames=$(sed 's!/mnt/.*!!' <<< $arg1)
+        input_lines=$(sed 's!/mnt/.*!!' <<< $arg1)
     elif [[ $arg1 =~  /$ ]] ; then
-        grepnames="$arg1"
+        input_lines="$arg1"
     fi
     return 0
 }
@@ -486,16 +486,16 @@ play_group() {
     return 0
 }
 
-select_one_grepname() {
-    namescount=$(wc -l <<< $grepnames)
-    (( $namescount > 1 )) && select_list "$arg1" "$grepnames"
+select_one_input_line() {
+    namescount=$(wc -l <<< $input_lines)
+    (( $namescount > 1 )) && select_list "$arg1" "$input_lines"
 }
 
 select_play() {
     local shuffle_line _lines n_chars min_char
     # test_print arg2 "$arg1"
     while true ; do
-        shuffle_list "$grepnames"
+        shuffle_list "$input_lines"
         (( $? == $E_IN_A_ROW )) && continue
         shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
         _lines=$(wc -l <<< $shuffle_line) # need remove extra line
@@ -536,8 +536,8 @@ select_sed() {
                 | sed "s/,$/,$grepcount/" \
                 | sed 's/$/p/')
     # test_print REPLY "$REPLY"
-    grepnames=$(sed -n "$REPLY" <<< $grepnames)
-    select_one_grepname
+    input_lines=$(sed -n "$REPLY" <<< $input_lines)
+    select_one_input_line
     select_play
     return 0
 }
@@ -545,9 +545,9 @@ select_sed() {
 select_regex() {
     printf '\n %s\n' \
            'You selected items with regex.'
-    make_namelist "$grepnames"
-    # test_print grepnames "$grepnames"
-    select_one_grepname
+    make_namelist "$input_lines"
+    # test_print input_lines "$input_lines"
+    select_one_input_line
     select_play
     return 0
 }
@@ -557,15 +557,15 @@ select_list() {
     local arg2="$2"
     local pattern1="[0-9]*[-\ ]+[0-9]*"
     local pattern2="[^0-9\ -]+"
-    grepcount=$(grep -ic .  <<< $grepnames)
+    grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )) ; then
         # grep '-F' for only string like "[live] tv"
         grepline=$(grep -iF "$arg2" <<< $arg1)
         play "$grepline"
     elif (( $grepcount > 1 )) ; then
         remove_parts "$arg2"
-        # test_print grepnames "$grepnames"
-        readarray -t arr_names <<< $grepnames
+        # test_print input_lines "$input_lines"
+        readarray -t arr_names <<< $input_lines
         printf '\n' # needed
         select line in "${arr_names[@]}" ; do
             if [[ $REPLY =~ ^00$ ]] ; then
@@ -615,7 +615,7 @@ play_local() {
         locallist=$(printf '%s\n' "${localoneline[@]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
-        select_list "$locallist" "$grepnames"
+        select_list "$locallist" "$input_lines"
     fi
     return 0
 }
@@ -677,10 +677,10 @@ play_xxx() { # private
     xxxlist="$XXX_FILE_PATH"
     # test_print xxxlist "$xxxlist"
     make_namelist "$xxxlist"
-    grepnames=$(grep -v "$SKIP_PATTERN" <<< $grepnames \
+    input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                     | sed 's/^# //')
-    # test_print grepnames "$grepnames"
-    select_list "$xxxlist" "$grepnames"
+    # test_print input_lines "$input_lines"
+    select_list "$xxxlist" "$input_lines"
     # sudo pkill notsodeep
     return 0
 }
@@ -853,16 +853,16 @@ youtube_search() { # uses youtube-dl
     done
     r_list=$(sort <<< $r_list)
     lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
-    grepnames=$(sed "s! ${yt_prefix}.*!!" <<< $r_list \
+    input_lines=$(sed "s! ${yt_prefix}.*!!" <<< $r_list \
                     | sed 's/^[^ ]\+ [^ ]\+ [^ ]\+ //')
     # test_print r_list "$r_list"
-    # test_print grepnames "$grepnames"
+    # test_print input_lines "$input_lines"
     declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
     PS3="
 Last uploaded: $lastdate
 choose : "
-    select_list "$r_list" "$grepnames"
+    select_list "$r_list" "$input_lines"
     return 0
 }
 
@@ -909,10 +909,10 @@ case "$garg1" in
 esac
 
 make_namelist "$urllist"
-grepnames=$(grep -v "$SKIP_PATTERN" <<< $grepnames \
+input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                 | sed 's/^# //')
-# test_print grepnames "$grepnames"
-select_list "$urllist" "$grepnames"
+# test_print input_lines "$input_lines"
+select_list "$urllist" "$input_lines"
 
 
 
