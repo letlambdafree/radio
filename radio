@@ -81,8 +81,6 @@
 
 ### TODO
 #
-# local play_all loop error
-# add uploader to information list
 
 
 
@@ -208,8 +206,8 @@ playing_print() {
     local arg3="$3"
     local arg4="$4"
     local arg5="$5"
-    local format1='\n \e[1;38;5;130m%s\e[0m\n\n'
-    local format2='\n \e[1;38;5;130m%s\n \e[1;38;5;240m%s %s %s %s\e[0m\n\n'
+    local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
+    local format2='\e[1;38;5;240m %s | %s | %s | %s\e[0m\n\n'
     arg1=$(sed 's/^# / /' <<< $arg1)
     if [[ $arg1 =~ https?:/ ]] ; then
         printf "$format1" \
@@ -223,14 +221,18 @@ playing_print() {
     else
         # for youtube_search
         if [[ $arg2 =~ ^[0-9]{8}$ \
-                  && $arg3 =~ [0-9]+ \
-                  && $arg4 =~ [0-9.]+ ]] ; then
+                  && $arg3 =~ [0-9.]+ \
+                  && $arg4 =~ [0-9]+ ]] ; then
+            arg2=$(date -d $arg2 +%Y/%m/%d)
+            printf -v arg3 "%.2f" $arg3
+            printf -v arg4 "%'d" $arg4
+            printf "$format1" \
+                   "$arg1"
             printf "$format2" \
-                   "$arg1" \
-                   "D: $arg2" \
-                   "| C: $arg3" \
-                   "| R: $arg4" \
-                   "| U: $arg5" # D:date, C:count, R:rating, U:uploader
+                   "$arg2" \
+                   "$arg3" \
+                   "$arg4" \
+                   "$arg5" # D:date, C:count, R:rating, U:uploader
         else
             printf "$format1" \
                    "$arg1"
@@ -370,17 +372,17 @@ play() {
     fi
     # test_print execute_part "$execute_part"
     if [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
-        pattern='^\([0-9]\{8\}\) \([0-9]\+\) \([0-9.]\+\) \(.*\)'
+        pattern='^\([0-9]\{8\}\) \([0-9.]\+\) \([0-9]\+\) \(.*\)'
         playing_date=$(sed "s/$pattern/\1/" <<< $name_part)
-        playing_view_count=$(sed "s/$pattern/\2/" <<< $name_part)
-        playing_average_rating=$(sed "s/$pattern/\3/" <<< $name_part)
+        playing_average_rating=$(sed "s/$pattern/\2/" <<< $name_part)
+        playing_view_count=$(sed "s/$pattern/\3/" <<< $name_part)
         playing_title=$(sed "s/$pattern/\4/" <<< $name_part)
         playing_uploader=$(sed "s/^http[^ ]\+ //" <<< $execute_part)
         execute_part=$(sed "s/ ${playing_uploader}$//" <<< $execute_part)
         playing_print "$playing_title" \
                       $playing_date \
-                      $playing_view_count \
                       $playing_average_rating \
+                      $playing_view_count \
                       "$playing_uploader"
     else
         playing_print "$name_part"
@@ -819,12 +821,12 @@ youtube_search() { # uses youtube-dl
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
                  | sed 's/^".*": "//' \
                  | sed 's/",$//')
-    r_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
-                       | sed 's/^".*": //' \
-                       | sed 's/,$//')
     r_average_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
                            | sed 's/^".*": //' \
                            | sed 's/,$//')
+    r_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
+                       | sed 's/^".*": //' \
+                       | sed 's/,$//')
     r_title=$(grep -oP '"title": ".*?",' <<< $result \
                   | sed 's/^".*": "//' \
                   | sed 's/",$//')
@@ -835,16 +837,16 @@ youtube_search() { # uses youtube-dl
                      | sed 's/^".*": "//' \
                      | sed 's/",$//')
     readarray -t arr_date <<< $r_date
-    readarray -t arr_view_count <<< $r_view_count
     readarray -t arr_average_rating <<< $r_average_rating
+    readarray -t arr_view_count <<< $r_view_count
     readarray -t arr_title <<< $r_title
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
     for title in "${arr_title[@]}" ; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s" \
                               ${arr_date[$i]} \
-                              ${arr_view_count[$i]} \
                               ${arr_average_rating[$i]} \
+                              ${arr_view_count[$i]} \
                               "$title" \
                               ${arr_url[$i]} \
                               "${arr_uploader[$i]}") # need ""
@@ -852,7 +854,7 @@ youtube_search() { # uses youtube-dl
     done
     r_list=$(sort <<< $r_list)
     lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
-    pattern1="s/^[0-9]\{8\} [0-9]\+ [0-9.]\+ \(.\+\) http.*/\1/"
+    pattern1="s/^[0-9]\{8\} [0-9.]\+ [0-9]\+ \(.\+\) http.*/\1/"
     grepnames=$(sed "$pattern1" <<< $r_list | sed 's/ http.*//')
     # test_print r_list "$r_list"
     # test_print grepnames "$grepnames"
