@@ -207,7 +207,7 @@ playing_print() {
     local arg4="$4"
     local arg5="$5"
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
-    local format2='\e[1;38;5;240m %s | %s | %s | %s\e[0m\n\n'
+    local format2="\e[1;38;5;240m %s | %.2f | %'d | %s\e[0m\n\n"
     arg1=$(sed 's/^# / /' <<< $arg1)
     if [[ $arg1 =~ https?:/ ]] ; then
         printf "$format1" \
@@ -217,22 +217,20 @@ playing_print() {
                "$arg1"
     elif [[ $arg1 =~ /mnt/ ]] ; then
         printf "$format1" \
-               "$(sed 's/\/mnt\/.*//' <<< $arg1)"
+               "$(sed 's!/mnt/.*!!' <<< $arg1)"
     else
         # for youtube_search
         if [[ $arg2 =~ ^[0-9]{8}$ \
                   && $arg3 =~ [0-9.]+ \
                   && $arg4 =~ [0-9]+ ]] ; then
             arg2=$(date -d $arg2 +%Y/%m/%d)
-            printf -v arg3 "%.2f" $arg3
-            printf -v arg4 "%'d" $arg4
             printf "$format1" \
                    "$arg1"
             printf "$format2" \
                    "$arg2" \
                    "$arg3" \
                    "$arg4" \
-                   "$arg5" # D:date, C:count, R:rating, U:uploader
+                   "$arg5" # D:date, R:rating, C:count, U:uploader
         else
             printf "$format1" \
                    "$arg1"
@@ -278,9 +276,9 @@ remove_parts() { # name_part for select()
     if [[ $arg1 =~  https?:// ]] ; then
         grepnames=$(sed 's/ http.*//' <<< $arg1)
     elif [[ $arg1 =~ ^/mnt/ ]] ; then
-        grepnames=$(sed 's/.*\/Music\///g'<<< $arg1)
+        grepnames=$(sed 's!.*/Music/!!g'<<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]] ; then
-        grepnames=$(sed 's/\/mnt\/.*//' <<< $arg1)
+        grepnames=$(sed 's!/mnt/.*!!' <<< $arg1)
     elif [[ $arg1 =~  /$ ]] ; then
         grepnames="$arg1"
     fi
@@ -294,9 +292,9 @@ print_shufflelist() {
         if [[ $line =~  https?:// ]] ; then
             print_name=$(sed 's/ http.*//' <<< $line)
         elif [[ $line =~ ^/mnt/ ]] ; then
-            print_name=$(sed 's/.*\/Music\///'<<< $line)
+            print_name=$(sed 's!.*/Music/!!'<<< $line)
         elif [[ $line =~  /mnt/ ]] ; then
-            print_name=$(sed 's/\/mnt\/.*//' <<< $line)
+            print_name=$(sed 's!/mnt/.*!!' <<< $line)
         else
             print_name="$line"
         fi
@@ -614,8 +612,7 @@ play_local() {
                 localoneline+=( "$file" ) # need " "
             fi
         done
-        locallist=$(printf '%s\n' \
-                           "${localoneline[@]}")
+        locallist=$(printf '%s\n' "${localoneline[@]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
         select_list "$locallist" "$grepnames"
@@ -699,7 +696,7 @@ youtube_search() { # uses youtube-dl
     local arr_title arr_url
     local c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate
-    local i j c
+    local i j c dots
     if [[ -e $ARR_YOUTUBE_SEARCH ]] ; then
         source "$ARR_YOUTUBE_SEARCH"
     else
@@ -786,14 +783,16 @@ youtube_search() { # uses youtube-dl
         printf "\n"
         while [[ -z $result ]] ; do # json-dump often fails
             ((c++))
+            dots+=.
             if (( $c > $try_dump_limit )) ; then
                 printf '\n \e[1;31m%s\e[0m\n' \
                        'Fail to dump. try later!'
                 exit 66
             fi
-            printf '\r\e[1;38;5;117m%s\e[0m %s' \
-                   "$c" \
-                   'trying ...' # need \r
+            printf '\r\e[1;38;5;117m%s\e[0m %s \e[1;38;5;40m%s\e[0m' \
+                   $c \
+                   'try dumping' \
+                   $dots
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
         printf "\n"
@@ -843,7 +842,7 @@ youtube_search() { # uses youtube-dl
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
     for title in "${arr_title[@]}" ; do
-        r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s" \
+        r_list+=$(printf "${r_list:+\n}%d %f %d %s %s %s" \
                               ${arr_date[$i]} \
                               ${arr_average_rating[$i]} \
                               ${arr_view_count[$i]} \
@@ -854,8 +853,8 @@ youtube_search() { # uses youtube-dl
     done
     r_list=$(sort <<< $r_list)
     lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
-    pattern1="s/^[0-9]\{8\} [0-9.]\+ [0-9]\+ \(.\+\) http.*/\1/"
-    grepnames=$(sed "$pattern1" <<< $r_list | sed 's/ http.*//')
+    grepnames=$(sed "s! ${yt_prefix}.*!!" <<< $r_list \
+                    | sed 's/^[^ ]\+ [^ ]\+ [^ ]\+ //')
     # test_print r_list "$r_list"
     # test_print grepnames "$grepnames"
     declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
