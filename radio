@@ -82,7 +82,7 @@
 ### TODO
 #
 # local play_all loop error
-# ncurse
+# add uploader to information list
 
 
 
@@ -186,7 +186,7 @@ test_print() {
                    no
         fi
     else
-        [[ -n "$arg2" ]] && itemsnumber=$(wc -l <<< "$arg2")
+        [[ -n $arg2 ]] && itemsnumber=$(wc -l <<< $arg2)
         if (( $itemsnumber == 1 )) ; then
             printf "$format1" \
                    $itemsnumber
@@ -209,15 +209,15 @@ playing_print() {
     local arg4="$4"
     local arg5="$5"
     local format1='\n \e[1;38;5;130m%s\e[0m\n\n'
-    local format2='\n \e[1;38;5;130m%s\n \e[1;38;5;240m%s %s %s\e[0m\n\n'
-    arg1=$(sed 's/^# / /' <<< "$arg1")
-    if [[ "$arg1" =~ https?:/ ]] ; then
+    local format2='\n \e[1;38;5;130m%s\n \e[1;38;5;240m%s %s %s %s\e[0m\n\n'
+    arg1=$(sed 's/^# / /' <<< $arg1)
+    if [[ $arg1 =~ https?:/ ]] ; then
         printf "$format1" \
                "$(sed 's/http.*//' <<< $arg1)"
-    elif [[ "$arg1" =~ /$ ]] ; then
+    elif [[ $arg1 =~ /$ ]] ; then
         printf "$format1" \
                "$arg1"
-    elif [[ "$arg1" =~ /mnt/ ]] ; then
+    elif [[ $arg1 =~ /mnt/ ]] ; then
         printf "$format1" \
                "$(sed 's/\/mnt\/.*//' <<< $arg1)"
     else
@@ -227,10 +227,10 @@ playing_print() {
                   && $arg4 =~ [0-9.]+ ]] ; then
             printf "$format2" \
                    "$arg1" \
-                   "date: $arg2" \
-                   "| count: $arg3" \
-                   "| rating: $arg4" \
-                   "| uploader: $arg5"
+                   "D: $arg2" \
+                   "| C: $arg3" \
+                   "| R: $arg4" \
+                   "| U: $arg5" # D:date, C:count, R:rating, U:uploader
         else
             printf "$format1" \
                    "$arg1"
@@ -273,13 +273,13 @@ make_namelist() {
 
 remove_parts() { # name_part for select()
     local arg1="$1"
-    if [[ "$arg1" =~  https?:// ]] ; then
+    if [[ $arg1 =~  https?:// ]] ; then
         grepnames=$(sed 's/ http.*//' <<< $arg1)
-    elif [[ "$arg1" =~ ^/mnt/ ]] ; then
+    elif [[ $arg1 =~ ^/mnt/ ]] ; then
         grepnames=$(sed 's/.*\/Music\///g'<<< $arg1)
-    elif [[ "$arg1" =~  /mnt/ ]] ; then
+    elif [[ $arg1 =~  /mnt/ ]] ; then
         grepnames=$(sed 's/\/mnt\/.*//' <<< $arg1)
-    elif [[ "$arg1" =~  /$ ]] ; then
+    elif [[ $arg1 =~  /$ ]] ; then
         grepnames="$arg1"
     fi
     return 0
@@ -316,7 +316,7 @@ shuffle_list() {
         # avoid selecting the same item in a row
         if [[ $firstshuffle == $lastshuffle ]] ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   'continue'
+                   continue
             return $E_IN_A_ROW
         else
             shufflelist=$(grep -vF "$firstshuffle" <<< $arg1) # needed -F
@@ -338,7 +338,6 @@ play() {
     local playing_date playing_view_count
     local playing_average_rating playing_title
     # test_print arg1 "$arg1"
-    ((count++))
     arg1=$(sed 's/^# //' <<< $arg1)
     if [[ $arg1 =~  https?:// ]] ; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
@@ -371,16 +370,18 @@ play() {
     fi
     # test_print execute_part "$execute_part"
     if [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
-        pattern='^\([0-9]\{8\}\) \([0-9]\+\) \([0-9.]\+\) \(.*\) \(.*\)'
+        pattern='^\([0-9]\{8\}\) \([0-9]\+\) \([0-9.]\+\) \(.*\)'
         playing_date=$(sed "s/$pattern/\1/" <<< $name_part)
         playing_view_count=$(sed "s/$pattern/\2/" <<< $name_part)
         playing_average_rating=$(sed "s/$pattern/\3/" <<< $name_part)
-        playing_uploader=$(sed "s/$pattern/\4/" <<< $name_part)
-        playing_title=$(sed "s/$pattern/\5/" <<< $name_part)
+        playing_title=$(sed "s/$pattern/\4/" <<< $name_part)
+        playing_uploader=$(sed "s/^http[^ ]\+ //" <<< $execute_part)
+        execute_part=$(sed "s/ ${playing_uploader}$//" <<< $execute_part)
         playing_print "$playing_title" \
                       $playing_date \
                       $playing_view_count \
-                      $playing_average_rating
+                      $playing_average_rating \
+                      "$playing_uploader"
     else
         playing_print "$name_part"
     fi
@@ -394,7 +395,6 @@ play() {
     else
         $PLAYER "$execute_part"
     fi
-    count=0
     return 0
 }
 
@@ -571,8 +571,7 @@ select_list() {
             if [[ $REPLY =~ ^00$ ]] ; then
                 select_all
                 exit 0
-            elif [[ $REPLY =~ $pattern1 \
-                        && ! $REPLY =~ $pattern2 ]] ; then
+            elif [[ $REPLY =~ $pattern1 && ! $REPLY =~ $pattern2 ]] ; then
                 select_sed
                 exit 0
             elif [[ $REPLY =~ [^0-9] ]] ; then
@@ -588,7 +587,6 @@ select_list() {
                 exit 1
             fi
         done
-
         grepline=$(grep -iF "$selected" <<< $arg1)
         play "$grepline"
         exit 0
@@ -693,7 +691,7 @@ youtube_search() { # uses youtube-dl
     local s_limit=100 # it takes 8 secs for getting 10 items, so need cache
     local max_cache=10000
     local display_c_Phrase_limit=100 # modify later
-    local try_dump_limit=100
+    local try_dump_limit=1000
     local result r_list
     local r_date r_view_count r_average_rating r_title r_url
     local arr_title arr_url
@@ -726,7 +724,7 @@ youtube_search() { # uses youtube-dl
         for line in "${!arr_result[@]}" ; do
             if [[ $line == $d_phrase ]] ; then
                 d_matched=1
-                unset arr_result["$d_phrase"]
+                unset arr_result["$d_phrase"] # need "$ "
                 unset arr_search["$d_phrase"]
                 declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
                 declare -p arr_result > "$ARR_YOUTUBE_RESULT"
@@ -746,9 +744,9 @@ youtube_search() { # uses youtube-dl
         s_phrase="${garg[@]:2}"
         for key in "${!arr_result[@]}" ; do
             if [[ $key == $s_phrase ]] ; then
-                result="${arr_result["$key"]}" # remove " "?
-                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
-                arr_search["$s_phrase"]=$s_rate
+                result="${arr_result[$key]}" # remove " "?
+                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+                arr_search[$s_phrase]=$s_rate
                 break
             fi
         done
@@ -761,8 +759,8 @@ youtube_search() { # uses youtube-dl
         s_phrase="${garg[@]:2}"
         for key in "${!arr_result[@]}" ; do
             if [[ $key == $s_phrase ]] ; then
-                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
-                arr_search["$s_phrase"]=$s_rate
+                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+                arr_search[$s_phrase]=$s_rate
                 u_matched=1
                 break
             fi
@@ -775,31 +773,33 @@ youtube_search() { # uses youtube-dl
     else
         for search in "${!arr_result[@]}" ; do
             if [[ $search == $s_phrase ]] ; then
-                result="${arr_result["$search"]}"
-                s_rate=$(( ${arr_search["$s_phrase"]} + 1 ))
-                arr_search["$s_phrase"]=$s_rate
+                result="${arr_result[$search]}"
+                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+                arr_search[$s_phrase]=$s_rate
                 break
             fi
         done
     fi
     if [[ -z $result ]] ; then
+        printf "\n"
         while [[ -z $result ]] ; do # json-dump often fails
             ((c++))
             if (( $c > $try_dump_limit )) ; then
                 printf '\n \e[1;31m%s\e[0m\n' \
-                       "Fail to dump. try later!"
+                       'Fail to dump. try later!'
                 exit 66
             fi
-            printf '\e[1;38;5;90m %s\e[0m%s\n' \
-                   "'${c}'" \
-                   "th trying ..."
+            printf '\r\e[1;38;5;117m%s\e[0m %s' \
+                   "$c" \
+                   'trying ...' # need \r
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
+        printf "\n"
         result=$(printf %b "$result") # Unicode-to-utf8, need %b
         if (( ${#arr_result[@]} >= $max_cache )) ; then
             for key in "${!arr_search[@]}" ; do
-                if (( ${arr_search["$key"]} <= ${min_rate:-10} )) ; then
-                    min_rate=${arr_search["$key"]}
+                if (( ${arr_search[$key]} <= ${min_rate:-10} )) ; then
+                    min_rate=${arr_search[$key]}
                     min_key="$key"
                 fi
             done
@@ -810,51 +810,50 @@ youtube_search() { # uses youtube-dl
                    "$min_rate rated."
         fi
         arr_result+=(["$s_phrase"]="$result")
-        if [[ -n ${arr_search["$s_phrase"]} ]] ; then
-            arr_search+=(["$s_phrase"]=${arr_search["$s_phrase"]})
+        if [[ -n ${arr_search[$s_phrase]} ]] ; then
+            arr_search+=(["$s_phrase"]=${arr_search[$s_phrase]})
         else
             arr_search+=(["$s_phrase"]=1)
         fi
     fi
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
-                       | sed 's/^".*": "//' \
-                       | sed 's/",$//')
+                 | sed 's/^".*": "//' \
+                 | sed 's/",$//')
+    r_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
+                       | sed 's/^".*": //' \
+                       | sed 's/,$//')
+    r_average_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
+                           | sed 's/^".*": //' \
+                           | sed 's/,$//')
     r_title=$(grep -oP '"title": ".*?",' <<< $result \
-                       | sed 's/^".*": "//' \
-                       | sed 's/",$//')
+                  | sed 's/^".*": "//' \
+                  | sed 's/",$//')
     r_url=$(grep -oP '"webpage_url": ".*?",' <<< $result \
-                     | sed 's/^".*": "//' \
-                     | sed 's/",$//')
+                | sed 's/^".*": "//' \
+                | sed 's/",$//')
     r_uploader=$(grep -oP '"uploader": ".*?",' <<< $result \
                      | sed 's/^".*": "//' \
                      | sed 's/",$//')
-    r_view_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
-                             | sed 's/^".*": //' \
-                             | sed 's/,$//')
-    r_average_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
-                             | sed 's/^".*": //' \
-                             | sed 's/,$//')
     readarray -t arr_date <<< $r_date
+    readarray -t arr_view_count <<< $r_view_count
+    readarray -t arr_average_rating <<< $r_average_rating
     readarray -t arr_title <<< $r_title
     readarray -t arr_url <<< $r_url
-    readarray -t arr_view_count <<< $r_view_count
     readarray -t arr_uploader <<< $r_uploader
-    readarray -t arr_average_rating <<< $r_average_rating
     for title in "${arr_title[@]}" ; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s" \
                               ${arr_date[$i]} \
                               ${arr_view_count[$i]} \
                               ${arr_average_rating[$i]} \
-                              ${arr_uploader[$i]} \
                               "$title" \
-                              "${arr_url[$i]}")
+                              ${arr_url[$i]} \
+                              "${arr_uploader[$i]}") # need ""
         ((i++))
     done
     r_list=$(sort <<< $r_list)
-    lastdate=$(tail -n 1 <<< $r_list \
-                   | grep -o '^[0-9]\{8\}')
-    grepnames=$(sed 's/^[0-9]\{8\} [0-9]\+ [0-9.]\+ //' <<< $r_list \
-                    | sed 's/ http.*//')
+    lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
+    pattern1="s/^[0-9]\{8\} [0-9]\+ [0-9.]\+ \(.\+\) http.*/\1/"
+    grepnames=$(sed "$pattern1" <<< $r_list | sed 's/ http.*//')
     # test_print r_list "$r_list"
     # test_print grepnames "$grepnames"
     declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
@@ -882,28 +881,28 @@ case "$garg1" in
     "")
         play_radio && exit 0
         ;;
-    -a|--all)
+    -a | --all)
         show_all && exit 0
         ;;
-    -g|--group)
+    -g | --group)
         play_group && exit 0
         ;;
-    -l|--local)
+    -l | --local)
         play_local && exit 0
         ;;
-    -t|--test)
+    -t | --test)
         test_items && exit 0
         ;;
-    -e|--edit)
+    -e | --edit)
         edit_this && exit 0
         ;;
-    -h|--help)
+    -h | --help)
         help_usage && exit 0
         ;;
-    -x|--xxx)
+    -x | --xxx)
         play_xxx && exit 0
         ;;
-    -y|--youtube)
+    -y | --youtube)
         youtube_search && exit 0
         ;;
 esac
