@@ -87,7 +87,6 @@
 
 
 # set -u # avoid a undeclared variable
-
 garg=( "$@" )
 garg0="$0"
 garg1="$1"
@@ -134,13 +133,13 @@ search_linenumber() {
     local arg1="$1"
     local arg2="$2"
     x=0
-    if [[ -f "$arg1" ]] ; then
-        while read -r line ; do
+    if [[ -f "$arg1" ]]; then
+        while read -r line; do
             ((x++))
             [[ $line =~ $arg2 ]] && break # unquote for regex
         done < $arg1
     else
-        while read -r line ; do
+        while read -r line; do
             ((x++))
             [[ $line =~ $arg2 ]] && break
         done <<< $arg1
@@ -151,14 +150,14 @@ search_linenumber() {
 
 back_trace() {
     local maxlength
-    for key in ${!FUNCNAME[@]} ; do
-        if (( ${#FUNCNAME[$key]} > ${maxlength:-0} )) ; then
+    for key in ${!FUNCNAME[@]}; do
+        if (( ${#FUNCNAME[$key]} > ${maxlength:-0} )); then
             maxlength=${#FUNCNAME[$key]}
         fi
     done
     # printf "\n %-${maxlength}s : %5d" \
     #        LINENO ${LINENO}
-    for key in ${!BASH_LINENO[@]} ; do
+    for key in ${!BASH_LINENO[@]}; do
         printf "\n %-${maxlength}s : %5d" \
                ${FUNCNAME[$key]} ${BASH_LINENO[$key]}
     done
@@ -176,11 +175,11 @@ test_print() {
     printf "$format3" \
            "$arg1" \
            "$arg2"
-    if (( $arg3 )) ; then
-        if (( $arg3 == 1 )) ; then
+    if (( $arg3 )); then
+        if (( $arg3 == 1 )); then
             printf "$format1" \
                    $arg3
-        elif (( $arg3 > 1 )) ; then
+        elif (( $arg3 > 1 )); then
             printf "$format2" \
                    $arg3
         else
@@ -189,10 +188,10 @@ test_print() {
         fi
     else
         [[ -n $arg2 ]] && itemsnumber=$(wc -l <<< $arg2)
-        if (( $itemsnumber == 1 )) ; then
+        if (( $itemsnumber == 1 )); then
             printf "$format1" \
                    $itemsnumber
-        elif (( $itemsnumber > 1 )) ; then
+        elif (( $itemsnumber > 1 )); then
             printf "$format2" \
                    $itemsnumber
         else
@@ -213,16 +212,16 @@ playing_print() {
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
     local format2="\e[1;38;5;240m %s | %.2f | %'d | %s\e[0m\n\n"
     arg1=$(sed 's/^# / /' <<< $arg1)
-    if [[ $arg1 =~ https?:/ ]] ; then
+    if [[ $arg1 =~ https?:/ ]]; then
         printf "$format1" \
                "$(sed 's/http.*//' <<< $arg1)"
-    elif [[ $arg1 =~ /$ ]] ; then
+    elif [[ $arg1 =~ /$ ]]; then
         printf "$format1" \
                "$arg1"
-    elif [[ $arg1 =~ /mnt/ ]] ; then
+    elif [[ $arg1 =~ /mnt/ ]]; then
         printf "$format1" \
                "$(sed 's!/mnt/.*!!' <<< $arg1)"
-    elif [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
+    elif [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             arg2=$(date -d $arg2 +%Y/%m/%d)
             printf "$format1" \
                    "$arg1" # title
@@ -244,19 +243,19 @@ make_namelist() {
     #
     local arg1="$1"
     local reverse=
-    if [[ -n $REPLY ]] ; then
+    if [[ -n $REPLY ]]; then
         readarray -t array_namelist <<< ${REPLY/ /$'\n'} # test
     else
         array_namelist=( "${garg[@]}" ) # need double quotes like 'lsd sia'
     fi
-    for line in "${array_namelist[@]}" ; do
-        if [[ -z $input_lines ]] ; then
+    for line in "${array_namelist[@]}"; do
+        if [[ -z $input_lines ]]; then
             # test_print line1 "$line"
             [[ $line =~ ^-+[a-z]+ ]] && continue
             input_lines=$(grep -i "$line" <<< $arg1)
         else
             # test_print line2 "$line"
-            if [[ $line == -v ]] ; then
+            if [[ $line == -v ]]; then
                 reverse=v
                 continue
             fi
@@ -264,7 +263,7 @@ make_namelist() {
             [[ -n $reverse ]] && reverse=
         fi
     done
-    if [[ -z $input_lines ]] ; then
+    if [[ -z $input_lines ]]; then
         printf '\n \e[1;31m%s\e[0m\n\n' \
                'No match with regex'
         exit 65
@@ -277,13 +276,13 @@ remove_parts() {
     # name_part for select()
     #
     local arg1="$1"
-    if [[ $arg1 =~  https?:// ]] ; then
+    if [[ $arg1 =~  https?:// ]]; then
         input_lines=$(sed 's/ http.*//' <<< $arg1)
-    elif [[ $arg1 =~ ^/mnt/ ]] ; then
+    elif [[ $arg1 =~ ^/mnt/ ]]; then
         input_lines=$(sed 's!.*/Music/!!g'<<< $arg1)
-    elif [[ $arg1 =~  /mnt/ ]] ; then
+    elif [[ $arg1 =~  /mnt/ ]]; then
         input_lines=$(sed 's!/mnt/.*!!' <<< $arg1)
-    elif [[ $arg1 =~  /$ ]] ; then
+    elif [[ $arg1 =~  /$ ]]; then
         input_lines="$arg1"
     fi
     return 0
@@ -292,12 +291,12 @@ remove_parts() {
 print_shufflelist() {
     local arg1="$1"
     local print_name print_names
-    for line in "$arg1" ; do
-        if [[ $line =~  https?:// ]] ; then
+    for line in "$arg1"; do
+        if [[ $line =~  https?:// ]]; then
             print_name=$(sed 's/ http.*//' <<< $line)
-        elif [[ $line =~ ^/mnt/ ]] ; then
+        elif [[ $line =~ ^/mnt/ ]]; then
             print_name=$(sed 's!.*/Music/!!'<<< $line)
-        elif [[ $line =~  /mnt/ ]] ; then
+        elif [[ $line =~  /mnt/ ]]; then
             print_name=$(sed 's!/mnt/.*!!' <<< $line)
         else
             print_name="$line"
@@ -318,13 +317,13 @@ shuffle_list() {
     local firstshuffle lastshuffle
     # test_print arg1 "$arg1"
     [[ -z $arg1 ]] && exit 1
-    if [[ -z $shufflelist ]] ; then
+    if [[ -z $shufflelist ]]; then
         print_shufflelist "$arg1"
         firstshuffle=$(shuf -n 1 <<< $arg1)
         #
         # avoid selecting the same item in a row
         #
-        if [[ $firstshuffle == $lastshuffle ]] ; then
+        if [[ $firstshuffle == $lastshuffle ]]; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    continue
             return $E_IN_A_ROW
@@ -350,13 +349,13 @@ play() {
     local pattern
     # test_print arg1 "$arg1"
     arg1=$(sed 's/^# //' <<< $arg1)
-    if [[ $arg1 =~  https?:// ]] ; then
+    if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
-    elif [[ $arg1 =~ /$ ]] ; then
+    elif [[ $arg1 =~ /$ ]]; then
         name_part="$arg1"
-    elif [[ $arg1 =~ ^/mnt/ ]] ; then
+    elif [[ $arg1 =~ ^/mnt/ ]]; then
         name_part=$(sed 's!.*/Music/!!g' <<< $arg1)
-    elif [[ $arg1 =~  /mnt/ ]] ; then
+    elif [[ $arg1 =~  /mnt/ ]]; then
         name_part=$(sed 's! /mnt/.*!!' <<< $arg1)
     else
         printf '\n \e[1;31m%s\e[0m\n\n' \
@@ -365,13 +364,13 @@ play() {
         exit 1
     fi
     # test_print name_part "$name_part"
-    if [[ $arg1 =~  https?:// ]] ; then
+    if [[ $arg1 =~  https?:// ]]; then
         execute_part=${arg1/*http/http}
-    elif [[ $arg1 =~ /$ ]] ; then
+    elif [[ $arg1 =~ /$ ]]; then
         execute_part="$LOCAL_MUSIC_DIR""$arg1"
-    elif [[ $arg1 =~ ^/mnt/ ]] ; then
+    elif [[ $arg1 =~ ^/mnt/ ]]; then
         execute_part="$arg1"
-    elif [[ $arg1 =~  /mnt/ ]] ; then
+    elif [[ $arg1 =~  /mnt/ ]]; then
         execute_part=${arg1/*mnt//mnt}
     else
         printf '\n \e[1;31m%s\e[0m\n\n' \
@@ -380,7 +379,7 @@ play() {
         exit 1
     fi
     # test_print execute_part "$execute_part"
-    if [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
+    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
         pattern='^\([0-9]\{8\}\) \([0-9.]\+\) \([0-9]\+\) \(.*\)'
         playing_date=$(sed "s/$pattern/\1/" <<< $name_part)
         playing_average_rating=$(sed "s/$pattern/\2/" <<< $name_part)
@@ -397,7 +396,7 @@ play() {
         playing_print "$name_part"
     fi
 
-    if [[ $execute_part =~  --[a-z]+ ]] ; then
+    if [[ $execute_part =~  --[a-z]+ ]]; then
         head_part=${execute_part%% --*} # need space for trailing
         option_part=${execute_part#"$head_part" } # need quotes
         # test_print head_part "$head_part"
@@ -410,7 +409,7 @@ play() {
 }
 
 play_radio() {
-    while true ; do
+    while true; do
         radiolist=$(grep -v "$SKIP_PATTERN" <<< $radiolist)
         shuffle_list "$radiolist"
         (( $? == $E_IN_A_ROW )) && continue
@@ -427,7 +426,7 @@ show_all(){
 
 play_group() {
     x=0
-    while read -r line ; do
+    while read -r line; do
         ((x++))
         # test_print urllist $urllist
         # test_print x $x
@@ -487,7 +486,7 @@ play_group() {
     grouplist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$grouplist" "^##+"
     grouplist=$(head -n $((x-2)) <<< $grouplist)
-    while true ; do
+    while true; do
         grouplist=$(grep -v "$SKIP_PATTERN" <<< $grouplist)
         shuffle_list "$grouplist"
         (( $? == $E_IN_A_ROW )) && continue
@@ -505,15 +504,15 @@ select_one_input_line() {
 select_play() {
     local shuffle_line _lines n_chars min_char
     # test_print arg2 "$arg1"
-    while true ; do
+    while true; do
         shuffle_list "$input_lines"
         (( $? == $E_IN_A_ROW )) && continue
         shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
         _lines=$(wc -l <<< $shuffle_line) # need remove extra line
-        if (( $_lines > 1 )) ; then
-            for line in "$shuffle_line" ; do
+        if (( $_lines > 1 )); then
+            for line in "$shuffle_line"; do
                 n_chars=$(wc -c <<< $line)
-                if (( $n_chars <= ${min_chars:-$n_chars} )) ; then
+                if (( $n_chars <= ${min_chars:-$n_chars} )); then
                     min_chars=$n_chars
                     shuffle_line="$line"
                 fi
@@ -572,29 +571,29 @@ select_list() {
     local pattern1='[0-9]*[-\ ]+[0-9]*'
     local pattern2='[^0-9\ -]+'
     grepcount=$(grep -ic .  <<< $input_lines)
-    if (( $grepcount == 1 )) ; then
+    if (( $grepcount == 1 )); then
         #
         # grep '-F' for only string like "[live] tv"
         #
         grepline=$(grep -iF "$arg2" <<< $arg1)
         play "$grepline"
         sleep 0.1 # needed for C-c
-    elif (( $grepcount > 1 )) ; then
+    elif (( $grepcount > 1 )); then
         remove_parts "$arg2"
         # test_print input_lines "$input_lines"
         readarray -t arr_names <<< $input_lines
         printf '\n' # needed
-        select line in "${arr_names[@]}" ; do
-            if [[ $REPLY =~ ^00$ ]] ; then
+        select line in "${arr_names[@]}"; do
+            if [[ $REPLY =~ ^00$ ]]; then
                 select_all
                 exit 0
-            elif [[ $REPLY =~ $pattern1 && ! $REPLY =~ $pattern2 ]] ; then
+            elif [[ $REPLY =~ $pattern1 && ! $REPLY =~ $pattern2 ]]; then
                 select_sed
                 exit 0
-            elif [[ $REPLY =~ [^0-9] ]] ; then
+            elif [[ $REPLY =~ [^0-9] ]]; then
                 select_regex
                 exit 0
-            elif [[ -n $line ]] ; then
+            elif [[ -n $line ]]; then
                 selected="$line"
                 break
             else
@@ -616,8 +615,8 @@ play_local() {
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
     locallist=$(head -n $((x-2)) <<< $locallist)
-    if [[ -z $garg2 ]] ; then
-        while true ; do
+    if [[ -z $garg2 ]]; then
+        while true; do
             locallist=$(grep -v "$SKIP_PATTERN" <<< $locallist)
             shuffle_list "$locallist"
             (( $? == $E_IN_A_ROW )) && continue
@@ -626,8 +625,8 @@ play_local() {
         done
     else
         shopt -s globstar
-        for file in "$LOCAL_MUSIC_DIR"**/* ; do
-            if [[ $file =~ $LOCAL_MUSIC_EXT ]] ; then
+        for file in "$LOCAL_MUSIC_DIR"**/*; do
+            if [[ $file =~ $LOCAL_MUSIC_EXT ]]; then
                 localoneline+=( "$file" ) # need " "
             fi
         done
@@ -645,13 +644,13 @@ test_items() {
     search_linenumber "$urllist" "^$TEST_END_LINE"
     testlist=$(head -n +$x <<< "$urllist")
     cat > "$REPORT_PATH" <<< $REPORT_START_LINE
-    while read -r line ; do
+    while read -r line; do
         (( $(grep -c "$SKIP_PATTERN" <<< $line) )) && continue
         playing_print "$line"
         $PLAYER $(sed 's/.*http/http/' <<< $line) &
         lastbgpid=$!
         sleep $TEST_TIME
-        if (( $(ps aux | grep -c $lastbgpid) == 1 )) ; then
+        if (( $(ps aux | grep -c $lastbgpid) == 1 )); then
             echo "$line" >> "$REPORT_PATH"
         else
             kill $lastbgpid
@@ -682,7 +681,7 @@ bypass_site() {
     #
     # bypass for the blocked sites
     #
-    if (( ! $(ps -A | grep -c notsodeep) )) ; then
+    if (( ! $(ps -A | grep -c notsodeep) )); then
         sudo iptables \
              -A INPUT \
              -p tcp \
@@ -723,20 +722,20 @@ youtube_search() {
     local c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate
     local i j c dots
-    if [[ -e $ARR_YOUTUBE_SEARCH ]] ; then
+    if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
     else
         declare -A arr_search # local
     fi
-    if [[ -e $ARR_YOUTUBE_RESULT ]] ; then
+    if [[ -e $ARR_YOUTUBE_RESULT ]]; then
         source "$ARR_YOUTUBE_RESULT"
     else
         declare -A arr_result # local
     fi
-    if [[ -z $garg2 ]] ; then
-        for line in "${!arr_result[@]}" ; do
+    if [[ -z $garg2 ]]; then
+        for line in "${!arr_result[@]}"; do
             ((j++))
-            if (( j > $display_c_Phrase_limit )) ; then
+            if (( j > $display_c_Phrase_limit )); then
                 c_phrase+="${c_phrase:+ }'$line' ..."
                 break
             fi
@@ -744,10 +743,10 @@ youtube_search() {
         done
         test_print c_phrase "$c_phrase" ${#arr_result[@]}
         exit 2
-    elif [[ $garg2 == -d ]] ; then  # -d delete the cached_phrase
+    elif [[ $garg2 == -d ]]; then  # -d delete the cached_phrase
         d_phrase="${garg[@]:2}"
-        for line in "${!arr_result[@]}" ; do
-            if [[ $line == $d_phrase ]] ; then
+        for line in "${!arr_result[@]}"; do
+            if [[ $line == $d_phrase ]]; then
                 d_matched=1
                 unset arr_result["$d_phrase"] # need "$ "
                 unset arr_search["$d_phrase"]
@@ -756,7 +755,7 @@ youtube_search() {
                 break
             fi
         done
-        if (( $d_matched )) ; then
+        if (( $d_matched )); then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    "success for deletion with '$d_phrase'"
             exit 0
@@ -765,52 +764,52 @@ youtube_search() {
                    "not matched with '$d_phrase'"
             exit 1
         fi
-    elif [[ $garg2 == -c ]] ; then  # -c search in the c_phrase
+    elif [[ $garg2 == -c ]]; then  # -c search in the c_phrase
         s_phrase="${garg[@]:2}"
-        for key in "${!arr_result[@]}" ; do
-            if [[ $key == $s_phrase ]] ; then
+        for key in "${!arr_result[@]}"; do
+            if [[ $key == $s_phrase ]]; then
                 result="${arr_result[$key]}" # remove " "?
-                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+                s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 break
             fi
         done
-        if [[ -z $result ]] ; then
+        if [[ -z $result ]]; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    'There is no cached_phrase.'
             exit 2
         fi
-    elif [[ $garg2 == -u ]] ; then # -u update the cached_phrase
+    elif [[ $garg2 == -u ]]; then # -u update the cached_phrase
         s_phrase="${garg[@]:2}"
-        for key in "${!arr_result[@]}" ; do
-            if [[ $key == $s_phrase ]] ; then
-                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+        for key in "${!arr_result[@]}"; do
+            if [[ $key == $s_phrase ]]; then
+                s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 u_matched=1
                 break
             fi
         done
-        if (( ! $u_matched )) ; then
+        if (( ! $u_matched )); then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    "not matched with '$update_phrase'"
             exit 1
         fi
     else
-        for search in "${!arr_result[@]}" ; do
-            if [[ $search == $s_phrase ]] ; then
+        for search in "${!arr_result[@]}"; do
+            if [[ $search == $s_phrase ]]; then
                 result="${arr_result[$search]}"
-                s_rate=$(( ${arr_search[$s_phrase]} + 1 ))
+                s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 break
             fi
         done
     fi
-    if [[ -z $result ]] ; then
+    if [[ -z $result ]]; then
         printf '\n'
-        while [[ -z $result ]] ; do # json-dump often fails
+        while [[ -z $result ]]; do # json-dump often fails
             ((c++))
             dots+=.
-            if (( $c > $try_dump_limit )) ; then
+            if (( $c > $try_dump_limit )); then
                 printf '\n \e[1;31m%s\e[0m\n' \
                        'Fail dumping. try later!'
                 exit 66
@@ -823,9 +822,9 @@ youtube_search() {
         done
         printf '\n'
         result=$(printf %b "$result") # Unicode-to-utf8, need %b
-        if (( ${#arr_result[@]} >= $max_cache )) ; then
-            for key in "${!arr_search[@]}" ; do
-                if (( ${arr_search[$key]} <= ${min_rate:-10} )) ; then
+        if (( ${#arr_result[@]} >= $max_cache )); then
+            for key in "${!arr_search[@]}"; do
+                if (( ${arr_search[$key]} <= ${min_rate:-10} )); then
                     min_rate=${arr_search[$key]}
                     min_key="$key"
                 fi
@@ -836,11 +835,11 @@ youtube_search() {
                    "'$min_key' has been removed" \
                    "$min_rate rated."
         fi
-        arr_result+=(["$s_phrase"]="$result")
-        if [[ -n ${arr_search[$s_phrase]} ]] ; then
-            arr_search+=(["$s_phrase"]=${arr_search[$s_phrase]})
+        arr_result+=( ["$s_phrase"]="$result" )
+        if [[ -n ${arr_search[$s_phrase]} ]]; then
+            arr_search+=( ["$s_phrase"]=${arr_search[$s_phrase]} )
         else
-            arr_search+=(["$s_phrase"]=1)
+            arr_search+=( ["$s_phrase"]=1 )
         fi
     fi
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
@@ -867,7 +866,7 @@ youtube_search() {
     readarray -t arr_title <<< $r_title
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
-    for title in "${arr_title[@]}" ; do
+    for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%d %f %d %s %s %s" \
                               ${arr_date[$i]} \
                               ${arr_average_rating[$i]} \
