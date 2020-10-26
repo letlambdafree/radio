@@ -203,6 +203,44 @@ test_print() {
     return 0
 }
 
+print_shuffle_list() {
+    local arg1="$1"
+    local format1='\n\e[1;38;5;220m%s\e[0m\n'
+    local format2='\n\e[1;38;5;240m%s\e[0m\n'
+    local format3='\n\e[1;38;5;40m%s item\e[0m\n'
+    local format4='\n\e[1;38;5;40m%s/%s item\e[0m\n'
+    local format5='\n\e[1;38;5;40m%s/%s items\e[0m\n'
+    local format6='\n \e[1;31m%s\e[0m\n\n'
+    local items_number=0
+    printf "$format1" \
+           'shuffle_list'
+    printf "$format2" \
+           "$arg1"
+    [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
+    if (( $n_init_shuffle_list == 0 )); then
+        printf "$format3" \
+               no
+    elif (( $n_init_shuffle_list == 1 )); then
+        printf "$format3" \
+               1
+    elif (( $items_number == 1 )); then
+        printf "$format4" \
+               $items_number \
+               $n_init_shuffle_list
+    elif (( $items_number > 1 )); then
+        printf "$format5" \
+               $items_number \
+               $n_init_shuffle_list
+    else
+        printf "$format6" \
+               'Something is wrong!'
+        back_trace
+        exit 1
+    fi
+    # back_trace
+    return 0
+}
+
 playing_print() {
     local arg1="$1"
     local arg2="$2"
@@ -271,24 +309,34 @@ make_namelist() {
     return 0
 }
 
-remove_parts() {
+get_name_part() {
     #
     # name_part for select()
     #
     local arg1="$1"
-    if [[ $arg1 =~  https?:// ]]; then
-        input_lines=$(sed 's/ http.*//' <<< $arg1)
+    local pattern='^[0-9]\{8\} [0-9.]\+ [0-9]\+ '
+    arg1=$(sed 's/^# //' <<< $arg1)
+    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
+        input_lines=$(sed 's! https\?://.*!!' <<< $arg1 \
+                          | sed "s/$pattern//")
+    elif [[ $arg1 =~  https?:// ]]; then
+        input_lines=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ ^/mnt/ ]]; then
-        input_lines=$(sed 's!.*/Music/!!g'<<< $arg1)
+        input_linest=$(sed 's!.*/Music/!!g' <<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]]; then
-        input_lines=$(sed 's!/mnt/.*!!' <<< $arg1)
+        input_lines=$(sed 's! /mnt/.*!!' <<< $arg1)
     elif [[ $arg1 =~  /$ ]]; then
         input_lines="$arg1"
+    else
+        printf '\n \e[1;31m%s\e[0m\n\n' \
+               'Something is wrong!'
+        back_trace
+        exit 1
     fi
     return 0
 }
 
-print_shufflelist() {
+make_shuffle_list() {
     local arg1="$1"
     local print_name print_names
     for line in "$arg1"; do
@@ -303,7 +351,7 @@ print_shufflelist() {
         fi
         print_names+=${print_names:+\n}$(sed 's/^# //' <<< $print_name)
     done
-    test_print shufflelist "$print_names"
+    print_shuffle_list "$print_names"
     return 0
 }
 
@@ -315,10 +363,12 @@ shuffle_list() {
     #
     local arg1="$1"
     local firstshuffle lastshuffle
+    declare -g n_init_shuffle_list
     # test_print arg1 "$arg1"
     [[ -z $arg1 ]] && exit 1
     if [[ -z $shufflelist ]]; then
-        print_shufflelist "$arg1"
+        n_init_shuffle_list=$(wc -l <<< $arg1)
+        make_shuffle_list "$arg1"
         firstshuffle=$(shuf -n 1 <<< $arg1)
         #
         # avoid selecting the same item in a row
@@ -332,7 +382,7 @@ shuffle_list() {
             shuffleradio="$firstshuffle"
         fi
     else
-        print_shufflelist "$shufflelist"
+        make_shuffle_list "$shufflelist"
         lastshuffle=$(shuf -n 1 <<< $shufflelist)
         shufflelist=$(grep -vF "$lastshuffle" <<< $shufflelist)
         shuffleradio="$lastshuffle"
@@ -499,25 +549,16 @@ play_group() {
 select_one_input_line() {
     namescount=$(wc -l <<< $input_lines)
     (( $namescount > 1 )) && select_list "$arg1" "$input_lines"
+    return 0
 }
 
 select_play() {
-    local shuffle_line _lines n_chars min_char
-    # test_print arg2 "$arg1"
+    local shuffle_line
+    # test_print arg1 "$arg1" # arg1 is select_list()'s
     while true; do
         shuffle_list "$input_lines"
         (( $? == $E_IN_A_ROW )) && continue
         shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
-        _lines=$(wc -l <<< $shuffle_line) # need remove extra line
-        if (( $_lines > 1 )); then
-            for line in "$shuffle_line"; do
-                n_chars=$(wc -c <<< $line)
-                if (( $n_chars <= ${min_chars:-$n_chars} )); then
-                    min_chars=$n_chars
-                    shuffle_line="$line"
-                fi
-            done
-        fi
         play "$shuffle_line"
         sleep 0.1 # needed for C-c
     done
@@ -579,7 +620,7 @@ select_list() {
         play "$grepline"
         sleep 0.1 # needed for C-c
     elif (( $grepcount > 1 )); then
-        remove_parts "$arg2"
+        get_name_part "$arg2"
         # test_print input_lines "$input_lines"
         readarray -t arr_names <<< $input_lines
         printf '\n' # needed
@@ -878,9 +919,7 @@ youtube_search() {
     done
     r_list=$(sort <<< $r_list)
     lastdate=$(tail -n 1 <<< $r_list | grep -o '^[0-9]\{8\}')
-    input_lines=$(sed "s! ${yt_prefix}.*!!" <<< $r_list \
-                    | sed 's/^[^ ]\+ [^ ]\+ [^ ]\+ //')
-    # test_print r_list "$r_list"
+    input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
     declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
