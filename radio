@@ -80,6 +80,7 @@
 
 
 ### TODO
+# curl, google code
 #
 
 
@@ -404,6 +405,7 @@ play_radio() {
         shuffle_list "$radiolist"
         (( $? == $E_IN_A_ROW )) && continue
         play "$shuffleradio"
+        sleep 0.1 # needed for C-c
     done
     return 0
 }
@@ -481,7 +483,7 @@ play_group() {
         shuffle_list "$grouplist"
         (( $? == $E_IN_A_ROW )) && continue
         play "$shuffleradio"
-        sleep 1
+        sleep 0.1 # needed for C-c
     done
     return 0
 }
@@ -509,6 +511,7 @@ select_play() {
             done
         fi
         play "$shuffle_line"
+        sleep 0.1 # needed for C-c
     done
     return 0
 }
@@ -562,6 +565,7 @@ select_list() {
         # grep '-F' for only string like "[live] tv"
         grepline=$(grep -iF "$arg2" <<< $arg1)
         play "$grepline"
+        sleep 0.1 # needed for C-c
     elif (( $grepcount > 1 )) ; then
         remove_parts "$arg2"
         # test_print input_lines "$input_lines"
@@ -589,6 +593,7 @@ select_list() {
         done
         grepline=$(grep -iF "$selected" <<< $arg1)
         play "$grepline"
+        sleep 0.1 # needed for C-c
         exit 0
     fi
 }
@@ -604,6 +609,7 @@ play_local() {
             shuffle_list "$locallist"
             (( $? == $E_IN_A_ROW )) && continue
             play "$shuffleradio"
+            sleep 0.1 # needed for C-c
         done
     else
         shopt -s globstar
@@ -636,7 +642,7 @@ test_items() {
         else
             kill $lastbgpid
         fi
-        sleep 1
+        sleep 0.1
     done <<< $testlist
     printf '\n %s\n' \
            "$(cat $REPORT_PATH)"
@@ -786,13 +792,13 @@ youtube_search() { # uses youtube-dl
             dots+=.
             if (( $c > $try_dump_limit )) ; then
                 printf '\n \e[1;31m%s\e[0m\n' \
-                       'Fail to dump. try later!'
+                       'Fail dumping. try later!'
                 exit 66
             fi
-            printf '\r\e[1;38;5;117m%s\e[0m %s \e[1;38;5;40m%s\e[0m' \
-                   $c \
+            printf '\r%s\e[1;38;5;40m%s\e[1;38;5;117m%s\e[0m' \
                    'try dumping' \
-                   $dots
+                   $dots \
+                   $c
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
         printf "\n"
