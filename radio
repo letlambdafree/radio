@@ -207,10 +207,11 @@ print_shuffle_list() {
     local arg1="$1"
     local format1='\n\e[1;38;5;220m%s\e[0m\n'
     local format2='\n\e[1;38;5;240m%s\e[0m\n'
-    local format3='\n\e[1;38;5;40m%s item\e[0m\n'
-    local format4='\n\e[1;38;5;40m%s/%s item\e[0m\n'
-    local format5='\n\e[1;38;5;40m%s/%s items\e[0m\n'
-    local format6='\n \e[1;31m%s\e[0m\n\n'
+    local format3='\n\e[1;38;5;196m%s\e[0m\n\n'
+    local format4='\e[1;38;5;24m%s\e[0m'
+    local format5='\e[1;38;5;25m%s\e[0m'
+    local format6='\e[1;38;5;26m%s\e[0m'
+    local format7='\e[1;38;5;27m%s\e[0m'
     local items_number=0
     printf "$format1" \
            'shuffle_list'
@@ -218,26 +219,29 @@ print_shuffle_list() {
            "$arg1"
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
     if (( $n_init_shuffle_list == 0 )); then
-        printf "$format3" \
-               no
+        printf "$format7" \
+               'no item'
     elif (( $n_init_shuffle_list == 1 )); then
-        printf "$format3" \
-               1
+        printf "$format7" \
+               '1 item'
     elif (( $items_number == 1 )); then
-        printf "$format4" \
+        printf "\n${format7}${format6}${format5} ${format4}\n" \
                $items_number \
-               $n_init_shuffle_list
+               '/' \
+               $n_init_shuffle_list \
+               'item'
     elif (( $items_number > 1 )); then
-        printf "$format5" \
+        printf "\n${format7}${format6}${format5} ${format4}\n" \
                $items_number \
-               $n_init_shuffle_list
+               '/' \
+               $n_init_shuffle_list \
+               'items'
     else
-        printf "$format6" \
-               'Something is wrong!'
+        printf "$format3" \
+               ' Something is wrong!'
         back_trace
         exit 1
     fi
-    # back_trace
     return 0
 }
 
