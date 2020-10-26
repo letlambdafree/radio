@@ -80,6 +80,7 @@
 
 
 ### TODO
+#
 # curl, google code
 #
 
@@ -108,18 +109,20 @@ YOUTUBE_END_LINE='### MY YOUTUBE URLS END'
 LOCAL_START_LINE='### MY LOCAL MUSIC'
 LOCAL_END_LINE='### MY LOCAL MUSIC END'
 TEST_END_LINE='### TEST END'
-SCRIPT_PATH="$(realpath "$garg0")" # test
+SCRIPT_PATH=$(realpath "$garg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
-REPORT_PATH="$SCRIPT_DIR/report"
-ARR_YOUTUBE_RESULT="$SCRIPT_DIR/arr_youtube_result"
-ARR_YOUTUBE_SEARCH="$SCRIPT_DIR/arr_youtube_search"
+REPORT_PATH="$SCRIPT_DIR"/report
+ARR_YOUTUBE_RESULT="$SCRIPT_DIR"/arr_youtube_result
+ARR_YOUTUBE_SEARCH="$SCRIPT_DIR"/arr_youtube_search
 REPORT_START_LINE='### ERROR REPORT'
-XXX_FILE_PATH="$SCRIPT_DIR/xxx"
-NOTSODEEP_PATH="$HOME/git/notsodeep/notsodeep"
-yt_prefix="https://www.youtube.com/watch?v="
+XXX_FILE_PATH="$SCRIPT_DIR"/xxx
+NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
+yt_prefix=https://www.youtube.com/watch?v=
 TEST_TIME=10 # sec
 PERIOD_TIME=600
+#
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
+#
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64 # for the same item in a row
 E_NO_MATCH_REGEX=65 # for no match with regex
@@ -167,8 +170,8 @@ test_print() {
     local arg2="$2"
     local arg3="$3"
     local itemsnumber=0
-    local format1='\n\e[1;38;5;40m%s item\e[0m\n'
-    local format2='\n\e[1;38;5;40m%s items\e[0m\n'
+    local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
     local format3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
     printf "$format3" \
            "$arg1" \
@@ -219,29 +222,26 @@ playing_print() {
     elif [[ $arg1 =~ /mnt/ ]] ; then
         printf "$format1" \
                "$(sed 's!/mnt/.*!!' <<< $arg1)"
-    else
-        # for youtube_search
-        if [[ $arg2 =~ ^[0-9]{8}$ \
-                  && $arg3 =~ [0-9.]+ \
-                  && $arg4 =~ [0-9]+ ]] ; then
+    elif [[ ${FUNCNAME[@]} =~ youtube_search ]] ; then
             arg2=$(date -d $arg2 +%Y/%m/%d)
             printf "$format1" \
-                   "$arg1"
+                   "$arg1" # title
             printf "$format2" \
-                   "$arg2" \
-                   "$arg3" \
-                   "$arg4" \
-                   "$arg5" # D:date, R:rating, C:count, U:uploader
-        else
-            printf "$format1" \
-                   "$arg1"
-        fi
+                   $arg2 \
+                   $arg3 \
+                   $arg4 \
+                   "$arg5" # date, rating, count, uploader
+    else
+        printf "$format1" \
+               "$arg1"
     fi
     return 0
 }
 
 make_namelist() {
+    #
     # grep 'and' option
+    #
     local arg1="$1"
     local reverse=
     if [[ -n $REPLY ]] ; then
@@ -272,7 +272,10 @@ make_namelist() {
     return 0
 }
 
-remove_parts() { # name_part for select()
+remove_parts() {
+    #
+    # name_part for select()
+    #
     local arg1="$1"
     if [[ $arg1 =~  https?:// ]] ; then
         input_lines=$(sed 's/ http.*//' <<< $arg1)
@@ -306,7 +309,11 @@ print_shufflelist() {
 }
 
 shuffle_list() {
+    #
     # all items must be selected only once for one-cycle
+    #
+    # uses shuf
+    #
     local arg1="$1"
     local firstshuffle lastshuffle
     # test_print arg1 "$arg1"
@@ -314,7 +321,9 @@ shuffle_list() {
     if [[ -z $shufflelist ]] ; then
         print_shufflelist "$arg1"
         firstshuffle=$(shuf -n 1 <<< $arg1)
+        #
         # avoid selecting the same item in a row
+        #
         if [[ $firstshuffle == $lastshuffle ]] ; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    continue
@@ -335,9 +344,10 @@ shuffle_list() {
 
 play() {
     local arg1="$1"
-    local execute_part name_part head_part option_part pattern
+    local execute_part name_part head_part option_part
     local playing_date playing_view_count
     local playing_average_rating playing_title
+    local pattern
     # test_print arg1 "$arg1"
     arg1=$(sed 's/^# //' <<< $arg1)
     if [[ $arg1 =~  https?:// ]] ; then
@@ -421,7 +431,6 @@ play_group() {
         ((x++))
         # test_print urllist $urllist
         # test_print x $x
-        # sleep 1
         case "$garg2" in
             en | english)
                 [[ $line =~ ^'## English Radio' ]] && break
@@ -526,10 +535,12 @@ select_all() {
 select_sed() {
     printf '\n %s\n' \
            'You selected multiple items with - and numbers.'
+    #
     # transform for sed
     #  3-5 7 11 15-20         --> 3,5p;7p;11p;15,20p
     #    3     -5  7  8-   9  --> 3,5p;7p;8,9p
     #   -  2     6  -         --> 1,2p;6,{endline}p
+    #
     REPLY=$(sed 's/^ \+\| \+$//g' <<< $REPLY \
                 | sed 's/ \+/ /g' \
                 | sed 's/ -\|- /-/g' \
@@ -558,11 +569,13 @@ select_regex() {
 select_list() {
     local arg1="$1"
     local arg2="$2"
-    local pattern1="[0-9]*[-\ ]+[0-9]*"
-    local pattern2="[^0-9\ -]+"
+    local pattern1='[0-9]*[-\ ]+[0-9]*'
+    local pattern2='[^0-9\ -]+'
     grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )) ; then
+        #
         # grep '-F' for only string like "[live] tv"
+        #
         grepline=$(grep -iF "$arg2" <<< $arg1)
         play "$grepline"
         sleep 0.1 # needed for C-c
@@ -618,7 +631,8 @@ play_local() {
                 localoneline+=( "$file" ) # need " "
             fi
         done
-        locallist=$(printf '%s\n' "${localoneline[@]}")
+        locallist=$(printf '%s\n'
+                    "${localoneline[@]}")
         # test_print locallist "$locallist"
         make_namelist "$locallist"
         select_list "$locallist" "$input_lines"
@@ -664,7 +678,10 @@ help_usage() {
     return 0
 }
 
-bypass_site() { # bypass for the blocked sites
+bypass_site() {
+    #
+    # bypass for the blocked sites
+    #
     if (( ! $(ps -A | grep -c notsodeep) )) ; then
         sudo iptables \
              -A INPUT \
@@ -691,7 +708,10 @@ play_xxx() { # private
     return 0
 }
 
-youtube_search() { # uses youtube-dl
+youtube_search() {
+    #
+    # uses youtube-dl
+    #
     local s_phrase="${garg[@]:1}"
     local s_limit=100 # it takes 8 secs for getting 10 items, so need cache
     local max_cache=10000
@@ -786,7 +806,7 @@ youtube_search() { # uses youtube-dl
         done
     fi
     if [[ -z $result ]] ; then
-        printf "\n"
+        printf '\n'
         while [[ -z $result ]] ; do # json-dump often fails
             ((c++))
             dots+=.
@@ -801,7 +821,7 @@ youtube_search() { # uses youtube-dl
                    $c
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
-        printf "\n"
+        printf '\n'
         result=$(printf %b "$result") # Unicode-to-utf8, need %b
         if (( ${#arr_result[@]} >= $max_cache )) ; then
             for key in "${!arr_search[@]}" ; do
@@ -854,7 +874,7 @@ youtube_search() { # uses youtube-dl
                               ${arr_view_count[$i]} \
                               "$title" \
                               ${arr_url[$i]} \
-                              "${arr_uploader[$i]}") # need ""
+                              "${arr_uploader[$i]}") # need " "
         ((i++))
     done
     r_list=$(sort <<< $r_list)
@@ -881,9 +901,11 @@ search_linenumber "$urllist" "^$RADIO_END_LINE"
 radiolist=$(head -n +$((x-2)) <<< $urllist)
 # test_print radiolist "$radiolist"
 
+#
 # case uses * ? [...] | as matching pattern
 # it doesn't use regex and variables basically
 # if you need these, use regex condition: [[  =~  ]]
+#
 case "$garg1" in
     "")
         play_radio && exit 0
@@ -913,7 +935,6 @@ case "$garg1" in
         youtube_search && exit 0
         ;;
 esac
-
 make_namelist "$urllist"
 input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                 | sed 's/^# //')
@@ -925,7 +946,7 @@ select_list "$urllist" "$input_lines"
 # ### - source
 # ##  - group
 # #   - url
-
+#
 ### MY RADIO URLS - from a latte applet in KDE.
 #
 ## English Radio
