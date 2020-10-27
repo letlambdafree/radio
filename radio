@@ -80,7 +80,6 @@
 ### TODO
 #
 # curl, google code
-# not match playing_print and actually playing in youtube_search
 # add bash, zsh, fish completion suggest for youtube-search()'s cashed phrases
 
 
@@ -122,10 +121,10 @@ PERIOD_TIME=600
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
-E_IN_A_ROW=64 # for the same item in a row
-E_NO_MATCH_REGEX=65 # for no match with regex
-E_FAIL_DUMP_YOUTUBE=66 # for fail youtube dump
-
+E_IN_A_ROW=64
+E_NO_MATCH_REGEX=65
+E_FAIL_DUMP_YOUTUBE=66
+E_NO_PARAM=99
 
 
 search_linenumber() {
@@ -172,30 +171,24 @@ test_print() {
     local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
     local format3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
     printf "$format3" \
-           "${FUNCNAME[1]}'s $arg1" \
+           "${FUNCNAME[1]}()'s $arg1" \
            "$arg2"
     if (( $arg3 )); then
         if (( $arg3 == 1 )); then
-            printf "$format1" \
-                   $arg3
+            printf "$format1" $arg3
         elif (( $arg3 > 1 )); then
-            printf "$format2" \
-                   $arg3
+            printf "$format2" $arg3
         else
-            printf "$format1" \
-                   no
+            printf "$format1" no
         fi
     else
         [[ -n $arg2 ]] && itemsnumber=$(wc -l <<< $arg2)
         if (( $itemsnumber == 1 )); then
-            printf "$format1" \
-                   $itemsnumber
+            printf "$format1" $itemsnumber
         elif (( $itemsnumber > 1 )); then
-            printf "$format2" \
-                   $itemsnumber
+            printf "$format2" $itemsnumber
         else
-            printf "$format1" \
-                   no
+            printf "$format1" no
         fi
     fi
     # back_trace
@@ -212,17 +205,13 @@ print_shuffle_list() {
     local format6='\e[1;38;5;26m%s\e[0m'
     local format7='\e[1;38;5;27m%s\e[0m'
     local items_number=0
-    printf "$format1" \
-           'shuffle_list'
-    printf "$format2" \
-           "$arg1"
+    printf "$format1" shuffle_list
+    printf "$format2" "$arg1"
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
     if (( $n_init_shuffle_list == 0 )); then
-        printf "$format7" \
-               'no item'
+        printf "$format7" 'no item'
     elif (( $n_init_shuffle_list == 1 )); then
-        printf "$format7" \
-               '1 item'
+        printf "$format7" '1 item'
     elif (( $items_number == 1 )); then
         printf "\n${format7}${format6}${format5} ${format4}\n" \
                $items_number \
@@ -236,8 +225,7 @@ print_shuffle_list() {
                $n_init_shuffle_list \
                'items'
     else
-        printf "$format3" \
-               ' Something is wrong!'
+        printf "$format3" ' Something is wrong!'
         back_trace
         exit 1
     fi
@@ -264,8 +252,7 @@ playing_print() {
         arg2=$(date -d $arg2 +%Y/%m/%d)
         arg3=$(echo "$arg3 * 20" | bc) # float multiply
         arg4=$(numfmt --to=si $arg4) # human-readable K,M,G,T
-        printf "$format1" \
-               "$arg1" # title
+        printf "$format1" "$arg1" # title
         # date, rating, count, uploader, description
         printf "$format2" \
                "$arg2" \
@@ -274,17 +261,13 @@ playing_print() {
                " | $arg5" \
                "${arg6:+$'\n'} $arg6"
     elif [[ $arg1 =~ https?:// ]]; then
-        printf "$format1" \
-               "$(sed 's/http.*//' <<< $arg1)"
+        printf "$format1" "$(sed 's/http.*//' <<< $arg1)"
     elif [[ $arg1 =~ /$ ]]; then
-        printf "$format1" \
-               "$arg1"
+        printf "$format1" "$arg1"
     elif [[ $arg1 =~ /mnt/ ]]; then
-        printf "$format1" \
-               "$(sed 's!/mnt/.*!!' <<< $arg1)"
+        printf "$format1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
     else
-        printf "$format1" \
-               "$arg1"
+        printf "$format1" "$arg1"
     fi
     return 0
 }
@@ -354,12 +337,10 @@ shuffle_list() {
     # uses shuf
     #
     local arg1="$1"
-    local shufflelist firstshuffle
-    declare -g n_init_shuffle_list
-    declare -g shuffleradio
-    declare -g lastshuffle # ??
+    local firstshuffle
+    declare -g shufflelist n_init_shuffle_list shuffleradio lastshuffle
     # test_print arg1 "$arg1"
-    [[ -z $arg1 ]] && exit 1
+    [[ -z $arg1 ]] && exit $E_NO_PARAM
     if [[ -z $shufflelist ]]; then
         n_init_shuffle_list=$(wc -l <<< $arg1)
         firstshuffle=$(shuf -n 1 <<< $arg1)
@@ -368,7 +349,7 @@ shuffle_list() {
         #
         if [[ $firstshuffle == $lastshuffle ]]; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   'continue' # need ' '
+                   continue
             return $E_IN_A_ROW
         else
             make_shuffle_list "$arg1"
@@ -501,53 +482,28 @@ play_group() {
         # test_print urllist $urllist
         # test_print x $x
         case "$garg2" in
-            en | english)
-                [[ $line =~ ^'## English Radio' ]] && break
-                ;;
-            kr | korean)
-                [[ $line =~ ^'## Korean Radio' ]] && break
-                ;;
-            jp | japanese)
-                [[ $line =~ ^'## Japanese Radio' ]] && break
-                ;;
-            mv | musicvideo)
-                [[ $line =~ ^'## Music Video' ]] && break
-                ;;
-            lt | livetv)
-                [[ $line =~ ^'## Live TV' ]] && break
-                ;;
-            ln | livenews)
-                [[ $line =~ ^'## Live News' ]] && break
-                ;;
-            lc | livecam)
-                [[ $line =~ ^'## Live Camera' ]] && break
-                ;;
-            pl | playlist)
-                [[ $line =~ ^'## Play List' ]] && break
-                ;;
+            en | english    ) [[ $line =~ ^'## English Radio'  ]] && break;;
+            kr | korean     ) [[ $line =~ ^'## Korean Radio'   ]] && break;;
+            jp | japanese   ) [[ $line =~ ^'## Japanese Radio' ]] && break;;
+            mv | musicvideo ) [[ $line =~ ^'## Music Video'    ]] && break;;
+            lt | livetv     ) [[ $line =~ ^'## Live TV'        ]] && break;;
+            ln | livenews   ) [[ $line =~ ^'## Live News'      ]] && break;;
+            lc | livecam    ) [[ $line =~ ^'## Live Camera'    ]] && break;;
+            pl | playlist   ) [[ $line =~ ^'## Play List'      ]] && break;;
             *)
-                printf '\n \e[1;34m%s\e[1;31m%s \e[1;34m%s\e[0m\n' \
-                       'There is no ' \
+                printf '\n %s\e[1;31m %s\e[0m %s\n' \
+                       'There is no' \
                        "'$garg2'" \
                        'group.'
-                printf '\n %s' \
-                       'Usage: radio -g {en|kr|jp|mv|lt|ln|lc|pl}'
-                printf '\n %s' \
-                       'en - English Radio'
-                printf '\n %s' \
-                       'kr - Korean Radio'
-                printf '\n %s' \
-                       'jp - Japanese Radio'
-                printf '\n %s' \
-                       'mv - Music Video'
-                printf '\n %s' \
-                       'lt - Live TV'
-                printf '\n %s' \
-                       'ln - Live News'
-                printf '\n %s' \
-                       'lc - Live Camera'
-                printf '\n %s\n' \
-                       'pl - Play List'
+                printf '\n Usage : radio -g option'
+                printf '\n option: en - English Radio'
+                printf '\n         kr - Korean Radio'
+                printf '\n         jp - Japanese Radio'
+                printf '\n         mv - Music Video'
+                printf '\n         lt - Live TV'
+                printf '\n         ln - Live News'
+                printf '\n         lc - Live Camera'
+                printf '\n         pl - Play List\n'
                 # back_trace
                 exit 2
         esac
@@ -805,13 +761,9 @@ youtube_search() {
     local i j c dots
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
-    else
-        declare -A arr_search # local
-    fi
-    if [[ -e $ARR_YOUTUBE_RESULT ]]; then
         source "$ARR_YOUTUBE_RESULT"
     else
-        declare -A arr_result # local
+        declare -A arr_search arr_result
     fi
     if [[ -z $garg2 ]]; then
         for line in "${!arr_result[@]}"; do
@@ -986,36 +938,29 @@ radiolist=$(head -n +$((x-2)) <<< $urllist)
 # if you need these, use regex condition: [[  =~  ]]
 #
 case "$garg1" in
-    "")
-        play_radio && exit 0
-        ;;
-    -a | --all)
-        show_all && exit 0
-        ;;
-    -g | --group)
-        play_group && exit 0
-        ;;
-    -l | --local)
-        play_local && exit 0
-        ;;
-    -t | --test)
-        test_items && exit 0
-        ;;
-    -e | --edit)
-        edit_this && exit 0
-        ;;
-    -h | --help)
-        help_usage && exit 0
-        ;;
-    -x | --xxx)
-        play_xxx && exit 0
-        ;;
-    -y | --youtube)
-        youtube_search && exit 0
-        ;;
+    ''             ) play_radio     && exit 0;;
+    -a | --all     ) show_all       && exit 0;;
+    -g | --group   ) play_group     && exit 0;;
+    -l | --local   ) play_local     && exit 0;;
+    -t | --test    ) test_items     && exit 0;;
+    -e | --edit    ) edit_this      && exit 0;;
+    -h | --help    ) help_usage     && exit 0;;
+    -x | --xxx     ) play_xxx       && exit 0;;
+    -y | --youtube ) youtube_search && exit 0;;
     *)
-        help_usage && exit 1
-        ;;
+        printf '\n %s\e[1;31m %s\e[0m %s\n' \
+               'There is no' \
+               "'$garg1'" \
+               'option.'
+        printf '\n Usage : radio [name] or radio option [arg ...]'
+        printf '\n option: -a displays all urls'
+        printf '\n         -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group'
+        printf '\n         -l ["regex"] plays a shuffled local music.'
+        printf '\n         -y [option] [phrase] searches a phrase in youtube'
+        printf '\n         -t tests all radios'
+        printf '\n         -e edit this script.'
+        printf '\n         -h prints help\n'
+        exit 2;;
 esac
 make_namelist "$urllist"
 input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
