@@ -84,12 +84,10 @@
 
 
 
-# set -u # avoid a undeclared variable
-garg=( "$@" )
-garg0="$0"
-garg1="$1"
-garg2="$2"
-PROGNAME="${garg0##*/}"
+set -u # avoid a undeclared variable
+g_arg=( "$@" )
+g_arg0="$0"
+PROGNAME="${g_arg0##*/}"
 BASH_VERSION='5.0.18(1)-release'
 VERSION=0.1
 PS3='
@@ -106,7 +104,7 @@ YOUTUBE_END_LINE='### MY YOUTUBE URLS END'
 LOCAL_START_LINE='### MY LOCAL MUSIC'
 LOCAL_END_LINE='### MY LOCAL MUSIC END'
 TEST_END_LINE='### TEST END'
-SCRIPT_PATH=$(realpath "$garg0") # test
+SCRIPT_PATH=$(realpath "$g_arg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
 REPORT_PATH="$SCRIPT_DIR"/report
 ARR_YOUTUBE_RESULT="$SCRIPT_DIR"/arr_youtube_result
@@ -232,7 +230,7 @@ print_shuffle_list() {
     return 0
 }
 
-playing_print() {
+playing_youtube_print() {
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
@@ -248,19 +246,27 @@ playing_print() {
     # test_print arg4 "$arg4"
     # test_print arg5 "$arg5"
     # test_print arg6 "$arg6"
-    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-        arg2=$(date -d $arg2 +%Y/%m/%d)
-        arg3=$(echo "$arg3 * 20" | bc) # float multiply
-        arg4=$(numfmt --to=si $arg4) # human-readable K,M,G,T
-        printf "$format1" "$arg1" # title
-        # date, rating, count, uploader, description
-        printf "$format2" \
-               "$arg2" \
-               $arg3 \
-               " | $arg4" \
-               " | $arg5" \
-               "${arg6:+$'\n'} $arg6"
-    elif [[ $arg1 =~ https?:// ]]; then
+    arg2=$(date -d $arg2 +%Y/%m/%d)
+    arg3=$(echo "$arg3 * 20" | bc) # float multiply
+    arg4=$(numfmt --to=si $arg4) # human-readable K,M,G,T
+    printf "$format1" "$arg1" # title
+    # date, rating, count, uploader, description
+    printf "$format2" \
+           "$arg2" \
+           $arg3 \
+           " | $arg4" \
+           " | $arg5" \
+           "${arg6:+$'\n'} $arg6"
+    return 0
+}
+
+playing_print() {
+    local arg1="$1"
+    local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
+    local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
+    arg1=$(sed 's/^# / /' <<< $arg1)
+    # test_print arg1 "$arg1"
+    if [[ $arg1 =~ https?:// ]]; then
         printf "$format1" "$(sed 's/http.*//' <<< $arg1)"
     elif [[ $arg1 =~ /$ ]]; then
         printf "$format1" "$arg1"
@@ -282,7 +288,7 @@ make_namelist() {
     if [[ -n $REPLY ]]; then
         readarray -t array_namelist <<< ${REPLY/ /$'\n'} # test
     else
-        array_namelist=( "${garg[@]}" ) # need " " like 'lsd sia'
+        array_namelist=( "${g_arg[@]}" ) # need " " like 'lsd sia'
     fi
     for line in "${array_namelist[@]}"; do
         if [[ -z $input_lines ]]; then
@@ -341,13 +347,13 @@ shuffle_list() {
     declare -g shufflelist n_init_shuffle_list shuffleradio lastshuffle
     # test_print arg1 "$arg1"
     [[ -z $arg1 ]] && exit $E_NO_PARAM
-    if [[ -z $shufflelist ]]; then
+    if [[ -z ${shufflelist:-} ]]; then
         n_init_shuffle_list=$(wc -l <<< $arg1)
         firstshuffle=$(shuf -n 1 <<< $arg1)
         #
         # avoid selecting the same item in a row
         #
-        if [[ $firstshuffle == $lastshuffle ]]; then
+        if [[ $firstshuffle == ${lastshuffle:-} ]]; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
                    continue
             return $E_IN_A_ROW
@@ -365,6 +371,8 @@ shuffle_list() {
     # eval "$2=\$arg2" # bash special form for returning a string
     return 0
 }
+
+
 
 play() {
     local arg1="$1"
@@ -437,12 +445,12 @@ play() {
         # test_print playing_view_count "$playing_view_count"
         # test_print playing_uploader "$playing_uploader"
         # test_print playing_description "$playing_description"
-        playing_print "$playing_title" \
-                      $playing_date \
-                      $playing_average_rating \
-                      $playing_view_count \
-                      "$playing_uploader" \
-                      "$playing_description"
+        playing_youtube_print "$playing_title" \
+                              $playing_date \
+                              $playing_average_rating \
+                              $playing_view_count \
+                              "$playing_uploader" \
+                              "$playing_description"
     else
         playing_print "$name_part"
     fi
@@ -481,7 +489,7 @@ play_group() {
         ((x++))
         # test_print urllist $urllist
         # test_print x $x
-        case "$garg2" in
+        case "${g_arg[1]}" in
             en | english    ) [[ $line =~ ^'## English Radio'  ]] && break;;
             kr | korean     ) [[ $line =~ ^'## Korean Radio'   ]] && break;;
             jp | japanese   ) [[ $line =~ ^'## Japanese Radio' ]] && break;;
@@ -493,7 +501,7 @@ play_group() {
             *)
                 printf '\n %s\e[1;31m %s\e[0m %s\n' \
                        'There is no' \
-                       "'$garg2'" \
+                       "'${g_arg[1]}'" \
                        'group.'
                 printf '\n Usage : radio -g option'
                 printf '\n option: en - English Radio'
@@ -651,7 +659,7 @@ play_local() {
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
     locallist=$(head -n $((x-2)) <<< $locallist)
-    if [[ -z $garg2 ]]; then
+    if [[ -z ${g_arg[1]} ]]; then
         while true; do
             locallist=$(grep -v "$SKIP_PATTERN" <<< $locallist)
             shuffle_list "$locallist"
@@ -704,8 +712,8 @@ edit_this() {
 }
 
 help_usage() {
-    search_linenumber "$garg0" '^# Usage'
-    helplist=$(tail -n +$((x-3)) "$garg0")
+    search_linenumber "$g_arg0" '^# Usage'
+    helplist=$(tail -n +$((x-3)) "$g_arg0")
     search_linenumber "$helplist" ^$
     helplist=$(head -n $x <<< $helplist)
     printf '\n %s\n' \
@@ -732,7 +740,7 @@ bypass_site() {
 
 play_xxx() { # private
     bypass_site
-    xxxlist="$XXX_FILE_PATH"
+    xxxlist=$(grep . "$XXX_FILE_PATH")
     # test_print xxxlist "$xxxlist"
     make_namelist "$xxxlist"
     input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
@@ -747,7 +755,7 @@ youtube_search() {
     #
     # uses youtube-dl json-dump
     #
-    local s_phrase="${garg[@]:1}"
+    local s_phrase="${g_arg[@]:1}"
     local s_limit=100 # it takes 8 secs for getting 10 items, so need cache
     local max_cache=10000000
     local display_c_Phrase_limit=100 # modify later
@@ -765,7 +773,7 @@ youtube_search() {
     else
         declare -A arr_search arr_result
     fi
-    if [[ -z $garg2 ]]; then
+    if [[ -z ${g_arg[1]} ]]; then
         for line in "${!arr_result[@]}"; do
             ((j++))
             if (( j > $display_c_Phrase_limit )); then
@@ -776,8 +784,8 @@ youtube_search() {
         done
         test_print c_phrase "$c_phrase" ${#arr_result[@]}
         exit 2
-    elif [[ $garg2 == -d ]]; then  # -d delete the cached_phrase
-        d_phrase="${garg[@]:2}"
+    elif [[ ${g_arg[1]} == -d ]]; then  # -d delete the cached_phrase
+        d_phrase="${g_arg[@]:2}"
         for line in "${!arr_result[@]}"; do
             if [[ $line == $d_phrase ]]; then
                 d_matched=1
@@ -797,8 +805,8 @@ youtube_search() {
                    "not matched with '$d_phrase'"
             exit 1
         fi
-    elif [[ $garg2 == -c ]]; then  # -c search in the c_phrase
-        s_phrase="${garg[@]:2}"
+    elif [[ ${g_arg[1]} == -c ]]; then  # -c search in the c_phrase
+        s_phrase="${g_arg[@]:2}"
         for key in "${!arr_result[@]}"; do
             if [[ $key == $s_phrase ]]; then
                 result="${arr_result[$key]}" # remove " "?
@@ -812,8 +820,8 @@ youtube_search() {
                    'There is no cached_phrase.'
             exit 2
         fi
-    elif [[ $garg2 == -u ]]; then # -u update the cached_phrase
-        s_phrase="${garg[@]:2}"
+    elif [[ ${g_arg[1]} == -u ]]; then # -u update the cached_phrase
+        s_phrase="${g_arg[@]:2}"
         for key in "${!arr_result[@]}"; do
             if [[ $key == $s_phrase ]]; then
                 s_rate=$((${arr_search[$s_phrase]}+1))
@@ -925,8 +933,8 @@ choose : "
 
 
 
-search_linenumber "$garg0" "^$RADIO_START_LINE"
-urllist=$(tail -n +$((x+2)) "$garg0")
+search_linenumber "$g_arg0" "^$RADIO_START_LINE"
+urllist=$(tail -n +$((x+2)) "$g_arg0")
 # test_print urllist "$urllist"
 search_linenumber "$urllist" "^$RADIO_END_LINE"
 radiolist=$(head -n +$((x-2)) <<< $urllist)
@@ -937,7 +945,7 @@ radiolist=$(head -n +$((x-2)) <<< $urllist)
 # it doesn't use regex and variables basically
 # if you need these, use regex condition: [[  =~  ]]
 #
-case "$garg1" in
+case "${g_arg[0]:-}" in
     ''             ) play_radio     && exit 0;;
     -a | --all     ) show_all       && exit 0;;
     -g | --group   ) play_group     && exit 0;;
@@ -950,12 +958,13 @@ case "$garg1" in
     *)
         printf '\n %s\e[1;31m %s\e[0m %s\n' \
                'There is no' \
-               "'$garg1'" \
+               "'${g_arg[0]}'" \
                'option.'
         printf '\n Usage : radio [name] or radio option [arg ...]'
         printf '\n option: -a displays all urls'
         printf '\n         -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group'
         printf '\n         -l ["regex"] plays a shuffled local music.'
+        printf '\n         -x ["regex"] plays a XXX for private.'
         printf '\n         -y [option] [phrase] searches a phrase in youtube'
         printf '\n         -t tests all radios'
         printf '\n         -e edit this script.'
