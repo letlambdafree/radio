@@ -89,7 +89,7 @@ g_arg=( "$@" )
 g_arg0="$0"
 PROGNAME="${g_arg0##*/}"
 BASH_VERSION='5.0.18(1)-release'
-VERSION=0.1
+PROGNAME_VERSION=0.1
 PS3='
 # 00 for all
 choose : '
@@ -248,7 +248,6 @@ playing_youtube_print() {
     local arg6="$6"
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
     local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
-    # arg1=$(sed 's/^# / /' <<< $arg1)
     # test_print arg1 "$arg1"
     # test_print arg2 "$arg2"
     # test_print arg3 "$arg3"
@@ -273,7 +272,6 @@ playing_print() {
     local arg1="$1"
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
     local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
-    # arg1=$(sed 's/^# / /' <<< $arg1)
     # test_print arg1 "$arg1"
     if [[ $arg1 =~ https?:// ]]; then
         printf "$format1" "$(sed 's/http.*//' <<< $arg1)"
@@ -388,7 +386,6 @@ play_youtube() {
     local playing_average_rating playing_title
     local pattern1 pattern2 pattern3 pattern4 pattern5 pattern6
     # test_print arg1 "$arg1"
-    # arg1=$(sed 's/^# //' <<< $arg1)
     name_part=$(sed 's! "webpage_url":.*!!' <<< $arg1)
     # test_print name_part "$name_part"
     execute_part=$(sed 's!.* "webpage_url": "!!' <<< $arg1)
@@ -420,13 +417,13 @@ play_youtube() {
     # test_print playing_average_rating "$playing_average_rating"
     # test_print playing_view_count "$playing_view_count"
     # test_print playing_uploader "$playing_uploader"
-    # test_print playing_description "$playing_description"
+    # test_print playing_description "${playing_description:-}"
     playing_youtube_print "$playing_title" \
                           $playing_date \
                           $playing_average_rating \
                           $playing_view_count \
                           "$playing_uploader" \
-                          "$playing_description"
+                          "${playing_description:-}"
     $PLAYER "$execute_part"
     return 0
 }
@@ -435,7 +432,6 @@ play() {
     local arg1="$1"
     local execute_part name_part head_part option_part
     # test_print arg1 "$arg1"
-    # arg1=$(sed 's/^# //' <<< $arg1)
     if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]]; then
@@ -497,7 +493,7 @@ show_all(){
 }
 
 play_group() {
-    local x=0
+    x=0
     while read -r line; do
         ((x++))
         # test_print urllist $urllist
@@ -623,7 +619,6 @@ select_list() {
         play "$grepline"
         sleep 0.1 # needed for C-c
     elif (( $grepcount > 1 )); then
-        # arg2=$(sed 's/^# //' <<< $arg2)
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             input_name_part=$(sed 's/.*"title": "//' <<< $arg2 \
                                   | sed 's/" "webpage_url": ".*//')
@@ -676,7 +671,7 @@ play_local() {
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
     locallist=$(head -n $((x-2)) <<< $locallist \
-                     | sed 's/^# //')
+                    | sed 's/^# //')
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             locallist=$(grep -v "$SKIP_PATTERN" <<< $locallist)
@@ -686,15 +681,14 @@ play_local() {
             sleep 0.1 # needed for C-c
         done
     else
+        locallist=
         shopt -s globstar
         for file in "$LOCAL_MUSIC_DIR"**/*; do
             if [[ $file =~ $LOCAL_MUSIC_EXT ]]; then
-                localoneline+=( "$file" ) # need " "
+                locallist+="${locallist:+$'\n'}$file"
             fi
         done
-        locallist=$(printf '%s\n'
-                    "${localoneline[@]}")
-        test_print locallist "$locallist"
+        # test_print locallist "$locallist"
         make_namelist "$locallist"
         select_list "$locallist" "$input_lines"
     fi
@@ -783,8 +777,8 @@ youtube_search() {
     local r_title r_url r_description
     local arr_title arr_url
     local c_phrase s_rate d_phrase d_matched u_matched
-    local lastline lastdate
-    local i j c dots
+    local lastline lastdate dots
+    local i=0 j=0 c=0
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
         source "$ARR_YOUTUBE_RESULT"
@@ -932,7 +926,7 @@ youtube_search() {
                          "$title" \
                          "${arr_url[$i]}" \
                          "${arr_uploader[$i]}" \
-                         "${arr_description[$i]:+ }${arr_description[$i]}")
+                         "${arr_description[$i]:+ }${arr_description[$i]:-}")
         ((i++))
     done
     r_list=$(sort <<< $r_list)
