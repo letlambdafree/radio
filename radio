@@ -128,7 +128,7 @@ E_NO_PARAM=99
 search_linenumber() {
     local arg1="$1"
     local arg2="$2"
-    x=0
+    declare -g x=0
     if [[ -f "$arg1" ]]; then
         while read -r line; do
             ((x++))
@@ -163,6 +163,27 @@ back_trace() {
 test_print() {
     local arg1="$1"
     local arg2="$2"
+    local itemsnumber=0
+    local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local format3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
+    printf "$format3" \
+           "${FUNCNAME[1]}()'s $arg1" \
+           "$arg2"
+    [[ -n $arg2 ]] && itemsnumber=$(wc -l <<< $arg2)
+    if (( $itemsnumber == 1 )); then
+        printf "$format1" $itemsnumber
+    elif (( $itemsnumber > 1 )); then
+        printf "$format2" $itemsnumber
+    else
+        printf "$format1" no
+    fi
+    return 0
+}
+
+print_youtube_caches() {
+    local arg1="$1"
+    local arg2="$2"
     local arg3="$3"
     local itemsnumber=0
     local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
@@ -171,25 +192,13 @@ test_print() {
     printf "$format3" \
            "${FUNCNAME[1]}()'s $arg1" \
            "$arg2"
-    if (( $arg3 )); then
-        if (( $arg3 == 1 )); then
-            printf "$format1" $arg3
-        elif (( $arg3 > 1 )); then
-            printf "$format2" $arg3
-        else
-            printf "$format1" no
-        fi
+    if (( $arg3 == 1 )); then
+        printf "$format1" $arg3
+    elif (( $arg3 > 1 )); then
+        printf "$format2" $arg3
     else
-        [[ -n $arg2 ]] && itemsnumber=$(wc -l <<< $arg2)
-        if (( $itemsnumber == 1 )); then
-            printf "$format1" $itemsnumber
-        elif (( $itemsnumber > 1 )); then
-            printf "$format2" $itemsnumber
-        else
-            printf "$format1" no
-        fi
+        printf "$format1" no
     fi
-    # back_trace
     return 0
 }
 
@@ -239,7 +248,7 @@ playing_youtube_print() {
     local arg6="$6"
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
     local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
-    arg1=$(sed 's/^# / /' <<< $arg1)
+    # arg1=$(sed 's/^# / /' <<< $arg1)
     # test_print arg1 "$arg1"
     # test_print arg2 "$arg2"
     # test_print arg3 "$arg3"
@@ -264,7 +273,7 @@ playing_print() {
     local arg1="$1"
     local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
     local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
-    arg1=$(sed 's/^# / /' <<< $arg1)
+    # arg1=$(sed 's/^# / /' <<< $arg1)
     # test_print arg1 "$arg1"
     if [[ $arg1 =~ https?:// ]]; then
         printf "$format1" "$(sed 's/http.*//' <<< $arg1)"
@@ -284,8 +293,8 @@ make_namelist() {
     #
     local arg1="$1"
     local reverse=
-    declare -g input_lines
-    if [[ -n $REPLY ]]; then
+    declare -g input_lines=
+    if [[ -n ${REPLY:-} ]]; then
         readarray -t array_namelist <<< ${REPLY/ /$'\n'} # test
     else
         array_namelist=( "${g_arg[@]}" ) # need " " like 'lsd sia'
@@ -374,12 +383,12 @@ shuffle_list() {
 
 play_youtube() {
     local arg1="$1"
-    local execute_part name_part head_part option_part
+    local execute_part name_part
     local playing_date playing_view_count
     local playing_average_rating playing_title
     local pattern1 pattern2 pattern3 pattern4 pattern5 pattern6
     # test_print arg1 "$arg1"
-    arg1=$(sed 's/^# //' <<< $arg1)
+    # arg1=$(sed 's/^# //' <<< $arg1)
     name_part=$(sed 's! "webpage_url":.*!!' <<< $arg1)
     # test_print name_part "$name_part"
     execute_part=$(sed 's!.* "webpage_url": "!!' <<< $arg1)
@@ -426,7 +435,7 @@ play() {
     local arg1="$1"
     local execute_part name_part head_part option_part
     # test_print arg1 "$arg1"
-    arg1=$(sed 's/^# //' <<< $arg1)
+    # arg1=$(sed 's/^# //' <<< $arg1)
     if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]]; then
@@ -488,7 +497,7 @@ show_all(){
 }
 
 play_group() {
-    x=0
+    local x=0
     while read -r line; do
         ((x++))
         # test_print urllist $urllist
@@ -548,7 +557,11 @@ select_play() {
         (( $? == $E_IN_A_ROW )) && continue
         # test_print shuffleradio "$shuffleradio"
         shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
-        play "$shuffle_line"
+        if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
+            play_youtube "$shuffle_line"
+        else
+            play "$shuffle_line"
+        fi
         sleep 0.1 # needed for C-c
     done
     return 0
@@ -610,7 +623,7 @@ select_list() {
         play "$grepline"
         sleep 0.1 # needed for C-c
     elif (( $grepcount > 1 )); then
-        arg2=$(sed 's/^# //' <<< $arg2)
+        # arg2=$(sed 's/^# //' <<< $arg2)
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             input_name_part=$(sed 's/.*"title": "//' <<< $arg2 \
                                   | sed 's/" "webpage_url": ".*//')
@@ -662,8 +675,9 @@ play_local() {
     search_linenumber "$urllist" "^$LOCAL_START_LINE"
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
-    locallist=$(head -n $((x-2)) <<< $locallist)
-    if [[ -z ${g_arg[1]} ]]; then
+    locallist=$(head -n $((x-2)) <<< $locallist \
+                     | sed 's/^# //')
+    if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             locallist=$(grep -v "$SKIP_PATTERN" <<< $locallist)
             shuffle_list "$locallist"
@@ -680,7 +694,7 @@ play_local() {
         done
         locallist=$(printf '%s\n'
                     "${localoneline[@]}")
-        # test_print locallist "$locallist"
+        test_print locallist "$locallist"
         make_namelist "$locallist"
         select_list "$locallist" "$input_lines"
     fi
@@ -711,7 +725,7 @@ test_items() {
 }
 
 edit_this() {
-    $EDITOR $HOME/git/radio/radio
+    $EDITOR "$g_arg0"
     return 0
 }
 
@@ -786,7 +800,7 @@ youtube_search() {
             fi
             c_phrase+="${c_phrase:+ }'$line'"
         done
-        test_print c_phrase "$c_phrase" ${#arr_result[@]}
+        print_youtube_caches c_phrase "$c_phrase" ${#arr_result[@]}
         exit 2
     elif [[ ${g_arg[1]} == -d ]]; then  # -d delete the cached_phrase
         d_phrase="${g_arg[@]:2}"
@@ -922,7 +936,6 @@ youtube_search() {
         ((i++))
     done
     r_list=$(sort <<< $r_list)
-    # r_list=$(sed 's/, $//' <<< $r_list)
     lastdate=$(tail -n 1 <<< $r_list | grep -o '[0-9]\{8\}')
     input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
@@ -959,7 +972,7 @@ case "${g_arg[0]:-}" in
     -h | --help    ) help_usage     && exit 0;;
     -x | --xxx     ) play_xxx       && exit 0;;
     -y | --youtube ) youtube_search && exit 0;;
-    *)
+    -*)
         printf '\n %s\e[1;31m %s\e[0m %s\n' \
                'There is no' \
                "'${g_arg[0]}'" \
