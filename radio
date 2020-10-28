@@ -372,9 +372,7 @@ shuffle_list() {
     return 0
 }
 
-
-
-play() {
+play_youtube() {
     local arg1="$1"
     local execute_part name_part head_part option_part
     local playing_date playing_view_count
@@ -382,9 +380,54 @@ play() {
     local pattern1 pattern2 pattern3 pattern4 pattern5 pattern6
     # test_print arg1 "$arg1"
     arg1=$(sed 's/^# //' <<< $arg1)
-    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-        name_part=$(sed 's! "webpage_url":.*!!' <<< $arg1)
-    elif [[ $arg1 =~  https?:// ]]; then
+    name_part=$(sed 's! "webpage_url":.*!!' <<< $arg1)
+    # test_print name_part "$name_part"
+    execute_part=$(sed 's!.* "webpage_url": "!!' <<< $arg1)
+    #test_print execute_part "$execute_part"
+    pattern1='s/.*"average_rating": //'
+    pattern2='s/.*"view_count": //'
+    pattern3='s/.*"title": "//'
+    pattern4='s/.*"uploader": "//'
+    pattern5='s/.*"description": "//'
+    pattern6='s/.*"webpage_url": "//'
+    playing_date=$(grep -o '^[0-9]\{8\}' <<< $name_part)
+    playing_average_rating=$(sed "$pattern1" <<< $name_part \
+                                 | sed 's/ "view_count": .*//')
+    playing_view_count=$(sed "$pattern2" <<< $name_part \
+                             | sed 's/ "title": .*//')
+    playing_title=$(sed "$pattern3" <<< $name_part \
+                        | sed 's/"$//')
+    if [[ $execute_part =~ '"description": "' ]]; then
+        playing_uploader=$(sed "$pattern4" <<< $execute_part \
+                               | sed 's/" "description": .*//')
+        playing_description=$(sed "$pattern5" <<< $execute_part \
+                                  | sed 's/"$//')
+    else
+        playing_uploader=$(sed "$pattern4" <<< $execute_part \
+                               | sed 's/"$//')
+    fi
+    execute_part=$(sed 's/" "uploader".*//' <<< $execute_part)
+    # test_print playing_date $playing_date"
+    # test_print playing_average_rating "$playing_average_rating"
+    # test_print playing_view_count "$playing_view_count"
+    # test_print playing_uploader "$playing_uploader"
+    # test_print playing_description "$playing_description"
+    playing_youtube_print "$playing_title" \
+                          $playing_date \
+                          $playing_average_rating \
+                          $playing_view_count \
+                          "$playing_uploader" \
+                          "$playing_description"
+    $PLAYER "$execute_part"
+    return 0
+}
+
+play() {
+    local arg1="$1"
+    local execute_part name_part head_part option_part
+    # test_print arg1 "$arg1"
+    arg1=$(sed 's/^# //' <<< $arg1)
+    if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]]; then
         name_part="$arg1"
@@ -399,9 +442,7 @@ play() {
         exit 1
     fi
     # test_print name_part "$name_part"
-    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-        execute_part=$(sed 's!.* "webpage_url": "!!' <<< $arg1)
-    elif [[ $arg1 =~  https?:// ]]; then
+    if [[ $arg1 =~  https?:// ]]; then
         execute_part=${arg1/*http/http}
     elif [[ $arg1 =~ /$ ]]; then
         execute_part="$LOCAL_MUSIC_DIR""$arg1"
@@ -416,44 +457,7 @@ play() {
         exit 1
     fi
     #test_print execute_part "$execute_part"
-    if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-        pattern1='s/.*"average_rating": //'
-        pattern2='s/.*"view_count": //'
-        pattern3='s/.*"title": "//'
-        pattern4='s/.*"uploader": "//'
-        pattern5='s/.*"description": "//'
-        pattern6='s/.*"webpage_url": "//'
-        playing_date=$(grep -o '^[0-9]\{8\}' <<< $name_part)
-        playing_average_rating=$(sed "$pattern1" <<< $name_part \
-                                     | sed 's/ "view_count": .*//')
-        playing_view_count=$(sed "$pattern2" <<< $name_part \
-                                 | sed 's/ "title": .*//')
-        playing_title=$(sed "$pattern3" <<< $name_part \
-                            | sed 's/"$//')
-        if [[ $execute_part =~ '"description": "' ]]; then
-            playing_uploader=$(sed "$pattern4" <<< $execute_part \
-                                   | sed 's/" "description": .*//')
-            playing_description=$(sed "$pattern5" <<< $execute_part \
-                                      | sed 's/"$//')
-        else
-            playing_uploader=$(sed "$pattern4" <<< $execute_part \
-                                   | sed 's/"$//')
-        fi
-        execute_part=$(sed 's/" "uploader".*//' <<< $execute_part)
-        # test_print playing_date $playing_date"
-        # test_print playing_average_rating "$playing_average_rating"
-        # test_print playing_view_count "$playing_view_count"
-        # test_print playing_uploader "$playing_uploader"
-        # test_print playing_description "$playing_description"
-        playing_youtube_print "$playing_title" \
-                              $playing_date \
-                              $playing_average_rating \
-                              $playing_view_count \
-                              "$playing_uploader" \
-                              "$playing_description"
-    else
-        playing_print "$name_part"
-    fi
+    playing_print "$name_part"
 
     if [[ $execute_part =~  --[a-z]+ ]]; then
         head_part=${execute_part%% --*} # need space for trailing
