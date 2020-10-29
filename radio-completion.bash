@@ -56,11 +56,9 @@ _radio_completions() {
     case ${#COMP_WORDS[@]} in
         2)
             # echo -n "$cur_arg"
-            if [[ $cur_arg == '' ]]; then
+            if [[ $cur_arg =~ ^(''|-)$ ]]; then
                 opt2="-a -g -l -x -y -t -e -v -h"
-            elif [[ $cur_arg == - ]]; then
-                opt2="-a -g -l -x -y -t -e -v -h"
-            elif [[ $cur_arg == -- ]]; then
+            elif [[ $cur_arg =~ ^--$ ]]; then
                 l_opt2_1="--all --group --local --xxx"
                 l_opt2_2=" --youtube --test --edit --version --help"
                 opt2="$l_opt2_1""$l_opt2_2"
@@ -93,10 +91,10 @@ _radio_completions() {
             fi
                 IFS="$oIFS"
             ;;
-        *)
-            printf '\n \e[1;31m %s\e[0m\n\n' \
-                   'Something is wrong!'
-            ;;
+        # *)
+        #     printf '\n \e[1;31m %s\e[0m\n\n' \
+        #            'Something is wrong!'
+        #     ;;
     esac
     return 0
 }
