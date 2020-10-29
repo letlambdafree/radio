@@ -77,7 +77,7 @@
 #       - prints this help.
 #
 # Exit Status:
-# Returns success unless an invalid option is given.
+# Returns success unless an invalid option is supplied or an error occurs.
 
 ### TODO
 #
