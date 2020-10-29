@@ -257,9 +257,11 @@ playing_youtube_print() {
     local arg6="$6"
     local arg7="$7"
     local format1='\n\e[1;38;5;130m%s\e[0m\n'
-    local format2="\n\e[1;38;5;142m%s | %.2f | %s | %s | %s\e[0m\n"
+    local format2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
     local format3="\n\e[1;38;5;144m%s\e[0m\n\n"
-    local arg5_h arg5_m arg5_s
+    local IGNORE_DESCRIPTION_WORDS=3
+    local DISPLAY_DESCRIPTION_LINES=10
+    local arg5_h arg5_m arg5_s arg7_wc_w arg7_wc_l
     # test_print ${LINENO} arg1 "$arg1"
     # test_print ${LINENO} arg2 "$arg2"
     # test_print ${LINENO} arg3 "$arg3"
@@ -269,42 +271,44 @@ playing_youtube_print() {
     # test_print ${LINENO} arg7 "$arg7"
     arg1=$(printf %b "$arg1")  # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
-    arg3=$(echo "$arg3 * 20" | bc) # rating
-    arg4=$(numfmt --to=si $arg4 | sed 's/G/B/') # count
-    if (( $arg5 )); then # duration
-        arg5_h=$((arg5/3600))
-        arg5_m=$((arg5/60%60))
-        arg5_s=$((arg5%60))
-        if (( arg5_h )); then
-            arg5=$(printf "%02d:%02d:%02d" \
-                          $arg5_h \
-                          $arg5_m \
-                          $arg5_s)
-        elif (( arg5_m )); then
-            arg5=$(printf "%02d:%02d" \
-                          $arg5_m \
-                          $arg5_s)
+    if (( $arg3 )); then # duration
+        arg3_h=$((arg3/3600))
+        arg3_m=$((arg3/60%60))
+        arg3_s=$((arg3%60))
+        if (( arg3_h )); then
+            arg3=$(printf "%02d:%02d:%02d" \
+                          $arg3_h \
+                          $arg3_m \
+                          $arg3_s)
         else
-            arg5=$(printf "%02d" \
-                          $arg5_s)
+            arg3=$(printf "%02d:%02d" \
+                          $arg3_m \
+                          $arg3_s)
         fi
     else
-        arg5=LIVE
+        arg3=LIVE
     fi
+    arg4=$(numfmt --to=si $arg4 | sed 's/G/B/') # count
+    arg5=$(echo "$arg5 * 20" | bc) # rating
     arg6=$(printf %b "$arg6") # uploader
     arg7=$(printf %b "$arg7") # description
     printf "$format1" \
            "$arg1"
     printf "$format2" \
            "$arg2" \
-           $arg3 \
+           "$arg3" \
            "$arg4" \
-           "$arg5" \
+           $arg5 \
            "$arg6"
     #
-    # remove too short description
+    # remove too short or too long description
     #
-    if (( $(wc -w <<< $arg7) >= 3 )); then
+    arg7_wc_w=$(wc -w <<< $arg7)
+    arg7_wc_l=$(wc -l <<< $arg7)
+    if (( $arg7_wc_w >= $IGNORE_DESCRIPTION_WORDS )); then
+        if (( arg7_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
+            arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ...'
+        fi
         printf "$format3" \
                "$arg7"
     fi
@@ -436,35 +440,35 @@ play_youtube() {
     execute_part=$(sed 's!.* "webpage_url" !!' <<< $arg1)
     # test_print ${LINENO} execute_part "$execute_part"
     pattern1='s/^"\([0-9]\{8\}\)" .*/\1/'
-    pattern2='s/.* "average_rating" \([0-9.]\+\) .*/\1/'
+    pattern2='s/.* "duration" \([0-9]\+\) .*/\1/'
     pattern3='s/.* "view_count" \([0-9]\+\) .*/\1/'
-    pattern4='s/.* "duration" \([0-9]\+\) .*/\1/'
+    pattern4='s/.* "average_rating" \([0-9.]\+\) .*/\1/'
     pattern5='s/.* "title" "//'
     pattern6='s/.* "uploader" "\(.*\)" "description" ".*/\1/'
     pattern7='s/.* "description" "//'
     pattern8='s/"\(.*\)" "uploader" ".*/\1/'
     playing_date=$(sed "$pattern1" <<< $name_part)
-    playing_average_rating=$(sed "$pattern2" <<< $name_part)
+    playing_duration=$(sed "$pattern2" <<< $name_part)
     playing_view_count=$(sed "$pattern3" <<< $name_part)
-    playing_duration=$(sed "$pattern4" <<< $name_part)
+    playing_average_rating=$(sed "$pattern4" <<< $name_part)
     playing_title=$(sed "$pattern5" <<< $name_part \
                         | sed 's/"$//')
     playing_uploader=$(sed "$pattern6" <<< $execute_part)
     playing_description=$(sed "$pattern7" <<< $execute_part \
                               | sed 's/"$//')
     execute_part=$(sed "$pattern8" <<< $execute_part)
-    test_print ${LINENO} playing_date "$playing_date"
-    test_print ${LINENO} playing_average_rating "$playing_average_rating"
-    test_print ${LINENO} playing_view_count "$playing_view_count"
-    test_print ${LINENO} playing_duration "$playing_duration"
-    test_print ${LINENO} playing_title "$playing_title"
-    test_print ${LINENO} playing_uploader "$playing_uploader"
-    test_print ${LINENO} playing_description "$playing_description"
+    # test_print ${LINENO} playing_date "$playing_date"
+    # test_print ${LINENO} playing_duration "$playing_duration"
+    # test_print ${LINENO} playing_view_count "$playing_view_count"
+    # test_print ${LINENO} playing_average_rating "$playing_average_rating"
+    # test_print ${LINENO} playing_title "$playing_title"
+    # test_print ${LINENO} playing_uploader "$playing_uploader"
+    # test_print ${LINENO} playing_description "$playing_description"
     playing_youtube_print "$playing_title" \
                           $playing_date \
-                          $playing_average_rating \
-                          $playing_view_count \
                           $playing_duration \
+                          $playing_view_count \
+                          $playing_average_rating \
                           "$playing_uploader" \
                           "$playing_description"
     #
@@ -834,9 +838,9 @@ youtube_search() {
     local display_c_Phrase_limit=100 # modify later
     local try_dump_limit=1000
     local result=
-    local r_list r_date r_rating r_count r_duration
+    local r_list r_date r_duration r_count r_rating
     local r_title r_url r_uploader r_description
-    local arr_date arr_rating arr_count arr_duration # arr need declare local?
+    local arr_date arr_duration arr_count arr_rating # arr need declare local?
     local arr_title arr_url arr_uploader arr_description
     local c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate dots
@@ -976,12 +980,12 @@ youtube_search() {
     # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
     #
     r_date=$(jq '.upload_date' <<< $result) # for sort
-    r_rating=$(jq '.average_rating' <<< $result \
-                   | sed 's/.*/"average_rating" \0/') # another method?
-    r_count=$(jq '.view_count' <<< $result \
-                  | sed 's/.*/"view_count" \0/')
     r_duration=$(jq '.duration' <<< $result \
                      | sed 's/.*/"duration" \0/')
+    r_count=$(jq '.view_count' <<< $result \
+                  | sed 's/.*/"view_count" \0/')
+    r_rating=$(jq '.average_rating' <<< $result \
+                   | sed 's/.*/"average_rating" \0/') # another method?
     r_title=$(jq '.title' <<< $result \
                   | sed 's/.*/"title" \0/')
     r_url=$(jq '.webpage_url' <<< $result \
@@ -991,17 +995,17 @@ youtube_search() {
     r_description=$(jq '.description' <<< $result \
                         | sed 's/.*/"description" \0/')
     readarray -t arr_date <<< $r_date # first position
-    readarray -t arr_rating <<< $r_rating
-    readarray -t arr_count <<< $r_count
     readarray -t arr_duration <<< $r_duration
+    readarray -t arr_count <<< $r_count
+    readarray -t arr_rating <<< $r_rating
     readarray -t arr_title <<< $r_title
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
     readarray -t arr_description <<< $r_description # # last position
     # test_print ${LINENO} arr_date ${#arr_date[@]}
-    # test_print ${LINENO} arr_rating ${#arr_rating[@]}
-    # test_print ${LINENO} arr_count ${#arr_count[@]}
     # test_print ${LINENO} arr_duration "${arr_duration[@]}"
+    # test_print ${LINENO} arr_count ${#arr_count[@]}
+    # test_print ${LINENO} arr_rating ${#arr_rating[@]}
     # test_print ${LINENO} arr_url ${#arr_url[@]}
     # test_print ${LINENO} arr_title ${#arr_title[@]}
     # test_print ${LINENO} arr_uploader "${arr_uploader[@]}"
@@ -1025,9 +1029,9 @@ youtube_search() {
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
                          "${arr_date[$i]}" \
-                         "${arr_rating[$i]}" \
-                         "${arr_count[$i]}" \
                          "${arr_duration[$i]}" \
+                         "${arr_count[$i]}" \
+                         "${arr_rating[$i]}" \
                          "${arr_title[$i]}" \
                          "${arr_url[$i]}" \
                          "${arr_uploader[$i]}" \
