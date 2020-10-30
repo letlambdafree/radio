@@ -82,9 +82,11 @@
 ### TODO
 #
 # curl, google code
-# completion suggest for radio -y -c 'cashed phrase'
+# completion suggest for zsh
 # visit the web-page playing youtube_search's result
-
+# 1-1 loop
+# select loop
+# last selected item coloring
 
 
 shopt -s globstar # Allow ** for recursive matches
@@ -118,6 +120,7 @@ XXX_FILE_PATH="$SCRIPT_DIR"/xxx
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
 yt_prefix=https://www.youtube.com/watch?v=
 BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
+DUMP_SUCCESS_ALERT_PATH=/mnt/data/Sound/Alert.mp3
 TEST_TIME=10 # sec
 PERIOD_TIME=600
 #
@@ -307,7 +310,7 @@ playing_youtube_print() {
     arg7_wc_l=$(wc -l <<< $arg7)
     if (( $arg7_wc_w >= $IGNORE_DESCRIPTION_WORDS )); then
         if (( arg7_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
-            arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ...'
+            arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ......'
         fi
         printf "$format3" \
                "$arg7"
@@ -609,7 +612,11 @@ select_play() {
         (( $? == $E_IN_A_ROW )) && continue
         # test_print ${LINENO} shuffleradio "$shuffleradio"
         shuffle_line=$(grep -iF "$shuffleradio" <<< $arg1)
-        play "$shuffle_line"
+        if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
+            play_youtube "$shuffle_line" # need
+        else
+            play "$shuffle_line"
+        fi
         sleep 0.1 # needed for C-c
     done
     return 0
@@ -953,6 +960,7 @@ youtube_search() {
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
         done
         printf '\n'
+        $PLAYER "$DUMP_SUCCESS_ALERT_PATH" &>/dev/null & # notice for success
         if (( ${#arr_result[@]} >= $max_cache )); then
             for key in "${!arr_search[@]}"; do
                 if (( ${arr_search[$key]} <= ${min_rate:-10} )); then
