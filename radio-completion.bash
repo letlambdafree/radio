@@ -2,6 +2,18 @@
 #
 # bash-completion for radio script
 #
+# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
 
 # COMP_WORDS
 #     - an array containing all individual words in the current command line.
@@ -17,7 +29,7 @@
 # column assignment
 
 
-set -u # avoid a undeclared variable
+# set -u # avoid a undeclared variable
 PROGRAM_VERSION=0.1
 
 
@@ -56,19 +68,20 @@ _radio_completions() {
     case ${#COMP_WORDS[@]} in
         2)
             # echo -n "$cur_arg"
-            if [[ $cur_arg =~ ^(''|-)$ ]]; then
-                opt2="-a -g -l -x -y -t -e -v -h"
-            elif [[ $cur_arg =~ ^--$ ]]; then
+            if [[ $cur_arg =~ ^-- ]]; then
                 l_opt2_1="--all --group --local --xxx"
                 l_opt2_2=" --youtube --test --edit --version --help"
                 opt2="$l_opt2_1""$l_opt2_2"
+            elif [[ $cur_arg =~ ^-|'' ]]; then
+                opt2="-a -g -l -x -y -t -e -v -h"
+
             fi
             COMPREPLY=( $(compgen -W "$opt2" -- "$cur_arg") )
             ;;
 
         3)
             # echo -n "$cur_arg"
-            if [[ $pre_arg =~ ^-(g|-group)$ ]]; then
+            if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
                 s_opt3="en kr jp mv lt ln lc pl"
                 l_opt3_1=" english korean japanese musicvideo"
                 l_opt3_2=" livetv livenews livecam playlist"
@@ -83,7 +96,7 @@ _radio_completions() {
             for item in "${!arr_search[@]}"; do
                 _search+=( "$item" )
             done
-            if [[ $p_pre_arg =~ ^-(y|-youtube)$ ]]; then
+            if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ $pre_arg =~ ^-(c|u|d)$ ]]; then
                     _search=$(printf "%s\n" "${_search[@]}")
                     COMPREPLY=( $(compgen -W "$_search" -- "$cur_arg") )
@@ -91,10 +104,6 @@ _radio_completions() {
             fi
                 IFS="$oIFS"
             ;;
-        # *)
-        #     printf '\n \e[1;31m %s\e[0m\n\n' \
-        #            'Something is wrong!'
-        #     ;;
     esac
     return 0
 }
