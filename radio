@@ -173,21 +173,21 @@ test_print() {
     local arg2="$2"
     local arg3="$3"
     local itemsnumber=0
-    local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local format3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
-    printf "$format3" \
+    local f1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local f2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local f3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
+    printf "$f3" \
            "${FUNCNAME[1]}()'s at $arg1" \
            "$arg2" \
            "$arg3"
 
     [[ -n $arg3 ]] && itemsnumber=$(wc -l <<< $arg3)
     if (( $itemsnumber == 1 )); then
-        printf "$format1" $itemsnumber
+        printf "$f1" $itemsnumber
     elif (( $itemsnumber > 1 )); then
-        printf "$format2" $itemsnumber
+        printf "$f2" $itemsnumber
     else
-        printf "$format1" no
+        printf "$f1" no
     fi
     return 0
 }
@@ -197,54 +197,54 @@ print_youtube_caches() {
     local arg2="$2"
     local arg3="$3"
     local itemsnumber=0
-    local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local format3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
-    printf "$format3" \
+    local f1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local f2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local f3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
+    printf "$f3" \
            "${FUNCNAME[1]}()'s $arg1" \
            "$arg2"
     if (( $arg3 == 1 )); then
-        printf "$format1" $arg3
+        printf "$f1" $arg3
     elif (( $arg3 > 1 )); then
-        printf "$format2" $arg3
+        printf "$f2" $arg3
     else
-        printf "$format1" no
+        printf "$f1" no
     fi
     return 0
 }
 
 print_shuffle_list() {
     local arg1="$1"
-    local format1='\n\e[1;38;5;220m%s\e[0m\n'
-    local format2='\n\e[1;38;5;240m%s\e[0m\n'
-    local format3='\n\e[1;38;5;196m%s\e[0m\n\n'
-    local format4='\e[1;38;5;24m%s\e[0m'
-    local format5='\e[1;38;5;25m%s\e[0m'
-    local format6='\e[1;38;5;26m%s\e[0m'
-    local format7='\e[1;38;5;27m%s\e[0m'
+    local f1='\n\e[1;38;5;220m%s\e[0m\n'
+    local f2='\n\e[1;38;5;240m%s\e[0m\n'
+    local f3='\n\e[1;38;5;196m%s\e[0m\n\n'
+    local f4='\e[1;38;5;24m%s\e[0m'
+    local f5='\e[1;38;5;25m%s\e[0m'
+    local f6='\e[1;38;5;26m%s\e[0m'
+    local f7='\e[1;38;5;27m%s\e[0m'
     local items_number=0
-    printf "$format1" shuffle_list
-    printf "$format2" \
+    printf "$f1" shuffle_list
+    printf "$f2" \
            "$(printf %b "$arg1")" # need " " for printf and " " for arg1
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
     if (( $n_init_shuffle_list == 0 )); then
-        printf "$format7" 'no item'
+        printf "$f7" 'no item'
     elif (( $n_init_shuffle_list == 1 )); then
-        printf "$format7" '1 item'
+        printf "$f7" '1 item'
     elif (( $items_number == 1 )); then
-        printf "\n${format7}${format6}${format5} ${format4}\n" \
+        printf "\n${f7}${f6}${f5} ${f4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'item'
     elif (( $items_number > 1 )); then
-        printf "\n${format7}${format6}${format5} ${format4}\n" \
+        printf "\n${f7}${f6}${f5} ${f4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'items'
     else
-        printf "$format3" ' Something is wrong!'
+        printf "$f3" ' Something is wrong!'
         back_trace
         exit 1
     fi
@@ -259,9 +259,9 @@ playing_youtube_print() {
     local arg5="$5"
     local arg6="$6"
     local arg7="$7"
-    local format1='\n\e[1;38;5;130m%s\e[0m\n'
-    local format2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
-    local format3="\n\e[1;38;5;144m%s\e[0m\n\n"
+    local f1='\n\e[1;38;5;130m%s\e[0m\n'
+    local f2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
+    local f3="\n\e[1;38;5;144m%s\e[0m\n\n"
     local IGNORE_DESCRIPTION_WORDS=3
     local DISPLAY_DESCRIPTION_LINES=10
     local arg5_h arg5_m arg5_s arg7_wc_w arg7_wc_l
@@ -295,9 +295,9 @@ playing_youtube_print() {
     arg5=$(echo "$arg5 * 20" | bc) # rating
     arg6=$(printf %b "$arg6") # uploader
     arg7=$(printf %b "$arg7") # description
-    printf "$format1" \
+    printf "$f1" \
            "$arg1"
-    printf "$format2" \
+    printf "$f2" \
            "$arg2" \
            "$arg3" \
            "$arg4" \
@@ -312,7 +312,7 @@ playing_youtube_print() {
         if (( arg7_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
             arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ......'
         fi
-        printf "$format3" \
+        printf "$f3" \
                "$arg7"
     fi
     return 0
@@ -320,17 +320,16 @@ playing_youtube_print() {
 
 playing_print() {
     local arg1="$1"
-    local format1='\n\e[1;38;5;130m %s\e[0m\n\n'
-    local format2="\e[1;38;5;240m %s | %.2f%s%s%s%s\e[0m\n\n"
+    local f1='\n\e[1;38;5;130m %s\e[0m\n\n'
     # test_print ${LINENO} arg1 "$arg1"
     if [[ $arg1 =~ https?:// ]]; then
-        printf "$format1" "$(sed 's/http.*//' <<< $arg1)"
+        printf "$f1" "$(sed 's/http.*//' <<< $arg1)"
     elif [[ $arg1 =~ /$ ]]; then
-        printf "$format1" "$arg1"
+        printf "$f1" "$arg1"
     elif [[ $arg1 =~ /mnt/ ]]; then
-        printf "$format1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
+        printf "$f1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
     else
-        printf "$format1" "$arg1"
+        printf "$f1" "$arg1"
     fi
     return 0
 }
@@ -433,48 +432,46 @@ shuffle_list() {
 play_youtube() {
     local arg1="$1"
     local execute_part name_part
-    local playing_date playing_average_rating playing_view_count
-    local playing_duration playing_title
-    local playing_uploader playing_description
-    local pattern1 pattern2 pattern3 pattern4
-    local pattern5 pattern6 pattern7 pattern8
+    local p_date p_average_rating p_view_count p_duration
+    local p_title p_uploader p_description
+    local p1 p2 p3 p4 p5 p6 p7 p8
     # test_print ${LINENO} arg1 "$arg1"
     name_part=$(sed 's! "webpage_url" .*!!' <<< $arg1)
     # test_print ${LINENO} name_part "$name_part"
     execute_part=$(sed 's!.* "webpage_url" !!' <<< $arg1)
     # test_print ${LINENO} execute_part "$execute_part"
-    pattern1='s/^"\([0-9]\{8\}\)" .*/\1/'
-    pattern2='s/.* "duration" \([0-9]\+\) .*/\1/'
-    pattern3='s/.* "view_count" \([0-9]\+\) .*/\1/'
-    pattern4='s/.* "average_rating" \([0-9.]\+\) .*/\1/'
-    pattern5='s/.* "title" "//'
-    pattern6='s/.* "uploader" "\(.*\)" "description" ".*/\1/'
-    pattern7='s/.* "description" "//'
-    pattern8='s/"\(.*\)" "uploader" ".*/\1/'
-    playing_date=$(sed "$pattern1" <<< $name_part)
-    playing_duration=$(sed "$pattern2" <<< $name_part)
-    playing_view_count=$(sed "$pattern3" <<< $name_part)
-    playing_average_rating=$(sed "$pattern4" <<< $name_part)
-    playing_title=$(sed "$pattern5" <<< $name_part \
+    p1='s/^"\([0-9]\{8\}\)" .*/\1/'
+    p2='s/.* "duration" \([0-9]\+\) .*/\1/'
+    p3='s/.* "view_count" \([0-9]\+\) .*/\1/'
+    p4='s/.* "average_rating" \([0-9.]\+\) .*/\1/'
+    p5='s/.* "title" "//'
+    p6='s/.* "uploader" "\(.*\)" "description" ".*/\1/'
+    p7='s/.* "description" "//'
+    p8='s/"\(.*\)" "uploader" ".*/\1/'
+    p_date=$(sed "$p1" <<< $name_part)
+    p_duration=$(sed "$p2" <<< $name_part)
+    p_view_count=$(sed "$p3" <<< $name_part)
+    p_average_rating=$(sed "$p4" <<< $name_part)
+    p_title=$(sed "$p5" <<< $name_part \
                         | sed 's/"$//')
-    playing_uploader=$(sed "$pattern6" <<< $execute_part)
-    playing_description=$(sed "$pattern7" <<< $execute_part \
+    p_uploader=$(sed "$p6" <<< $execute_part)
+    p_description=$(sed "$p7" <<< $execute_part \
                               | sed 's/"$//')
-    execute_part=$(sed "$pattern8" <<< $execute_part)
-    # test_print ${LINENO} playing_date "$playing_date"
-    # test_print ${LINENO} playing_duration "$playing_duration"
-    # test_print ${LINENO} playing_view_count "$playing_view_count"
-    # test_print ${LINENO} playing_average_rating "$playing_average_rating"
-    # test_print ${LINENO} playing_title "$playing_title"
-    # test_print ${LINENO} playing_uploader "$playing_uploader"
-    # test_print ${LINENO} playing_description "$playing_description"
-    playing_youtube_print "$playing_title" \
-                          $playing_date \
-                          $playing_duration \
-                          $playing_view_count \
-                          $playing_average_rating \
-                          "$playing_uploader" \
-                          "$playing_description"
+    execute_part=$(sed "$p8" <<< $execute_part)
+    # test_print ${LINENO} p_date "$p_date"
+    # test_print ${LINENO} p_duration "$p_duration"
+    # test_print ${LINENO} p_view_count "$p_view_count"
+    # test_print ${LINENO} p_average_rating "$p_average_rating"
+    # test_print ${LINENO} p_title "$p_title"
+    # test_print ${LINENO} p_uploader "$p_uploader"
+    # test_print ${LINENO} p_description "$p_description"
+    playing_youtube_print "$p_title" \
+                          $p_date \
+                          $p_duration \
+                          $p_view_count \
+                          $p_average_rating \
+                          "$p_uploader" \
+                          "$p_description"
     #
     # 1>/dev/null disable information
     # 2>/dev/null disable process-bar
@@ -666,8 +663,8 @@ select_regex() {
 select_list() {
     local arg1="$1"
     local arg2="$2"
-    local pattern1='[0-9]*[-\ ]+[0-9]*'
-    local pattern2='[^0-9\ -]+'
+    local p1='[0-9]*[-\ ]+[0-9]*'
+    local p2='[^0-9\ -]+'
     local input_name_part
     grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )); then
@@ -709,7 +706,7 @@ select_list() {
             if [[ $REPLY =~ ^00$ ]]; then
                 select_all
                 exit 0
-            elif [[ $REPLY =~ $pattern1 && ! $REPLY =~ $pattern2 ]]; then
+            elif [[ $REPLY =~ $p1 && ! $REPLY =~ $p2 ]]; then
                 select_sed
                 exit 0
             elif [[ $REPLY =~ [^0-9] ]]; then
@@ -846,7 +843,7 @@ youtube_search() {
     local s_limit=100 # it takes 8 secs to get 10 items, so need cache
     local max_cache=10000000
     local display_c_Phrase_limit=100 # modify later
-    local try_dump_limit=1000
+    local try_dump_limit=10
     local result=
     local r_list r_date r_duration r_count r_rating
     local r_title r_url r_uploader r_description
@@ -958,6 +955,7 @@ youtube_search() {
                    $c \
                    $dots
             result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
+            sleep 10 # retry after
         done
         printf '\n'
         $PLAYER "$DUMP_SUCCESS_ALERT_PATH" &>/dev/null & # notice for success
@@ -994,11 +992,11 @@ youtube_search() {
     #
     r_date=$(jq '.upload_date' <<< $result) # for sort
     r_duration=$(jq '.duration' <<< $result \
-                     | sed 's/.*/"duration" \0/')
+                     | sed 's/.*/"duration" \0/') # another method?
     r_count=$(jq '.view_count' <<< $result \
                   | sed 's/.*/"view_count" \0/')
     r_rating=$(jq '.average_rating' <<< $result \
-                   | sed 's/.*/"average_rating" \0/') # another method?
+                   | sed 's/.*/"average_rating" \0/')
     r_title=$(jq '.title' <<< $result \
                   | sed 's/.*/"title" \0/')
     r_url=$(jq '.webpage_url' <<< $result \
