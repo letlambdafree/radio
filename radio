@@ -26,7 +26,7 @@
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
-#
+v#
 # radio "regex"
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
@@ -95,7 +95,7 @@ g_arg=( "$@" )
 g_arg0="$0"
 PROGRAM_NAME="${g_arg0##*/}"
 BASH_VERSION='5.0.18(1)-release'
-PROGRAM_VERSION=0.1
+PROGRAM_VERSION=0.2.0
 PS3='
 # 00 for all
 choose : '
