@@ -116,7 +116,15 @@ REPORT_PATH="$SCRIPT_DIR"/report
 ARR_YOUTUBE_RESULT="$SCRIPT_DIR"/arr_youtube_result
 ARR_YOUTUBE_SEARCH="$SCRIPT_DIR"/arr_youtube_search
 REPORT_START_LINE='### ERROR REPORT'
-XXX_FILE_PATH="$SCRIPT_DIR"/xxx
+ENGLISH_RADIO_PATH="$SCRIPT_DIR"/english_radio
+KOREAN_RADIO_PATH="$SCRIPT_DIR"/korean_radio
+LIVE_CAMERA_PATH="$SCRIPT_DIR"/live_camera
+LIVE_NEWS_PATH="$SCRIPT_DIR"/live_news
+LIVE_TV_PATH="$SCRIPT_DIR"/live_tv
+LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
+MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
+PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
+XXX_PATH="$SCRIPT_DIR"/xxx
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
 yt_prefix=https://www.youtube.com/watch?v=
 BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
@@ -827,7 +835,7 @@ bypass_site() {
 
 play_xxx() { # private
     bypass_site
-    xxxlist=$(grep . "$XXX_FILE_PATH")
+    xxxlist=$(grep . "$XXX_PATH")
     # test_print ${LINENO} xxxlist "$xxxlist"
     make_namelist "$xxxlist"
     input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
