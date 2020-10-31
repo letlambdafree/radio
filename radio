@@ -119,6 +119,7 @@ LIVE_TV_PATH="$SCRIPT_DIR"/live_tv
 LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
 MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
 PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
+
 XXX_PATH="$SCRIPT_DIR"/xxx
 RADIO_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                  "$KOREAN_RADIO_PATH" \
@@ -394,8 +395,8 @@ make_shuffle_list() {
     arg1=$(sed 's/^# //' <<< $arg1)
     for line in "$arg1"; do
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-            print_name=$(sed 's/.*"title" "//' <<< $line \
-                                  | sed 's/" "webpage_url" ".*//')
+            print_name=$(sed 's/.*"title": "//' <<< $line \
+                                  | sed 's/" "webpage_url": ".*//')
         elif [[ $line =~  https?:// ]]; then
             print_name=$(sed 's/ http.*//' <<< $line)
         elif [[ $line =~ ^/mnt/ ]]; then
@@ -454,27 +455,25 @@ play_youtube() {
     local p_title p_uploader p_description
     local s1 s2 s3 s4 s5 s6 s7 s8
     # test_print $LINENO arg1 "$arg1"
-    name_part=$(sed 's! "webpage_url" .*!!' <<< $arg1)
+    name_part=$(sed 's! "webpage_url": .*!!' <<< $arg1)
     # test_print $LINENO name_part "$name_part"
-    execute_part=$(sed 's!.* "webpage_url" !!' <<< $arg1)
+    execute_part=$(sed 's!.* "webpage_url": !!' <<< $arg1)
     # test_print $LINENO execute_part "$execute_part"
-    s1='s/^"\([0-9]\{8\}\)" .*/\1/'
-    s2='s/.* "duration" \([0-9]\+\) .*/\1/'
-    s3='s/.* "view_count" \([0-9]\+\) .*/\1/'
-    s4='s/.* "average_rating" \([0-9.]\+\) .*/\1/'
-    s5='s/.* "title" "//'
-    s6='s/.* "uploader" "\(.*\)" "description" ".*/\1/'
-    s7='s/.* "description" "//'
-    s8='s/"\(.*\)" "uploader" ".*/\1/'
+    s1='s/^\([0-9]\{8\}\) .*/\1/'
+    s2='s/.* "duration": \([0-9]\+\) .*/\1/'
+    s3='s/.* "view_count": \([0-9]\+\) .*/\1/'
+    s4='s/.* "average_rating": \([0-9.]\+\) .*/\1/'
+    s5='s/.* "title": "\(.*\)"$/\1/'
+    s6='s/.* "uploader": "\(.*\)" "description": ".*/\1/'
+    s7='s/.* "description": "\(.*\)"$/\1/'
+    s8='s/^"\(.*\)" "uploader": ".*/\1/'
     p_date=$(sed "$s1" <<< $name_part)
     p_duration=$(sed "$s2" <<< $name_part)
     p_view_count=$(sed "$s3" <<< $name_part)
     p_average_rating=$(sed "$s4" <<< $name_part)
-    p_title=$(sed "$s5" <<< $name_part \
-                        | sed 's/"$//')
+    p_title=$(sed "$s5" <<< $name_part)
     p_uploader=$(sed "$s6" <<< $execute_part)
-    p_description=$(sed "$s7" <<< $execute_part \
-                              | sed 's/"$//')
+    p_description=$(sed "$s7" <<< $execute_part)
     execute_part=$(sed "$s8" <<< $execute_part)
     # test_print $LINENO p_date "$p_date"
     # test_print $LINENO p_duration "$p_duration"
@@ -692,8 +691,8 @@ select_list() {
             # "title" "도시의 그림자 -\n이 어둠의 이슬픔"
             # in select(), added one more line
             #
-            input_name_part=$(sed 's/.* "title" "//' <<< $arg2 \
-                                  | sed 's/" "webpage_url" ".*//' \
+            input_name_part=$(sed 's/.* "title": "//' <<< $arg2 \
+                                  | sed 's/" "webpage_url": ".*//' \
                                   | sed 's/\\n/ /')
             # test_print $LINENO input_name_part "$input_name_part"
         elif [[ $arg2 =~  https?:// ]]; then
@@ -1017,6 +1016,8 @@ youtube_search() {
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
                  | sed 's/^".*": "//' \
                  | sed 's/",$//') # for sort
+    r_duration=$(grep -oP '"duration": [0-9]+,' <<< $result \
+                   | sed 's/,$//')
     r_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
                    | sed 's/,$//')
     r_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
@@ -1028,8 +1029,8 @@ youtube_search() {
     r_uploader=$(grep -oP '"uploader": ".*?",' <<< $result \
                      | sed 's/,$//')
     r_description=$(grep -oP '"description": ".*?",' <<< $result \
-                            | sed 's/,$//')
-    [[ $r_description == '' ]] && r_description='null'
+                        || grep -oP '"description": "",' <<< $result)
+    r_description=$(sed 's/,$//' <<< $r_description)
     # r_date=$(jq '.upload_date' <<< $result) # for sort
     # r_duration=$(jq '.duration' <<< $result \
     #                  | sed 's/.*/"duration" \0/') # another method?
@@ -1054,13 +1055,13 @@ youtube_search() {
     readarray -t arr_uploader <<< $r_uploader
     readarray -t arr_description <<< $r_description # # last position
     # test_print $LINENO arr_date ${#arr_date[@]}
-    # test_print $LINENO arr_duration "${arr_duration[@]}"
+    # test_print $LINENO arr_duration ${#arr_duration[@]}
     # test_print $LINENO arr_count ${#arr_count[@]}
     # test_print $LINENO arr_rating ${#arr_rating[@]}
     # test_print $LINENO arr_url ${#arr_url[@]}
     # test_print $LINENO arr_title ${#arr_title[@]}
-    # test_print $LINENO arr_uploader "${arr_uploader[@]}"
-    # test_print $LINENO arr_description "${#arr_description[@]}"
+    # test_print $LINENO arr_uploader ${#arr_uploader[@]}
+    # test_print $LINENO arr_description ${#arr_description[@]}
     # for line in "${arr_title[@]}" ; do
     #     printf "\n\n"
     #     wc -l <<< "$line"
@@ -1092,7 +1093,7 @@ youtube_search() {
     r_list=$(sort <<< $r_list)
     last_date=$(tail -n 1 <<< $r_list | grep -o '[0-9]\{8\}')
     input_lines="$r_list" # for select_list()
-    # test_print $LINENO input_lines "$input_lines"
+    test_print $LINENO input_lines "$input_lines"
     if [[ ${g_arg[1]} != -c ]]; then
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
