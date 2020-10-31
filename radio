@@ -119,7 +119,6 @@ LIVE_TV_PATH="$SCRIPT_DIR"/live_tv
 LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
 MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
 PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
-
 XXX_PATH="$SCRIPT_DIR"/xxx
 RADIO_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                  "$KOREAN_RADIO_PATH" \
@@ -215,54 +214,54 @@ print_youtube_caches() {
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
-    local f1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local f2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local f3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
-    printf "$f3" \
+    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local p3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
+    printf "$p3" \
            "${FUNCNAME[1]}()'s $arg1" \
            "$arg2"
     if (( $arg3 == 1 )); then
-        printf "$f1" $arg3
+        printf "$p1" $arg3
     elif (( $arg3 > 1 )); then
-        printf "$f2" $arg3
+        printf "$p2" $arg3
     else
-        printf "$f1" no
+        printf "$p1" no
     fi
     return 0
 }
 
 print_shuffle_list() {
     local arg1="$1"
-    local f1='\n\e[1;38;5;220m%s\e[0m\n'
-    local f2='\n\e[1;38;5;240m%s\e[0m\n'
-    local f3='\n\e[1;38;5;196m%s\e[0m\n\n'
-    local f4='\e[1;38;5;24m%s\e[0m'
-    local f5='\e[1;38;5;25m%s\e[0m'
-    local f6='\e[1;38;5;26m%s\e[0m'
-    local f7='\e[1;38;5;27m%s\e[0m'
+    local p1='\n\e[1;38;5;220m%s\e[0m\n'
+    local p2='\n\e[1;38;5;240m%s\e[0m\n'
+    local p3='\n\e[1;38;5;196m%s\e[0m\n\n'
+    local p4='\e[1;38;5;24m%s\e[0m'
+    local p5='\e[1;38;5;25m%s\e[0m'
+    local p6='\e[1;38;5;26m%s\e[0m'
+    local p7='\e[1;38;5;27m%s\e[0m'
     local items_number=0
-    printf "$f1" shuffle_list
-    printf "$f2" \
+    printf "$p1" shuffle_list
+    printf "$p2" \
            "$(printf %b "$arg1")" # need " " for printf and " " for arg1
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
     if (( $n_init_shuffle_list == 0 )); then
-        printf "$f7" 'no item'
+        printf "$p7" 'no item'
     elif (( $n_init_shuffle_list == 1 )); then
-        printf "$f7" '1 item'
+        printf "$p7" '1 item'
     elif (( $items_number == 1 )); then
-        printf "\n${f7}${f6}${f5} ${f4}\n" \
+        printf "\n${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'item'
     elif (( $items_number > 1 )); then
-        printf "\n${f7}${f6}${f5} ${f4}\n" \
+        printf "\n${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'items'
     else
-        printf "$f3" ' Something is wrong!'
+        printf "$p3" ' Something is wrong!'
         back_trace
         exit 1
     fi
@@ -277,9 +276,9 @@ playing_youtube_print() {
     local arg5="$5"
     local arg6="$6"
     local arg7="$7"
-    local f1='\n\e[1;38;5;130m%s\e[0m\n'
-    local f2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
-    local f3="\n\e[1;38;5;144m%s\e[0m\n\n"
+    local p1='\n\e[1;38;5;130m%s\e[0m\n'
+    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
+    local p3="\n\e[1;38;5;144m%s\e[0m\n\n"
     local IGNORE_DESCRIPTION_WORDS=3
     local DISPLAY_DESCRIPTION_LINES=10
     local arg5_h arg5_m arg5_s arg7_wc_w arg7_wc_l
@@ -313,9 +312,9 @@ playing_youtube_print() {
     arg5=$(echo "$arg5 * 20" | bc) # rating
     arg6=$(printf %b "$arg6") # uploader
     arg7=$(printf %b "$arg7") # description
-    printf "$f1" \
+    printf "$p1" \
            "$arg1"
-    printf "$f2" \
+    printf "$p2" \
            "$arg2" \
            "$arg3" \
            "$arg4" \
@@ -330,7 +329,7 @@ playing_youtube_print() {
         if (( arg7_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
             arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ......'
         fi
-        printf "$f3" \
+        printf "$p3" \
                "$arg7"
     fi
     return 0
@@ -338,16 +337,16 @@ playing_youtube_print() {
 
 playing_print() {
     local arg1="$1"
-    local f1='\n\e[1;38;5;130m %s\e[0m\n\n'
+    local p1='\n\e[1;38;5;130m %s\e[0m\n\n'
     # test_print $LINENO arg1 "$arg1"
     if [[ $arg1 =~ https?:// ]]; then
-        printf "$f1" "$(sed 's/http.*//' <<< $arg1)"
+        printf "$p1" "$(sed 's/http.*//' <<< $arg1)"
     elif [[ $arg1 =~ /$ ]]; then
-        printf "$f1" "$arg1"
+        printf "$p1" "$arg1"
     elif [[ $arg1 =~ /mnt/ ]]; then
-        printf "$f1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
+        printf "$p1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
     else
-        printf "$f1" "$arg1"
+        printf "$p1" "$arg1"
     fi
     return 0
 }
@@ -674,8 +673,8 @@ select_regex() {
 select_list() {
     local arg1="$1"
     local arg2="$2"
-    local p1='[0-9]*[-\ ]+[0-9]*'
-    local p2='[^0-9\ -]+'
+    local r1='[0-9]*[-\ ]+[0-9]*'
+    local r2='[^0-9\ -]+'
     local input_name_part
     grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )); then
@@ -717,7 +716,7 @@ select_list() {
             if [[ $REPLY =~ ^00$ ]]; then
                 select_all
                 exit 0
-            elif [[ $REPLY =~ $p1 && ! $REPLY =~ $p2 ]]; then
+            elif [[ $REPLY =~ $r1 && ! $REPLY =~ $r2 ]]; then
                 select_sed
                 exit 0
             elif [[ $REPLY =~ [^0-9] ]]; then
