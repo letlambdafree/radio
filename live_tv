@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# radio - Bash shell script for listening radio basically
+
+# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
+# 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
+# franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.c
+# Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=TDy-nmXZNQM
+# Adom TV Live https://www.youtube.com/watch?v=LIb1ADo0pGs
