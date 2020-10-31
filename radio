@@ -26,7 +26,7 @@
 # radio
 #       - plays a shuffled radio, press 'q' to play the next.
 #         this loops infinitely, press Ctrl-c repeatedly to exit.
-v#
+#
 # radio "regex"
 #       - plays a searched item.
 #         need quote for "or" regex searching like "wordA\|wordB".
@@ -192,20 +192,20 @@ test_print() {
     local arg2="$2"
     local arg3="$3"
     local items_number=0
-    local f1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local f2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local f3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
-    printf "$f3" \
+    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local p3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
+    printf "$p3" \
            "${FUNCNAME[1]}()'s: $arg1" \
            "$arg2" \
            "$arg3"
     [[ -n $arg3 ]] && items_number=$(wc -l <<< $arg3)
     if (( $items_number == 1 )); then
-        printf "$f1" $items_number
+        printf "$p1" $items_number
     elif (( $items_number > 1 )); then
-        printf "$f2" $items_number
+        printf "$p2" $items_number
     else
-        printf "$f1" no
+        printf "$p1" no
     fi
     return 0
 }
@@ -565,7 +565,6 @@ show_all(){
 play_group() {
     local group_list
     # test_print $LINENO URL_LIST $URL_LIST
-    # test_print $LINENO x $x
     case "${g_arg[1]}" in
         en | english    ) group_list=$(cat "$ENGLISH_RADIO_PATH");;
         kr | korean     ) group_list=$(cat "$KOREAN_RADIO_PATH");;
@@ -745,11 +744,6 @@ select_list() {
 
 play_local() {
     local local_list
-    # search_linenumber "$URL_LIST" "^$LOCAL_START_LINE"
-    # local_list=$(tail -n +$((x+2)) <<< $URL_LIST)
-    # search_linenumber "$local_list" "^##+"
-    # local_list=$(head -n $((x-2)) <<< $local_list \
-    #                | sed 's/^# //')
     local_list=$(cat "$LOCAL_MUSIC_PATH" \
                      | sed 's/^# //')
     if [[ -z ${g_arg[1]:-} ]]; then
@@ -776,8 +770,7 @@ play_local() {
 
 test_items() {
     local last_bg_pid
-    search_linenumber "$URL_LIST" "^$TEST_END_LINE"
-    testlist=$(head -n +$x <<< "$URL_LIST")
+    testlist=$(grep . <<< "$URL_LIST")
     cat > "$REPORT_PATH" <<< $REPORT_START_LINE
     while read -r line; do
         (( $(grep -c "$SKIP_PATTERN" <<< $line) )) && continue
@@ -1010,8 +1003,6 @@ youtube_search() {
     # "duration" "age_limit" "annotations" "chapters" "webpage_url"
     # "view_count" "like_count" "dislike_count" "average_rating" "formats"
     #
-    # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
-    #
     r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
                  | sed 's/^".*": "//' \
                  | sed 's/",$//') # for sort
@@ -1046,22 +1037,7 @@ youtube_search() {
     # test_print $LINENO arr_title ${#arr_title[@]}
     # test_print $LINENO arr_uploader ${#arr_uploader[@]}
     # test_print $LINENO arr_description ${#arr_description[@]}
-    # for line in "${arr_title[@]}" ; do
-    #     printf "\n\n"
-    #     wc -l <<< "$line"
-    #     printf "\n\n"
-    # done
     # if (( ${#arr_title[@]} != ${#arr_url[@]} )); then
-    #     printf "\n %s / %s / %s\n" \
-    #            "titles: ${#arr_title[@]}" \
-    #            "urls: ${#arr_url[@]}" \
-    #            'sync fails!'
-    # else
-    #     printf "\n %s / %s / %s\n" \
-    #            "titles: ${#arr_title[@]}" \
-    #            "urls: ${#arr_url[@]}" \
-    #            'sync success!'
-    # fi
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
                          "${arr_date[$i]}" \
