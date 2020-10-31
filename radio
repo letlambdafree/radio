@@ -93,7 +93,6 @@ shopt -s globstar # Allow ** for recursive matches
 set -u # avoid a undeclared variable
 g_arg=( "$@" )
 g_arg0="$0"
-BASH_VERSION='5.0.18(1)-release'
 SCRIPT_VERSION=0.2.0
 PS3='
 # 00 for all
@@ -500,7 +499,9 @@ play_youtube() {
 play() {
     local arg1="$1"
     local execute_part name_part head_part option_part
+    local p1='\n \e[1;31m%s\e[0m\n\n' \
     # test_print $LINENO arg1 "$arg1"
+    arg1=$(sed 's/^# / /' <<< $arg1)
     if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]]; then
@@ -508,10 +509,9 @@ play() {
     elif [[ $arg1 =~ ^/mnt/ ]]; then
         name_part=$(sed 's!.*/Music/!!g' <<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]]; then
-        name_part=$(sed 's! /mnt/.*!!' <<< $arg1 \
-                        | sed 's/^# / /')
+        name_part=$(sed 's! /mnt/.*!!' <<< $arg1)
     else
-        printf '\n \e[1;31m%s\e[0m\n\n' \
+        printf "$p1" \
                'Something is wrong!'
         back_trace
         exit 1
@@ -526,7 +526,7 @@ play() {
     elif [[ $arg1 =~  /mnt/ ]]; then
         execute_part=${arg1/*mnt//mnt}
     else
-        printf '\n \e[1;31m%s\e[0m\n\n' \
+        printf "$p1" \
                'Something is wrong!'
         back_trace
         exit 1
@@ -636,6 +636,7 @@ select_all() {
 }
 
 select_sed() {
+    local sed_reply
     printf '\n %s\n' \
            'You selected multiple items with - and numbers.'
     #
@@ -644,7 +645,7 @@ select_sed() {
     #    3     -5  7  8-   9  --> 3,5p;7p;8,9p
     #   -  2     6  -         --> 1,2p;6,{endline}p
     #
-    REPLY=$(sed 's/^ \+\| \+$//g' <<< $REPLY \
+    sed_reply=$(sed 's/^ \+\| \+$//g' <<< $REPLY \
                 | sed 's/ \+/ /g' \
                 | sed 's/ -\|- /-/g' \
                 | sed 's/ /p;/g' \
@@ -653,7 +654,7 @@ select_sed() {
                 | sed "s/,$/,$grepcount/" \
                 | sed 's/$/p/')
     # test_print $LINENO REPLY "$REPLY"
-    input_lines=$(sed -n "$REPLY" <<< $input_lines)
+    input_lines=$(sed -n "$sed_reply" <<< $input_lines)
     select_one_input_line
     select_play
     return 0
@@ -674,6 +675,7 @@ select_list() {
     local arg2="$2"
     local r1='[0-9]*[-\ ]+[0-9]*'
     local r2='[^0-9\ -]+'
+    local p1='\n \e[1;31m%s\e[0m\n\n'
     local input_name_part
     grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )); then
@@ -702,7 +704,7 @@ select_list() {
         elif [[ $arg2 =~  /$ ]]; then
             input_name_part="$arg2"
         else
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "$p1" \
                    'Something is wrong!'
             back_trace
             exit 1
@@ -725,7 +727,7 @@ select_list() {
                 selected="$line"
                 break
             else
-                printf '\n \e[1;31m%s\e[0m\n' \
+                printf "$p1" \
                        'Something is wrong!'
                 back_trace
                 exit 1
@@ -770,12 +772,12 @@ play_local() {
 
 test_items() {
     local last_bg_pid
-    testlist=$(grep . <<< "$URL_LIST")
+    testlist=$(grep . <<< $URL_LIST)
     cat > "$REPORT_PATH" <<< $REPORT_START_LINE
     while read -r line; do
         (( $(grep -c "$SKIP_PATTERN" <<< $line) )) && continue
         playing_print "$line"
-        $PLAYER $(sed 's/.*http/http/' <<< $line) &
+        play $line &
         last_bg_pid=$!
         sleep $TEST_TIME
         if (( $(ps aux | grep -c $last_bg_pid) == 1 )); then
@@ -783,9 +785,9 @@ test_items() {
         else
             kill $last_bg_pid
         fi
-        sleep 0.1
     done <<< $testlist
-    printf '\n %s\n' \
+    printf '\n %s\n\n%s\n\n' \
+           'REPORT::'
            "$(cat $REPORT_PATH)"
     return 0
 }
@@ -855,7 +857,7 @@ youtube_search() {
     #
     local s_phrase="${g_arg[@]:1}"
     local s_limit=100 # it takes 8 secs to get 10 items, so need cache
-    local max_cache=10000000
+    local max_cache=1000000
     local display_c_Phrase_limit=100 # modify later
     local retry_dump_limit=10
     local result=
@@ -863,7 +865,8 @@ youtube_search() {
     local r_title r_url r_uploader r_description
     local c_phrase s_rate d_phrase d_matched u_matched
     local last_date dots
-    local p1 p2 youtube_dl_opt
+    local p1='\n \e[1;31m%s\e[0m\n\n'
+    local p2 p3 youtube_dl_opt
     local i=0 j=0 c=0
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
@@ -896,11 +899,11 @@ youtube_search() {
             fi
         done
         if (( $d_matched )); then
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "$p1" \
                    "success for deletion with '$d_phrase'"
             exit 0
         else
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "$p1" \
                    "not matched with '$d_phrase'"
             exit 1
         fi
@@ -915,7 +918,7 @@ youtube_search() {
             fi
         done
         if [[ -z $result ]]; then
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "$p1" \
                    'There is no cached_phrase.'
             exit 2
         fi
@@ -930,7 +933,7 @@ youtube_search() {
             fi
         done
         if (( ! $u_matched )); then
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "$p1" \
                    "not matched with '$update_phrase'"
             exit 1
         fi
@@ -946,18 +949,18 @@ youtube_search() {
     fi
     if [[ -z $result ]]; then
         printf '\n'
-        p1='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;0m %s\e[0m\r'
-        p2='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;40m %s\e[0m\r'
+        p2='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;0m %s\e[0m\r'
+        p3='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;40m %s\e[0m\r'
         while [[ -z $result ]]; do # json-dump often fails
             ((c++))
             if (( $c > $retry_dump_limit )); then
-                printf '\n\n \e[1;31m%s\e[0m\n' \
+                printf "$p1" \
                        'Fail dumping. Retry later!'
                 exit $E_FAIL_DUMP_YOUTUBE
 
             fi
             if (( $c % 10 == 1)); then
-                printf "$p1" \
+                printf "$p2" \
                        "retry in ${DUMP_RETRY_AFTER}s"\
                        $c/$retry_dump_limit \
                        ${dots:-.}
@@ -965,7 +968,7 @@ youtube_search() {
             else
                 dots+=.
             fi
-            printf "$p2" \
+            printf "$p3" \
                    "retry in ${DUMP_RETRY_AFTER}s"\
                    $c/$retry_dump_limit \
                    $dots
