@@ -93,9 +93,8 @@ shopt -s globstar # Allow ** for recursive matches
 set -u # avoid a undeclared variable
 g_arg=( "$@" )
 g_arg0="$0"
-PROGRAM_NAME="${g_arg0##*/}"
 BASH_VERSION='5.0.18(1)-release'
-PROGRAM_VERSION=0.2.0
+SCRIPT_VERSION=0.2.0
 PS3='
 # 00 for all
 choose : '
@@ -103,13 +102,11 @@ PLAYER=mpv
 LOCAL_VIDEO_DIR=/mnt/data/Videos/
 LOCAL_MUSIC_DIR=/mnt/data/Music/
 LOCAL_MUSIC_EXT='.*\.(mp3|flac)$'
-TEST_END_LINE='### TEST END'
 SCRIPT_PATH=$(realpath "$g_arg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
-REPORT_PATH="$SCRIPT_DIR"/report
+SCRIPT_NAME="${SCRIPT_PATH##*/}"
 ARR_YOUTUBE_RESULT="$SCRIPT_DIR"/arr_youtube_result
 ARR_YOUTUBE_SEARCH="$SCRIPT_DIR"/arr_youtube_search
-REPORT_START_LINE='### ERROR REPORT'
 ENGLISH_RADIO_PATH="$SCRIPT_DIR"/english_radio
 KOREAN_RADIO_PATH="$SCRIPT_DIR"/korean_radio
 JAPANESE_RADIO_PATH="$SCRIPT_DIR"/japanese_radio
@@ -138,10 +135,13 @@ URL_LIST=$(cat "$ENGLISH_RADIO_PATH" \
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
 yt_prefix=https://www.youtube.com/watch?v=
 BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
-DUMP_SUCCESS_PATH=/mnt/data/Sound/Alert.mp3
+REPORT_PATH="$SCRIPT_DIR"/report
+REPORT_START_LINE='### ERROR REPORT'
+TEST_END_LINE='### TEST END'
 TEST_TIME=10 # sec
 PERIOD_TIME=600
 DUMP_RETRY_AFTER=10
+DUMP_SUCCESS_PATH=/mnt/data/Sound/Alert.mp3
 #
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
@@ -796,8 +796,9 @@ edit_this() {
 }
 
 print_version() {
-    printf '\n%s\n' \
-           "$PROGRAM_VERSION"
+    printf '\n%s: %s\n' \
+           "$SCRIPT_NAME" \
+           "$SCRIPT_VERSION"
     return 0
 }
 
@@ -997,30 +998,30 @@ youtube_search() {
     #
     # json_dump_key_order:
     #
-    # "id": "uploader" "uploader_id" "uploader_url" "channel_id" "channel_url"
+    # "id" "uploader" "uploader_id" "uploader_url" "channel_id" "channel_url"
     # "upload_date" "license" "creator" "title" "alt_title" "thumbnails"
     # "description" "categories" "tags" "subtitles" "automatic_captions"
     # "duration" "age_limit" "annotations" "chapters" "webpage_url"
     # "view_count" "like_count" "dislike_count" "average_rating" "formats"
     #
-    r_date=$(grep -oP '"upload_date": ".*?",' <<< $result \
-                 | sed 's/^".*": "//' \
-                 | sed 's/",$//') # for sort
-    r_duration=$(grep -oP '"duration": [0-9]+,' <<< $result \
-                   | sed 's/,$//')
-    r_rating=$(grep -oP '"average_rating": [0-9.]+,' <<< $result \
-                   | sed 's/,$//')
-    r_count=$(grep -oP '"view_count": [0-9]+,' <<< $result \
-                  | sed 's/,$//')
-    r_title=$(grep -oP '"title": ".*?",' <<< $result \
-                  | sed 's/,$//')
-    r_url=$(grep -oP '"webpage_url": ".*?",' <<< $result \
-                | sed 's/,$//')
-    r_uploader=$(grep -oP '"uploader": ".*?",' <<< $result \
-                     | sed 's/,$//')
-    r_description=$(grep -oP '"description": ".*?",' <<< $result \
-                        || grep -oP '"description": "",' <<< $result)
-    r_description=$(sed 's/,$//' <<< $r_description)
+    r_date=$(grep -oP '"upload_date": ".*?", "' <<< $result \
+                 | sed 's/^"upload_date": "//' \
+                 | sed 's/", "$//') # for sort
+    r_duration=$(grep -oP '"duration": [0-9]+, "' <<< $result \
+                   | sed 's/, "$//')
+    r_rating=$(grep -oP '"average_rating": [0-9.]+, "' <<< $result \
+                   | sed 's/, "$//')
+    r_count=$(grep -oP '"view_count": [0-9]+, "' <<< $result \
+                  | sed 's/, "$//')
+    r_title=$(grep -oP '"title": ".*?", "' <<< $result \
+                  | sed 's/, "$//')
+    r_url=$(grep -oP '"webpage_url": ".*?", "' <<< $result \
+                | sed 's/, "$//')
+    r_uploader=$(grep -oP '"uploader": ".*?", "' <<< $result \
+                     | sed 's/, "$//')
+    r_description=$(grep -oP '"description": ".*?", "' <<< $result \
+                        || grep -oP '"description": "", "' <<< $result)
+    r_description=$(sed 's/, "$//' <<< $r_description)
     readarray -t arr_date <<< $r_date # first position
     readarray -t arr_duration <<< $r_duration
     readarray -t arr_count <<< $r_count
@@ -1028,32 +1029,31 @@ youtube_search() {
     readarray -t arr_title <<< $r_title
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
-    readarray -t arr_description <<< $r_description # # last position
+    readarray -t arr_description <<< $r_description # last position
     # test_print $LINENO arr_date ${#arr_date[@]}
     # test_print $LINENO arr_duration ${#arr_duration[@]}
     # test_print $LINENO arr_count ${#arr_count[@]}
     # test_print $LINENO arr_rating ${#arr_rating[@]}
-    # test_print $LINENO arr_url ${#arr_url[@]}
     # test_print $LINENO arr_title ${#arr_title[@]}
+    # test_print $LINENO arr_url ${#arr_url[@]}
     # test_print $LINENO arr_uploader ${#arr_uploader[@]}
     # test_print $LINENO arr_description ${#arr_description[@]}
-    # if (( ${#arr_title[@]} != ${#arr_url[@]} )); then
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
-                         "${arr_date[$i]}" \
-                         "${arr_duration[$i]}" \
-                         "${arr_count[$i]}" \
-                         "${arr_rating[$i]}" \
-                         "${arr_title[$i]}" \
-                         "${arr_url[$i]}" \
-                         "${arr_uploader[$i]}" \
-                         "${arr_description[$i]}")
+                         "${arr_date[i]}" \
+                         "${arr_duration[i]}" \
+                         "${arr_count[i]}" \
+                         "${arr_rating[i]}" \
+                         "${arr_title[i]}" \
+                         "${arr_url[i]}" \
+                         "${arr_uploader[i]}" \
+                         "${arr_description[i]}") # $ can be removed
         ((i++))
     done
     r_list=$(sort <<< $r_list)
     last_date=$(tail -n 1 <<< $r_list | grep -o '[0-9]\{8\}')
     input_lines="$r_list" # for select_list()
-    test_print $LINENO input_lines "$input_lines"
+    # test_print $LINENO input_lines "$input_lines"
     if [[ ${g_arg[1]} != -c ]]; then
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
