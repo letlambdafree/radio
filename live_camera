@@ -1,22 +1,5 @@
 #!/bin/bash
 
-# radio - Bash shell script for listening radio basically
-
-# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License at <http://www.gnu.org/licenses/> for
-# more details.
-
-
-
 # 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
 # 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
 # Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=jEhIe2SDKso
