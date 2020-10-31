@@ -100,7 +100,7 @@ choose : '
 PLAYER=mpv
 LOCAL_VIDEO_DIR=/mnt/data/Videos/
 LOCAL_MUSIC_DIR=/mnt/data/Music/
-LOCAL_MUSIC_EXT='.*\.(mp3|flac)$'
+LOCAL_MUSIC_EXT='\.(mp3|flac)$'
 SCRIPT_PATH=$(realpath "$g_arg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
 SCRIPT_NAME="${SCRIPT_PATH##*/}"
@@ -115,7 +115,7 @@ LIVE_TV_PATH="$SCRIPT_DIR"/live_tv
 LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
 MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
 PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
-XXX_PATH="$SCRIPT_DIR"/xxx
+XXX_PATH="$SCRIPT_DIR"/xxx # no public
 RADIO_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                  "$KOREAN_RADIO_PATH" \
                  "$JAPANESE_RADIO_PATH")
@@ -132,15 +132,14 @@ URL_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                "$PLAY_LIST_PATH" \
                "$XXX_PATH")
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
-yt_prefix=https://www.youtube.com/watch?v=
+yt_prefix='https://www.youtube.com/watch?v='
 BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
 REPORT_PATH="$SCRIPT_DIR"/report
 REPORT_START_LINE='### ERROR REPORT'
-TEST_END_LINE='### TEST END'
-TEST_TIME=10 # sec
+TEST_TIME=10 # secs
 PERIOD_TIME=600
 DUMP_RETRY_AFTER=10
-DUMP_SUCCESS_PATH=/mnt/data/Sound/Alert.mp3
+DUMP_SUCCESS_SOUND_PATH=/mnt/data/Sound/Alert.mp3
 #
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
@@ -151,24 +150,6 @@ E_FAIL_DUMP_YOUTUBE=66
 E_NO_PARAM=99
 
 
-search_linenumber() {
-    local arg1="$1"
-    local arg2="$2"
-    declare -g x=0
-    if [[ -f "$arg1" ]]; then
-        while read -r line; do
-            ((x++))
-            [[ $line =~ $arg2 ]] && break # unquote for regex
-        done < $arg1
-    else
-        while read -r line; do
-            ((x++))
-            [[ $line =~ $arg2 ]] && break
-        done <<< $arg1
-    fi
-    # test_print $LINENO search_linenumber $x
-    return 0
-}
 
 back_trace() {
     local max_length
@@ -187,18 +168,18 @@ back_trace() {
 }
 
 test_print() {
-    local arg1="${1:-0}"
+    local arg1="$1"
     local arg2="$2"
-    local arg3="$3"
     local items_number=0
     local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
     local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local p3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
+    local p3='\n\e[1;38;5;220m%s %s\n\e[1;38;5;240m%s\e[0m'
+    local caller_line_number=$(caller | cut -d ' ' -f 1)
     printf "$p3" \
-           "${FUNCNAME[1]}()'s: $arg1" \
-           "$arg2" \
-           "$arg3"
-    [[ -n $arg3 ]] && items_number=$(wc -l <<< $arg3)
+           "${FUNCNAME[1]}()'s $arg1" \
+           ":: $caller_line_number" \
+           "$arg2"
+    [[ -n $arg2 ]] && items_number=$(wc -l <<< $arg2)
     if (( $items_number == 1 )); then
         printf "$p1" $items_number
     elif (( $items_number > 1 )); then
@@ -281,13 +262,13 @@ playing_youtube_print() {
     local IGNORE_DESCRIPTION_WORDS=3
     local DISPLAY_DESCRIPTION_LINES=10
     local arg5_h arg5_m arg5_s arg7_wc_w arg7_wc_l
-    # test_print $LINENO arg1 "$arg1"
-    # test_print $LINENO arg2 "$arg2"
-    # test_print $LINENO arg3 "$arg3"
-    # test_print $LINENO arg4 "$arg4"
-    # test_print $LINENO arg5 "$arg5"
-    # test_print $LINENO arg6 "$arg6"
-    # test_print $LINENO arg7 "$arg7"
+    # test_print arg1 "$arg1"
+    # test_print arg2 "$arg2"
+    # test_print arg3 "$arg3"
+    # test_print arg4 "$arg4"
+    # test_print arg5 "$arg5"
+    # test_print arg6 "$arg6"
+    # test_print arg7 "$arg7"
     arg1=$(printf %b "$arg1")  # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
     if (( $arg3 )); then # duration
@@ -337,7 +318,7 @@ playing_youtube_print() {
 playing_print() {
     local arg1="$1"
     local p1='\n\e[1;38;5;130m %s\e[0m\n\n'
-    # test_print $LINENO arg1 "$arg1"
+    # test_print arg1 "$arg1"
     if [[ $arg1 =~ https?:// ]]; then
         printf "$p1" "$(sed 's/http.*//' <<< $arg1)"
     elif [[ $arg1 =~ /$ ]]; then
@@ -364,11 +345,11 @@ make_namelist() {
     fi
     for line in "${arr_namelist[@]}"; do
         if [[ -z $input_lines ]]; then
-            # test_print $LINENO line1 "$line"
+            # test_print line1 "$line"
             [[ $line =~ ^-+[a-z]+ ]] && continue
             input_lines=$(grep -i "$line" <<< $arg1)
         else
-            # test_print $LINENO line2 "$line"
+            # test_print line2 "$line"
             if [[ $line == -v ]]; then
                 reverse=v
                 continue
@@ -419,7 +400,7 @@ shuffle_list() {
     local arg1="$1"
     local firstshuffle
     declare -g shuffle_list n_init_shuffle_list shuffle_radio last_shuffle
-    # test_print $LINENO arg1 "$arg1"
+    # test_print arg1 "$arg1"
     [[ -z $arg1 ]] && exit $E_NO_PARAM
     if [[ -z ${shuffle_list:-} ]]; then
         n_init_shuffle_list=$(wc -l <<< $arg1)
@@ -452,11 +433,11 @@ play_youtube() {
     local p_date p_average_rating p_view_count p_duration
     local p_title p_uploader p_description
     local s1 s2 s3 s4 s5 s6 s7 s8
-    # test_print $LINENO arg1 "$arg1"
+    # test_print arg1 "$arg1"
     name_part=$(sed 's! "webpage_url": .*!!' <<< $arg1)
-    # test_print $LINENO name_part "$name_part"
+    # test_print name_part "$name_part"
     execute_part=$(sed 's!.* "webpage_url": !!' <<< $arg1)
-    # test_print $LINENO execute_part "$execute_part"
+    # test_print execute_part "$execute_part"
     s1='s/^\([0-9]\{8\}\) .*/\1/'
     s2='s/.* "duration": \([0-9]\+\) .*/\1/'
     s3='s/.* "view_count": \([0-9]\+\) .*/\1/'
@@ -473,13 +454,13 @@ play_youtube() {
     p_uploader=$(sed "$s6" <<< $execute_part)
     p_description=$(sed "$s7" <<< $execute_part)
     execute_part=$(sed "$s8" <<< $execute_part)
-    # test_print $LINENO p_date "$p_date"
-    # test_print $LINENO p_duration "$p_duration"
-    # test_print $LINENO p_view_count "$p_view_count"
-    # test_print $LINENO p_average_rating "$p_average_rating"
-    # test_print $LINENO p_title "$p_title"
-    # test_print $LINENO p_uploader "$p_uploader"
-    # test_print $LINENO p_description "$p_description"
+    # test_print p_date "$p_date"
+    # test_print p_duration "$p_duration"
+    # test_print p_view_count "$p_view_count"
+    # test_print p_average_rating "$p_average_rating"
+    # test_print p_title "$p_title"
+    # test_print p_uploader "$p_uploader"
+    # test_print p_description "$p_description"
     playing_youtube_print "$p_title" \
                           $p_date \
                           $p_duration \
@@ -500,7 +481,7 @@ play() {
     local arg1="$1"
     local execute_part name_part head_part option_part
     local p1='\n \e[1;31m%s\e[0m\n\n' \
-    # test_print $LINENO arg1 "$arg1"
+    # test_print arg1 "$arg1"
     arg1=$(sed 's/^# / /' <<< $arg1)
     if [[ $arg1 =~  https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
@@ -516,7 +497,7 @@ play() {
         back_trace
         exit 1
     fi
-    # test_print $LINENO name_part "$name_part"
+    # test_print name_part "$name_part"
     if [[ $arg1 =~  https?:// ]]; then
         execute_part=${arg1/*http/http}
     elif [[ $arg1 =~ /$ ]]; then
@@ -531,14 +512,14 @@ play() {
         back_trace
         exit 1
     fi
-    #test_print $LINENO execute_part "$execute_part"
+    #test_print execute_part "$execute_part"
     playing_print "$name_part"
 
     if [[ $execute_part =~  --[a-z]+ ]]; then
         head_part=${execute_part%% --*} # need space for trailing
         option_part=${execute_part#"$head_part" } # need quotes
-        # test_print $LINENO head_part $head_part"
-        # test_print $LINENO option_part "$option_part"
+        # test_print head_part $head_part"
+        # test_print option_part "$option_part"
         $PLAYER "$head_part" $option_part # don't quote options
     else
         $PLAYER "$execute_part"
@@ -564,7 +545,7 @@ show_all(){
 
 play_group() {
     local group_list
-    # test_print $LINENO URL_LIST $URL_LIST
+    # test_print URL_LIST $URL_LIST
     case "${g_arg[1]}" in
         en | english    ) group_list=$(cat "$ENGLISH_RADIO_PATH");;
         kr | korean     ) group_list=$(cat "$KOREAN_RADIO_PATH");;
@@ -612,11 +593,11 @@ select_one_input_line() {
 
 select_play() {
     local shuffle_line
-    # test_print $LINENO arg1 "$arg1" # arg1 is select_list()'s
+    # test_print arg1 "$arg1" # arg1 is select_list()'s
     while true; do
         shuffle_list "$input_lines"
         (( $? == $E_IN_A_ROW )) && continue
-        # test_print $LINENO shuffle_radio "$shuffle_radio"
+        # test_print shuffle_radio "$shuffle_radio"
         shuffle_line=$(grep -iF "$shuffle_radio" <<< $arg1)
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             play_youtube "$shuffle_line" # need
@@ -653,7 +634,7 @@ select_sed() {
                 | sed 's/^,/1,/' \
                 | sed "s/,$/,$grepcount/" \
                 | sed 's/$/p/')
-    # test_print $LINENO REPLY "$REPLY"
+    # test_print REPLY "$REPLY"
     input_lines=$(sed -n "$sed_reply" <<< $input_lines)
     select_one_input_line
     select_play
@@ -664,7 +645,7 @@ select_regex() {
     printf '\n %s\n' \
            'You selected items with regex.'
     make_namelist "$input_lines"
-    # test_print $LINENO input_lines "$input_lines"
+    # test_print input_lines "$input_lines"
     select_one_input_line
     select_play
     return 0
@@ -694,7 +675,7 @@ select_list() {
             input_name_part=$(sed 's/.* "title": "//' <<< $arg2 \
                                   | sed 's/" "webpage_url": ".*//' \
                                   | sed 's/\\n/ /')
-            # test_print $LINENO input_name_part "$input_name_part"
+            # test_print input_name_part "$input_name_part"
         elif [[ $arg2 =~  https?:// ]]; then
             input_name_part=$(sed 's! https\?://.*!!' <<< $arg2)
         elif [[ $arg2 =~ ^/mnt/ ]]; then
@@ -710,7 +691,7 @@ select_list() {
             exit 1
         fi
         input_name_part=$(printf %b "$input_name_part") # Unicode-to-utf8
-        # test_print $LINENO input_name_part "$input_name_part"
+        # test_print input_name_part "$input_name_part"
         readarray -t arr_names <<< $input_name_part
         printf '\n' # needed
         select line in "${arr_names[@]}"; do
@@ -763,7 +744,7 @@ play_local() {
                 local_list+="${local_list:+$'\n'}$file"
             fi
         done
-        # test_print $LINENO local_list "$local_list"
+        # test_print local_list "$local_list"
         make_namelist "$local_list"
         select_list "$local_list" "$input_lines"
     fi
@@ -801,6 +782,26 @@ print_version() {
     printf '\n%s: %s\n' \
            "$SCRIPT_NAME" \
            "$SCRIPT_VERSION"
+    test_print SCRIPT_NAME "$SCRIPT_NAME"
+    return 0
+}
+
+search_linenumber() {
+    local arg1="$1"
+    local arg2="$2"
+    declare -g x=0
+    if [[ -f "$arg1" ]]; then
+        while read -r line; do
+            ((x++))
+            [[ $line =~ $arg2 ]] && break # unquote for regex
+        done < $arg1
+    else
+        while read -r line; do
+            ((x++))
+            [[ $line =~ $arg2 ]] && break
+        done <<< $arg1
+    fi
+    # test_print search_linenumber $x
     return 0
 }
 
@@ -844,7 +845,7 @@ play_xxx() { # private
             sleep 0.1 # needed for C-c
         done
     else
-        # test_print $LINENO xxx_list "$xxx_list"
+        # test_print xxx_list "$xxx_list"
         make_namelist "$xxx_list"
         select_list "$xxx_list" "$input_lines"
     fi
@@ -977,7 +978,7 @@ youtube_search() {
             sleep $DUMP_RETRY_AFTER # you can be banned for too many request
         done
         printf '\n'
-        $PLAYER "$DUMP_SUCCESS_PATH" &>/dev/null & # notice for success
+        $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null & # notice for success
         if (( ${#arr_result[@]} >= $max_cache )); then
             for key in "${!arr_search[@]}"; do
                 if (( ${arr_search[$key]} <= ${min_rate:-10} )); then
@@ -1033,14 +1034,14 @@ youtube_search() {
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
     readarray -t arr_description <<< $r_description # last position
-    # test_print $LINENO arr_date ${#arr_date[@]}
-    # test_print $LINENO arr_duration ${#arr_duration[@]}
-    # test_print $LINENO arr_count ${#arr_count[@]}
-    # test_print $LINENO arr_rating ${#arr_rating[@]}
-    # test_print $LINENO arr_title ${#arr_title[@]}
-    # test_print $LINENO arr_url ${#arr_url[@]}
-    # test_print $LINENO arr_uploader ${#arr_uploader[@]}
-    # test_print $LINENO arr_description ${#arr_description[@]}
+    # test_print arr_date ${#arr_date[@]}
+    # test_print arr_duration ${#arr_duration[@]}
+    # test_print arr_count ${#arr_count[@]}
+    # test_print arr_rating ${#arr_rating[@]}
+    # test_print arr_title ${#arr_title[@]}
+    # test_print arr_url ${#arr_url[@]}
+    # test_print arr_uploader ${#arr_uploader[@]}
+    # test_print arr_description ${#arr_description[@]}
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
                          "${arr_date[i]}" \
@@ -1056,7 +1057,7 @@ youtube_search() {
     r_list=$(sort <<< $r_list)
     last_date=$(tail -n 1 <<< $r_list | grep -o '[0-9]\{8\}')
     input_lines="$r_list" # for select_list()
-    # test_print $LINENO input_lines "$input_lines"
+    # test_print input_lines "$input_lines"
     if [[ ${g_arg[1]} != -c ]]; then
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
@@ -1108,5 +1109,5 @@ esac
 make_namelist "$URL_LIST"
 input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                   | sed 's/^# //')
-# test_print $LINENO input_lines "$input_lines"
+# test_print input_lines "$input_lines"
 select_list "$URL_LIST" "$input_lines"
