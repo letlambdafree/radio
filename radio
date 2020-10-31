@@ -123,6 +123,7 @@ BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
 DUMP_SUCCESS_ALERT_PATH=/mnt/data/Sound/Alert.mp3
 TEST_TIME=10 # sec
 PERIOD_TIME=600
+DUMP_RETRY_AFTER=10
 #
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
@@ -342,11 +343,11 @@ make_namelist() {
     local reverse=
     declare -g input_lines=
     if [[ -n ${REPLY:-} ]]; then
-        readarray -t array_namelist <<< ${REPLY/ /$'\n'} # test
+        readarray -t arr_namelist <<< ${REPLY/ /$'\n'} # test
     else
-        array_namelist=( "${g_arg[@]}" ) # need " " like 'lsd sia'
+        arr_namelist=( "${g_arg[@]}" ) # need " " like 'lsd sia'
     fi
-    for line in "${array_namelist[@]}"; do
+    for line in "${arr_namelist[@]}"; do
         if [[ -z $input_lines ]]; then
             # test_print ${LINENO} line1 "$line"
             [[ $line =~ ^-+[a-z]+ ]] && continue
@@ -492,7 +493,8 @@ play() {
     elif [[ $arg1 =~ ^/mnt/ ]]; then
         name_part=$(sed 's!.*/Music/!!g' <<< $arg1)
     elif [[ $arg1 =~  /mnt/ ]]; then
-        name_part=$(sed 's! /mnt/.*!!' <<< $arg1)
+        name_part=$(sed 's! /mnt/.*!!' <<< $arg1 \
+                        | sed 's/^# / /')
     else
         printf '\n \e[1;31m%s\e[0m\n\n' \
                'Something is wrong!'
@@ -734,6 +736,7 @@ select_list() {
 }
 
 play_local() {
+    local locallist
     search_linenumber "$urllist" "^$LOCAL_START_LINE"
     locallist=$(tail -n +$((x+2)) <<< $urllist)
     search_linenumber "$locallist" "^##+"
@@ -843,14 +846,13 @@ youtube_search() {
     local s_limit=100 # it takes 8 secs to get 10 items, so need cache
     local max_cache=10000000
     local display_c_Phrase_limit=100 # modify later
-    local try_dump_limit=10
+    local retry_dump_limit=10
     local result=
     local r_list r_date r_duration r_count r_rating
     local r_title r_url r_uploader r_description
-    local arr_date arr_duration arr_count arr_rating # arr need declare local?
-    local arr_title arr_url arr_uploader arr_description
     local c_phrase s_rate d_phrase d_matched u_matched
     local lastline lastdate dots
+    local p1 youtube_dl_opt
     local i=0 j=0 c=0
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
@@ -933,29 +935,32 @@ youtube_search() {
     fi
     if [[ -z $result ]]; then
         printf '\n'
+        p1='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;0m %s\e[0m\r'
+        p2='\e[1;38;5;117m %s\e[0m %s\e[1;38;5;40m %s\e[0m\r'
         while [[ -z $result ]]; do # json-dump often fails
             ((c++))
-            if (( $c % 10 == 1)); then
-                printf '\e[1;38;5;117m %s\e[0m %s\e[1;38;5;0m %s\e[0m\r' \
-                       trying \
-                       $c \
-                       ${dots:-.}
-                 dots=.
-            else
-                dots+=.
-            fi
-            if (( $c > $try_dump_limit )); then
-                printf '\n \e[1;31m%s\e[0m\n' \
-                       'Fail dumping. try later!'
+            if (( $c > $retry_dump_limit )); then
+                printf '\n\n \e[1;31m%s\e[0m\n' \
+                       'Fail dumping. Retry later!'
                 exit $E_FAIL_DUMP_YOUTUBE
 
             fi
-            printf '\e[1;38;5;117m %s\e[0m %s\e[1;38;5;40m %s\e[0m\r' \
-                   trying \
-                   $c \
+            if (( $c % 10 == 1)); then
+                printf "$p1" \
+                       "retry in ${DUMP_RETRY_AFTER}s"\
+                       $c/$retry_dump_limit \
+                       ${dots:-.}
+                dots=.
+            else
+                dots+=.
+            fi
+            printf "$p2" \
+                   "retry in ${DUMP_RETRY_AFTER}s"\
+                   $c/$retry_dump_limit \
                    $dots
-            result=$(youtube-dl -j ytsearch${s_limit}:"$s_phrase" 2>/dev/null)
-            sleep 10 # retry after
+            youtube_dl_opt="-j ytsearch$s_limit:$s_phrase"
+            result=$(youtube-dl -j "youtube-dl_opt" 2>/dev/null)
+            sleep $DUMP_RETRY_AFTER # you can be banned for too many request
         done
         printf '\n'
         $PLAYER "$DUMP_SUCCESS_ALERT_PATH" &>/dev/null & # notice for success
@@ -1113,238 +1118,3 @@ input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                   | sed 's/^# //')
 # test_print ${LINENO} input_lines "$input_lines"
 select_list "$urllist" "$input_lines"
-
-
-
-# ### - source
-# ##  - group
-# #   - url
-#
-### MY RADIO URLS - from a latte applet in KDE.
-#
-## English Radio
-#
-# BBC Radio London 94.9 FM http://bbcmedia.ic.llnwd.net/stream/bbcmedia_lrldn_mf_p
-# NPR 24h Program Stream https://npr-ice.streamguys1.com/live.mp3
-# CNN HLN http://tunein.streamguys1.com/cnnhln
-# Fox News Radio https://streaming-ent.shoutcast.com/foxnews
-# KWSU 1250 Northwest Public Radio NPR News - Pullman, WA http://streams.nwpr.org:8000/NWPRNEWS
-# WNPR 90.5 Connecticut Public Radio - Meriden, CT http://16113.live.streamtheworld.com/WNPRFM_SC
-# 90.5 WESA Pittsburgh's NPR New Station https://17273.live.streamtheworld.com:443/WESAFM.mp3
-#
-## Korean Radio
-#
-# SBS 러브 FM-SBS 라디오 http://slive.ytn.co.kr:1935/live/fmlive_0624_1.sdp/playlist.m3u8
-# gukak http://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8
-# FM 95.1 TBS fm http://58.234.158.60:1935/fmlive/myStream/playlist.m3u8
-#
-## Japanese Radio
-#
-# KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
-# Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
-# Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
-# FmHaro!76.1（エフエムハロー!） http://musicbird.leanstream.co/JCB034-MP3
-# FM Fujiyama (FMふじやま, JOZZ3CA-FM, 77.6 MHz, Fujikawaguchiko, Yamanashi) http://musicbird.leanstream.co/JCB026-MP3
-# Shuunan FM (しゅうなんFM, JOZZ8AJ-FM, 78.4 MHz, Shūnan, Yamaguchi) http://musicbird.leanstream.co/JCB085-MP3
-# Air Tesshi (Airてっし, JOZZ1AU-FM, 78.8 MHz, Nayoro, Hokkaido) http://musicbird.leanstream.co/JCB003-MP3
-# Umeda FM Be Happy! (ウメダFM Be Happy! 789/エフエムキタ, JOZZ7AK-FM, 78.9MHz, Kita-ku, Osaka) http://musicbird.leanstream.co/JCB068-MP3
-# Happy FM Itami (ハッピーエフエムいたみ, JOZZ7AJ-FM, 79.4 MHz, Itami, Hyōgo) http://musicbird.leanstream.co/JCB070-MP3
-# FM Yame (FM八女, JOZZ0BY-FM, 80.1 MHz, Yame, Fukuoka) http://musicbird.leanstream.co/JCB086-MP3
-# FM Hanako (JOZZ7AA-FM, 82.4 MHz, Moriguchi City, Osaka) http://musicbird.leanstream.co/JCB069-MP3
-# Kamakura FM 82.8 (かまくらFM, JOZZ3AF-FM, 82.8 MHz, Kamakura, Kanagawa) http://musicbird.leanstream.co/JCB016-MP3?args=tunein_02
-# Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
-# Humming FM Takarazuka (ハミングFM宝塚, JOZZ7AT-FM, 83.5 MHz, Takarazuka, Hyōgo) http://musicbird.leanstream.co/JCB071-MP3
-# 84.3 FM Edogawa (FMえどがわ, JOZZ3AS-FM, Edogawa City, Tokyo) http://musicbird.leanstream.co/JCB032-MP3
-# Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
-# FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
-# Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3
-#
-### MY RADIO URLS END
-#
-### MY YOUTUBE URLS - need a youtube-dl to play a url.
-#
-## Music Video
-#
-# Дария «Нуки» Ставрович «Zombie» - Слепые прослушивания – Голос – Сезон 5 https://www.youtube.com/watch?v=pLN-EnS_QLA
-# Дария Ставрович «Круги на воде» - Нокауты - Голос - Сезон 5 https://www.youtube.com/watch?v=AW3EJiRD0ho
-# Дария Ставрович «Chandelier» - Полуфинал - Голос - Сезон 5 https://www.youtube.com/watch?v=ltV1yoeIoPM
-# Sting - Shape of My Heart (Leon) https://www.youtube.com/watch?v=QK-Z1K67uaA
-# What's up - EXCELENTE COVER!!! https://www.youtube.com/watch?v=1NNE0b55AoM
-# nakashima mika - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
-# nakashima mika - 中島美嘉『雪の華』 Music Video https://www.youtube.com/watch?v=oIoaIlPpIcA
-# Amazarash(아마자라시 - 한글자막)  - 내가 죽으려고 생각한 것은【acoustic live ver】 https://www.youtube.com/watch?v=6SNscvxLP4E
-# Sia - Big Girls Cry (Official Video) https://www.youtube.com/watch?v=4NhKWZpkw1Q
-# Sia - The Greatest https://www.youtube.com/watch?v=GKSRyLdjsPA
-# Sia - Together (from the motion picture Music) https://www.youtube.com/watch?v=vnfGni4_RlI
-# Sia - Alive https://www.youtube.com/watch?v=t2NgsJrrAyM
-# Sia - Unstoppable https://www.youtube.com/watch?v=H3evCDEXp4I
-# Sia - Chandelier (Official Music Video) https://www.youtube.com/watch?v=2vjPBrBU-TM
-# Sia - Elastic Heart feat. Shia LaBeouf & Maddie Ziegler (Official Video) https://www.youtube.com/watch?v=KWZGAExj-es
-# LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
-# LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
-# LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
-# Queen - Love of My Life https://www.youtube.com/watch?v=v3xwCkhmies
-# Queen - Love Of My Life (Live, 1979) https://www.youtube.com/watch?v=Idj__EDPCKk
-# Queen - Somebody To Love - HD Live - 1981 Montreal https://www.youtube.com/watch?v=aA2IRoPFIn0
-# Queen - Bohemian Rhapsody (Live at Rock Montreal, 1981) [HD] https://www.youtube.com/watch?v=N0dbGGvsjf8
-# radiohead - Creep https://www.youtube.com/watch?v=XFkzRNyygfk
-# Radiohead - Creep (Best Live Performance) https://www.youtube.com/watch?v=k3_RU30tEIE
-# The Cranberries - Zombie 1999 Live Video https://www.youtube.com/watch?v=8MuhFxaT7zo
-# This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
-# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16 --volume=180
-# 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
-# 노래얼_김옥희_이 어둠의 이 슬픔_고대 85학번 입학 30주년 기념 모교방문 축제 https://www.youtube.com/watch?v=cmNekU_svwY&list=RDcmNekU_svwY
-# 강지민 - 이 어둠의 이 슬픔 (도시의 그림자) https://www.youtube.com/watch?v=lg6IKzPdoes --volume=70
-# 심수봉 - 백만송이 장미 (1997년 6월 1일 이소라의 프로포즈) https://www.youtube.com/watch?v=z3Lkc8fEsww
-# 떼창 할 수 밖에 없는 심수봉 - 남자는 배 여자는 항구♬ [유희열의 스케치북/You Heeyeol's Sketchbook] 20191220 https://www.youtube.com/watch?v=uRU58V_59jk
-# 블랙홀(Black Hole) - 깊은 밤의 서정곡 https://www.youtube.com/watch?v=946hIajM-Hc
-#===== local music video file
-# Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
-# Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
-# Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
-# Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=09:13 --end=12:38
-# Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
-# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
-# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=07:45 --end=10:10
-# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
-# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:42
-# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
-# Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
-# Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
-# Les.Miserables 2012 - The Confrontation /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=43:20 --end=45:10
-# Les.Miserables 2012 - Paris / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:06:42 --end=1:09:36
-# Les.Miserables 2012 - On My Own /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
-# Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
-# Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
-#===== ani-opening
-# Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
-# Neon Genesis Evangelion (A Cruel Angel's Thesis) Anime Intro Opening Theme HD BluRay (Best Quality) https://www.youtube.com/watch?v=nU21rCWkuJw
-# Read or Die Opening https://www.youtube.com/watch?v=jsBpraFks0Y
-#
-## Live TV
-#
-# 正在直播：CCTV中文国际 https://www.youtube.com/watch?v=vCDDYb_M2B4
-# franceinfo - DIRECT TV - actualité france et monde, interviews, documentaires et analyses https://www.youtube.c
-# Tele1 TV | Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=TDy-nmXZNQM
-# Adom TV Live https://www.youtube.com/watch?v=LIb1ADo0pGs
-#
-## Live News
-#
-# LIVE 언제, 어디서나 KBS 24시뉴스 https://www.youtube.com/watch?v=cUaptEjecPE
-# YTN LIVE 대한민국 24시간 뉴스채널 https://www.youtube.com/watch?v=U_sYIKWhJvk
-# live 연합뉴스TV https://www.youtube.com/watch?v=0GN8t2u3flc
-# CNA 24/7 LIVE https://www.youtube.com/watch?v=XWq5kBlakcQ
-# ANNnewsCH https://www.youtube.com/watch?v=coYw-eVU0Ks
-# Taiwan Formosa live news HD https://www.youtube.com/watch?v=XxJKnDLYZz4
-# Taiwan EBC 24h live news https://www.youtube.com/watch?v=RaIJ767Bj_M
-# Watch NBC News NOW Live https://www.youtube.com/watch?v=6hRk_zPTN1c
-# NBC2 Live Stream https://www.youtube.com/watch?v=tPeUHECNLKs
-# Watch The Latest News Headlines and Live Events: ABC News Live https://www.youtube.com/watch?v=w_Ma8oQLmSM
-# Al Jazeera English | Live https://www.youtube.com/watch?v=_dsWF2prkR8
-# Watch Sky News live https://www.youtube.com/watch?v=9Auq9mYxFEE
-# Euronews English Live https://www.youtube.com/watch?v=4MHhTZaGt2w
-# FRANCE 24 English – LIVE – International Breaking News & Top stories - 24/7 stream https://www.youtube.com/watch?v=FUnJzFT2i84
-# LIVE: Puthiya Thalaimurai Live News | Tamil News | Live Tamil News | Ayodhya Ram temple | Sushant https://www.youtube.com/watch?v=AyOCx_DHXJU
-# OTV Live 24x7 | Latest News Updates | Coronavirus(COVID-19) News | Unlock 3.0 Updates | Odisha TV https://www.youtube.com/watch?v=Axu-FoqBIXY
-# Sakshi TV LIVE | Today 'Telugu News' LIVE  https://www.youtube.com/watch?v=8McTsOqeueE
-# Manorama News LIVE TV https://www.youtube.com/watch?v=jjH6v95z3Nw
-# Watch SAMAA TV's News LIVE STREAM 24/7 | Full Pakistan coverage https://www.youtube.com/watch?v=vBjv7ZkRzig
-# LIVE STREAMING KOMPAS TV 24/7 https://www.youtube.com/watch?v=gIB2egm7tL8
-# NETTV LIVE 2020 https://www.youtube.com/watch?v=WZ83bBwWZQY
-# Channels Television Live https://www.youtube.com/watch?v=MSQhwpYQbtQ
-# TGRT Haber TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=5J8uR3mxq80
-# Habertürk TV Canlı Yayın ᴴᴰ https://www.youtube.com/watch?v=deKH0pQ7-rg
-#
-## Live Camera - often change url address or off the camera
-#
-# 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
-# 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
-# Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=jEhIe2SDKso
-# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=I6YANW67hQ0
-# 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
-# Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
-# 秋葉原ライブカメラ Akihabara live camera YouTube Live version https://www.youtube.com/watch?v=mpFAKw68Je0
-# KABUKICHO TOKYO Live Stream https://www.youtube.com/watch?v=kUeDK-f2IMk
-# LIVE 道後温泉本館！！正面カメラ https://www.youtube.com/watch?v=vM7_-e0gdsc
-# 【ライブ配信】丸沼高原　標高1500ｍ https://www.youtube.com/watch?v=m-U577NAs_U
-# WATCH NASA: Earth Viewing cameras - Earth From Space ISS feed https://www.youtube.com/watch?v=DDU-rZs-Ic4
-# EarthCam Live: Times Square in 4K https://www.youtube.com/watch?v=mRe-514tGMg
-# Times Square: 1560 Broadway View Live https://www.youtube.com/watch?v=4qyZLflp-sI
-# Times Square: Express View Live https://www.youtube.com/watch?v=uw0lpuMSe9E&feature=emb_logo
-# Las Vegas: AE View Live https://www.youtube.com/watch?v=1ZNCtDLUKHw
-# Avalanche Bay Indoor Waterpark, Boyne Mountain https://www.youtube.com/watch?v=mm_fnIJ1c6Q&feature=emb_logo
-# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
-# White Mountains TV Live Cam: North Conway Village https://www.youtube.com/watch?v=eT7Z70L5SPo
-# Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=NHkrWF5HMSE
-# Live Stream — Public Square, Watertown NY — Jake Johnson Properties https://www.youtube.com/watch?v=qP1y7Tdab7Y&feature=emb_logo
-# Tropical Murphys 1 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=0Ns1sNoUSaY
-# Tropical Murphys 2 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wXsYOpVP-kQ
-# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (AI Camera looking for people) https://www.youtube.com/watch?v=-Fen7JP8oHI&feature=emb_logo
-# LIVE · Thailand / Koh Phangan · Thong Sala center (Mandolino Pizzeria) https://www.youtube.com/watch?v=1nnt_Beuo88&feature=emb_logo
-# Hush Bar Cam, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wqvStiZyVBI
-# Crystal Bay Yacht Club Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=aJdwAUUbFL8
-# Crystal Bay Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=AK9TkxHCbHU
-# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (Seaview Sunrise Resort) https://www.youtube.com/watch?v=9WbCh2AE_NU
-# Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
-# Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
-# WebCam.NL | www.sportsatsea.nl - live HD PTZ camera. https://www.youtube.com/watch?v=5rkyZrQv674&feature=emb_logo
-# Beach Bar live HD Webcam in Cruz Bay https://www.youtube.com/watch?v=GrZ8LL8yAqs&feature=emb_logo
-# Live da Club Camping Jesolo International https://www.youtube.com/watch?v=SDIPtTeTUdA
-# Live Da Jesolo Spiagge - Oro Beach https://www.youtube.com/watch?v=zE_yzuxFiMo
-# Lanzarote Webcam LIVE HD Streaming from Puerto del Carmen Beach (Lanzarote,Canary Islands,Spain) https://www.youtube.com/watch?v=mpd2CHIgJ9A
-# Alanya Turkey, Alanya Türkei, Аланья Турция Palmiye Beach Hotel Live Camera https://www.youtube.com/watch?v=hYAaoI2E1Pw
-# The central beach of Lignano Sabbiadoro (Italy) - Spiaggia LIVE streaming HD Webcam https://www.youtube.com/watch?v=jB_ix1xoj1c
-# Historical city center "Piazza Fontana" of Lignano Sabbiadoro (Italy) - LIVE streaming HD Webcam https://www.youtube.com/watch?v=3J_-o4sB2RU
-# Webcam Bari Sardo - Sardegna https://www.youtube.com/watch?v=IbgPG5L-uoI
-# LIVE Deerfield Beach - Beach Camera https://www.youtube.com/watch?v=-HAi_5IIAYg&feature=emb_logo
-# Underwater Camera in Deerfield Beach, Florida https://www.youtube.com/watch?v=GAv4VCC41oU
-# Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
-# Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
-# HC Lomnice nad Popelkou https://www.youtube.com/watch?v=7AGre-USTMc
-# Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=MAIRHYclfyM
-# Lomnice nad Popelkou - Koupaliště (kamera 2) https://www.youtube.com/watch?v=sDKNrdqMcqE
-# Lomnice nad Popelkou - Husovo náměstí https://www.youtube.com/watch?v=IsJWaa_KMVc
-# Lomnice nad Popelkou - TENIS - pohled ke klubovně https://www.youtube.com/watch?v=vPWxzpc0Iek
-# Lomnice nad Popelkou - tour https://www.youtube.com/watch?v=qAWlaKoSqa4
-# TJ Sokol Nová Ves nad Popelkou, z.s. , fotbalové hřiště https://www.youtube.com/watch?v=Bg2JXM5KcII
-# Jinolice - Oborský rybník https://www.youtube.com/watch?v=t1NLP0TJwn8
-# Tropical Reef Camera powered by EXPLORE.org https://www.youtube.com/watch?v=F109TZt3nRc
-# "Shirahama Ohama Beach" 白浜大浜海水浴場（静岡県下田市） https://www.youtube.com/watch?v=xuP8xIbZvmo
-# Frenchy’s Clearwater Beach Cam https://www.youtube.com/watch?v=fa7wCF6JL1w
-# 「LIVECAMERA」　草津温泉「湯畑」湯滝前  https://www.youtube.com/watch?v=GzbPVzPnT-U
-# 「LIVECAMERA 」草津温泉 西の河原・湯川LIVE https://www.youtube.com/watch?v=iPBW7BBoyIw
-# 【LIVE CAMERA】飛騨高山ライブカメラ 陣屋前 /Hida-Takayama,In front of the Takayama Jinya https://www.youtube.com/watch?v=PG8kZQ2EkSQ
-# 【ライブ配信】丸沼高原スキー場　標高1400m https://www.youtube.com/watch?v=YqXzpB-ardY
-# 上高地河童橋ライブカメラ KAMIKOCHI KAPPA-BASHI LIVE CAMERA https://www.youtube.com/watch?v=8bZTa4CBJ2o
-# 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=sgteH34KgM0
-# LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
-# 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
-# 【LIVE】上野城ライブカメラ 桜島と鹿児島市内 ※音付き（作業用にも） / Sakurajima and Kagoshima city in Japan https://www.youtube.com/watch?v=WCzHpvAoYRY
-# 【Live Stream】久里浜遠望カメラ　神奈川県横須賀市　The Sky of Yokosuka, Japan https://www.youtube.com/watch?v=L-oKanVICT8
-#
-## Play List - my favorite list
-#
-# 심수봉 노래 모음 https://www.youtube.com/watch?v=-03cg8u5fdU
-# 정태춘, 박은옥 히트곡 모음 듣기ㅣ북한강에서, 촛불 https://www.youtube.com/watch?v=TuukzC2chdo
-# 김광석 히트곡 모음 (고음질) https://www.youtube.com/watch?v=yxp2CGK_WWE
-# 김현식 베스트 명곡 전부 모음 - 고음질 https://www.youtube.com/watch?v=Speml0pUCB4
-# 해바라기 - 노래모음 베스트 20곡 https://www.youtube.com/watch?v=zGsIgF3UBpU
-# 자우림 (JAURIM), 김윤아 BEST 40곡 좋은 노래모음 - [연속재생] https://www.youtube.com/watch?v=CYtsEIfpSOg
-# 산울림 노래모음 : BEST 15곡 https://www.youtube.com/watch?v=ZBE1McRB5Qg
-# 도시의 그림자(Shadow of City) - 도시의 그림자 (Full Album) https://www.youtube.com/watch?v=LW14PKtNvws
-# ♣등려군 노래 모음 11곡♣ https://www.youtube.com/watch?v=tIoLOB1fRgo
-#
-### MY YOUTUBE URLS END
-#
-### TEST END
-#
-### MY LOCAL MUSIC - my music directories in my local computer.
-#
-# 아이유 - 꽃갈피 둘/
-# 김광석 [2005 Best]/
-# fav/
-# Camila Cabello/
-# moana/
-# sia/
-#
-### MY LOCAL MUSIC END
