@@ -858,7 +858,7 @@ play_xxx() { # private
 
 youtube_search() {
     #
-    # uses youtube-dl's json-dump and jq
+    # uses youtube-dl's json-dump
     #
     local s_phrase="${g_arg[@]:1}"
     local s_limit=100 # it takes 8 secs to get 10 items, so need cache
@@ -1031,21 +1031,6 @@ youtube_search() {
     r_description=$(grep -oP '"description": ".*?",' <<< $result \
                         || grep -oP '"description": "",' <<< $result)
     r_description=$(sed 's/,$//' <<< $r_description)
-    # r_date=$(jq '.upload_date' <<< $result) # for sort
-    # r_duration=$(jq '.duration' <<< $result \
-    #                  | sed 's/.*/"duration" \0/') # another method?
-    # r_count=$(jq '.view_count' <<< $result \
-    #               | sed 's/.*/"view_count" \0/')
-    # r_rating=$(jq '.average_rating' <<< $result \
-    #                | sed 's/.*/"average_rating" \0/')
-    # r_title=$(jq '.title' <<< $result \
-    #               | sed 's/.*/"title" \0/')
-    # r_url=$(jq '.webpage_url' <<< $result \
-    #             | sed 's/.*/"webpage_url" \0/')
-    # r_uploader=$(jq '.uploader' <<< $result \
-    #                  | sed 's/.*/"uploader" \0/')
-    # r_description=$(jq '.description' <<< $result \
-    #                     | sed 's/.*/"description" \0/')
     readarray -t arr_date <<< $r_date # first position
     readarray -t arr_duration <<< $r_duration
     readarray -t arr_count <<< $r_count
