@@ -1,22 +1,5 @@
 #!/bin/bash
 
-# radio - Bash shell script for listening radio basically
-
-# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License at <http://www.gnu.org/licenses/> for
-# more details.
-
-
-
 # KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
 # Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
 # Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
