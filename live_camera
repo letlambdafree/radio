@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# radio - Bash shell script for listening radio basically
+
+# Copyright 2020, Taeseong Ryu <formeu2s@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
+# 남산서울타워 파노라마 LIVE https://www.youtube.com/watch?v=uVTcfjw8sBw
+# 鍛冶町通りライブカメラ［ザザシティ浜松］PTZ（パンチルトズーム）https://www.youtube.com/watch?v=PvoIqPjZFyA&feature=emb_logo
+# Shibuya Scramble Crossing Live Camera https://www.youtube.com/watch?v=jEhIe2SDKso
+# 【LIVE CAMERA】渋谷スクランブル交差点 ライブ映像 https://www.youtube.com/watch?v=I6YANW67hQ0
+# 【LIVE】Tokyo Shinjuku Live Camera 新宿 大ガード交差点【2020】https://www.youtube.com/watch?v=RQA5RcIZlAM
+# Downtown Telluride Live Camera https://www.youtube.com/watch?v=Y_TLxje5Qw4
+# 秋葉原ライブカメラ Akihabara live camera YouTube Live version https://www.youtube.com/watch?v=mpFAKw68Je0
+# KABUKICHO TOKYO Live Stream https://www.youtube.com/watch?v=kUeDK-f2IMk
+# LIVE 道後温泉本館！！正面カメラ https://www.youtube.com/watch?v=vM7_-e0gdsc
+# 【ライブ配信】丸沼高原　標高1500ｍ https://www.youtube.com/watch?v=m-U577NAs_U
+# WATCH NASA: Earth Viewing cameras - Earth From Space ISS feed https://www.youtube.com/watch?v=DDU-rZs-Ic4
+# EarthCam Live: Times Square in 4K https://www.youtube.com/watch?v=mRe-514tGMg
+# Times Square: 1560 Broadway View Live https://www.youtube.com/watch?v=4qyZLflp-sI
+# Times Square: Express View Live https://www.youtube.com/watch?v=uw0lpuMSe9E&feature=emb_logo
+# Las Vegas: AE View Live https://www.youtube.com/watch?v=1ZNCtDLUKHw
+# Avalanche Bay Indoor Waterpark, Boyne Mountain https://www.youtube.com/watch?v=mm_fnIJ1c6Q&feature=emb_logo
+# Jackson Hole Wyoming USA Town Square Live Cam - SeeJH.com https://www.youtube.com/watch?v=1EiC9bvVGnk
+# White Mountains TV Live Cam: North Conway Village https://www.youtube.com/watch?v=eT7Z70L5SPo
+# Webcam Lanzarote - Live Stream from the Beachbar in Costa Teguise https://www.youtube.com/watch?v=NHkrWF5HMSE
+# Live Stream — Public Square, Watertown NY — Jake Johnson Properties https://www.youtube.com/watch?v=qP1y7Tdab7Y&feature=emb_logo
+# Tropical Murphys 1 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=0Ns1sNoUSaY
+# Tropical Murphys 2 Live Stream From Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wXsYOpVP-kQ
+# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (AI Camera looking for people) https://www.youtube.com/watch?v=-Fen7JP8oHI&feature=emb_logo
+# LIVE · Thailand / Koh Phangan · Thong Sala center (Mandolino Pizzeria) https://www.youtube.com/watch?v=1nnt_Beuo88&feature=emb_logo
+# Hush Bar Cam, Soi Green Mango, Chaweng, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=wqvStiZyVBI
+# Crystal Bay Yacht Club Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=aJdwAUUbFL8
+# Crystal Bay Live Stream From Lamai, Koh Samui, Thailand | Live HD Webcam | SamuiWebcam https://www.youtube.com/watch?v=AK9TkxHCbHU
+# LIVE · Thailand / Koh Phangan / Haad Rin · Full Moon Party beach (Seaview Sunrise Resort) https://www.youtube.com/watch?v=9WbCh2AE_NU
+# Banff, AB Canada Live Cam https://www.youtube.com/watch?v=Tpchwvyv6yU
+# Grancanaria.live | Playa del Inglés - Yumbo Center - LIVE ultraHD 4K PTZ https://www.youtube.com/watch?v=cvYNX6OONW4&feature=emb_logo
+# WebCam.NL | www.sportsatsea.nl - live HD PTZ camera. https://www.youtube.com/watch?v=5rkyZrQv674&feature=emb_logo
+# Beach Bar live HD Webcam in Cruz Bay https://www.youtube.com/watch?v=GrZ8LL8yAqs&feature=emb_logo
+# Live da Club Camping Jesolo International https://www.youtube.com/watch?v=SDIPtTeTUdA
+# Live Da Jesolo Spiagge - Oro Beach https://www.youtube.com/watch?v=zE_yzuxFiMo
+# Lanzarote Webcam LIVE HD Streaming from Puerto del Carmen Beach (Lanzarote,Canary Islands,Spain) https://www.youtube.com/watch?v=mpd2CHIgJ9A
+# Alanya Turkey, Alanya Türkei, Аланья Турция Palmiye Beach Hotel Live Camera https://www.youtube.com/watch?v=hYAaoI2E1Pw
+# The central beach of Lignano Sabbiadoro (Italy) - Spiaggia LIVE streaming HD Webcam https://www.youtube.com/watch?v=jB_ix1xoj1c
+# Historical city center "Piazza Fontana" of Lignano Sabbiadoro (Italy) - LIVE streaming HD Webcam https://www.youtube.com/watch?v=3J_-o4sB2RU
+# Webcam Bari Sardo - Sardegna https://www.youtube.com/watch?v=IbgPG5L-uoI
+# LIVE Deerfield Beach - Beach Camera https://www.youtube.com/watch?v=-HAi_5IIAYg&feature=emb_logo
+# Underwater Camera in Deerfield Beach, Florida https://www.youtube.com/watch?v=GAv4VCC41oU
+# Dania Beach Pier and Beach Cam https://www.youtube.com/watch?v=bEoNVd3spEM&feature=emb_logo
+# Sportovní areál - Maškova zahrada, Turnov https://www.youtube.com/watch?v=meUtwDS6fVk&feature=emb_logo
+# HC Lomnice nad Popelkou https://www.youtube.com/watch?v=7AGre-USTMc
+# Lomnice nad Popelkou - Koupaliště https://www.youtube.com/watch?v=MAIRHYclfyM
+# Lomnice nad Popelkou - Koupaliště (kamera 2) https://www.youtube.com/watch?v=sDKNrdqMcqE
+# Lomnice nad Popelkou - Husovo náměstí https://www.youtube.com/watch?v=IsJWaa_KMVc
+# Lomnice nad Popelkou - TENIS - pohled ke klubovně https://www.youtube.com/watch?v=vPWxzpc0Iek
+# Lomnice nad Popelkou - tour https://www.youtube.com/watch?v=qAWlaKoSqa4
+# TJ Sokol Nová Ves nad Popelkou, z.s. , fotbalové hřiště https://www.youtube.com/watch?v=Bg2JXM5KcII
+# Jinolice - Oborský rybník https://www.youtube.com/watch?v=t1NLP0TJwn8
+# Tropical Reef Camera powered by EXPLORE.org https://www.youtube.com/watch?v=F109TZt3nRc
+# "Shirahama Ohama Beach" 白浜大浜海水浴場（静岡県下田市） https://www.youtube.com/watch?v=xuP8xIbZvmo
+# Frenchy’s Clearwater Beach Cam https://www.youtube.com/watch?v=fa7wCF6JL1w
+# 「LIVECAMERA」　草津温泉「湯畑」湯滝前  https://www.youtube.com/watch?v=GzbPVzPnT-U
+# 「LIVECAMERA 」草津温泉 西の河原・湯川LIVE https://www.youtube.com/watch?v=iPBW7BBoyIw
+# 【LIVE CAMERA】飛騨高山ライブカメラ 陣屋前 /Hida-Takayama,In front of the Takayama Jinya https://www.youtube.com/watch?v=PG8kZQ2EkSQ
+# 【ライブ配信】丸沼高原スキー場　標高1400m https://www.youtube.com/watch?v=YqXzpB-ardY
+# 上高地河童橋ライブカメラ KAMIKOCHI KAPPA-BASHI LIVE CAMERA https://www.youtube.com/watch?v=8bZTa4CBJ2o
+# 【LIVE CAMERA】長門湯本温泉ライブカメラ 恩湯（おんとう）前 https://www.youtube.com/watch?v=sgteH34KgM0
+# LIVE 道後温泉本館！！冠山カメラ https://www.youtube.com/watch?v=cqjaUAloHzQ
+# 【LIVE CAMERA】飛騨高山ライブカメラ 中橋/Hida-Takayama Naka-Bashi Bridge https://www.youtube.com/watch?v=4hx8Xqj0cXM
+# 【LIVE】上野城ライブカメラ 桜島と鹿児島市内 ※音付き（作業用にも） / Sakurajima and Kagoshima city in Japan https://www.youtube.com/watch?v=WCzHpvAoYRY
+# 【Live Stream】久里浜遠望カメラ　神奈川県横須賀市　The Sky of Yokosuka, Japan https://www.youtube.com/watch?v=L-oKanVICT8
