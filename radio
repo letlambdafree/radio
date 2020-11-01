@@ -267,12 +267,14 @@ playing_print() {
     local arg1="$1"
     local p1='\n\e[1;38;5;130m %s\e[0m\n\n'
     # test_print arg1 "$arg1"
-    if [[ $arg1 =~ https?:// ]]; then
-        printf "$p1" "$(sed 's/http.*//' <<< $arg1)"
+    if [[ $arg1 =~ (.*)[[:space:]]https?:// ]]; then
+        # printf "$p1" "$(sed 's/http.*//' <<< $arg1)"
+        printf "$p1" "${BASH_REMATCH[1]}" # test
     elif [[ $arg1 =~ /$ ]]; then
         printf "$p1" "$arg1"
-    elif [[ $arg1 =~ /mnt/ ]]; then
-        printf "$p1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
+    elif [[ $arg1 =~ (.*)[[:space:]]/mnt/ ]]; then
+        # printf "$p1" "$(sed 's!/mnt/.*!!' <<< $arg1)"
+        printf "$p1" "${BASH_REMATCH[1]}"
     else
         printf "$p1" "$arg1"
     fi
