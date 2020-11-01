@@ -15,69 +15,15 @@
 # GNU General Public License at <http://www.gnu.org/licenses/> for
 # more details.
 
+
+
 ### description:
 #
 # This script is for my personal purpose like playing music
 # from various sources like radio, youtube, local storage.
 # In 'select()', you can search narrowly, regex, range and default option.
-#
-# Usage: radio [name] or radio option [arg ...]
-#
-# radio
-#       - plays a shuffled radio, press 'q' to play the next.
-#         this loops infinitely, press Ctrl-c repeatedly to exit.
-#
-# radio "regex"
-#       - plays a searched item.
-#         need quote for "or" regex searching like "wordA\|wordB".
-#         don't need quote for "and" regex searching, only need white-space.
-#         use -v for inverting match
-#         select items like 3-5 7 11 15-20, -2 6- ,  2  - 7  8
-#         search narrowly until only one chosen or all chosen
-#         press 00 to select all items
-#         ex) radio "sia\|live\|tv" cam "mango\|full"
-#             radio sia -v lsd : include "sia" but not "lsd"
-#
-# Options:
-#
-# -a | --all
-#       - displays all urls
-#
-# -g | --group {en|kr|jp|mv|lt|ln|lc|pl}
-#       - plays a shuffled radio in a group, press 'q' to play the next.
-#         this loops infinitely, press Ctrl-c repeatedly to exit.
-#         ex) radio -g jp : play only the Japanese radio randomly
-#
-# -l | --local ["regex"]
-#       - plays a shuffled local music.
-#         this loops infinitely, press Ctrl-c repeatedly to exit.
-#         ex) radio -l sia : play only local files with sia
-#
-# -x | --xxx ["regex"]
-#       - plays a XXX for private
-#       - asks your password for bypassing a blocked site
-#
-# -y | --youtube [option] [phrase]
-#       - searches a phrase in youtube and plays the urls
-#       - if no option and no phrase, display the cached phrases
-#       - use alias : alias yt='radio -y', then yt 'something'
-#       - options
-#         -d : delete the cached phrase
-#         -u : update the cached phrase
-#         -c : only search in the cached phrases
-#
-# -t | --test
-#       - tests all radios whether work or not.
-#         If failed, it logs on the file named report.
-#
-# -e | --edit
-#       - edit this script.
-#
-# -h | --help
-#       - prints this help.
-#
-# Exit Status:
-# Returns 0  unless an invalid option is supplied or an error occurs.
+
+
 
 ### TODO
 #
@@ -87,6 +33,7 @@
 # 1-1 loop
 # select loop
 # last selected item coloring
+
 
 
 shopt -s globstar # Allow ** for recursive matches
@@ -562,15 +509,17 @@ play_group() {
                    'There is no' \
                    "'${g_arg[1]}'" \
                    'group.'
-            printf '\n Usage : radio -g option'
-            printf '\n option: en - English Radio'
-            printf '\n         kr - Korean Radio'
-            printf '\n         jp - Japanese Radio'
-            printf '\n         mv - Music Video'
-            printf '\n         lt - Live TV'
-            printf '\n         ln - Live News'
-            printf '\n         lc - Live Camera'
-            printf '\n         pl - Play List\n'
+            cat <<HEREDOC
+ Usage : radio -g option
+ Option: en - English Radio
+         kr - Korean Radio
+         jp - Japanese Radio
+         mv - Music Video
+         lt - Live TV
+         ln - Live News
+         lc - Live Camera
+         pl - Play List
+HEREDOC
             # back_trace
             exit 2
             ;;
@@ -788,32 +737,68 @@ print_version() {
     return 0
 }
 
-search_linenumber() {
-    local arg1="$1"
-    local arg2="$2"
-    declare -g x=0
-    if [[ -f "$arg1" ]]; then
-        while read -r line; do
-            ((x++))
-            [[ $line =~ $arg2 ]] && break # unquote for regex
-        done < $arg1
-    else
-        while read -r line; do
-            ((x++))
-            [[ $line =~ $arg2 ]] && break
-        done <<< $arg1
-    fi
-    # test_print search_linenumber $x
-    return 0
-}
-
 help_usage() {
-    search_linenumber "$g_arg0" '^# Usage: '
-    help_list=$(tail -n +$x "$g_arg0")
-    search_linenumber "$help_list" ^$
-    help_list=$(head -n $x <<< $help_list)
-    printf '\n%s\n' \
-           "$(sed 's/#\+//' <<< $help_list)" # need " "
+    cat << HEREDOC
+
+Usage: radio [name] or radio option [arg ...]
+
+radio
+      - plays a shuffled radio, press 'q' to play the next.
+        this loops infinitely, press Ctrl-c repeatedly to exit.
+
+radio "regex"
+      - plays a searched item.
+        need quote for "or" regex searching like "wordA\|wordB".
+        don't need quote for "and" regex searching, only need white-space.
+        use -v for inverting match
+        select items like 3-5 7 11 15-20, -2 6- ,  2  - 7  8
+        search narrowly until only one chosen or all chosen
+        press 00 to select all items
+        ex) radio "sia\|live\|tv" cam "mango\|full"
+            radio sia -v lsd : include "sia" but not "lsd"
+
+Options:
+
+-a | --all
+      - displays all urls
+
+-g | --group {en|kr|jp|mv|lt|ln|lc|pl}
+      - plays a shuffled radio in a group, press 'q' to play the next.
+        this loops infinitely, press Ctrl-c repeatedly to exit.
+        ex) radio -g jp : play only the Japanese radio randomly
+
+-l | --local ["regex"]
+      - plays a shuffled local music.
+        this loops infinitely, press Ctrl-c repeatedly to exit.
+        ex) radio -l sia : play only local files with sia
+
+-x | --xxx ["regex"]
+      - plays a XXX for private
+      - asks your password for bypassing a blocked site
+
+-y | --youtube [option] [phrase]
+      - searches a phrase in youtube and plays the urls
+      - if no option and no phrase, display the cached phrases
+      - use alias : alias yt='radio -y', then yt 'something'
+      - options
+        -d : delete the cached phrase
+        -u : update the cached phrase
+        -c : only search in the cached phrases
+
+-t | --test
+      - tests all radios whether work or not.
+        If failed, it logs on the file named report.
+
+-e | --edit
+      - edit this script.
+
+-h | --help
+      - prints this help.
+
+Exit Status:
+Returns 0  unless an invalid option is supplied or an error occurs.
+
+HEREDOC
     return 0
 }
 
@@ -1095,16 +1080,18 @@ case "${g_arg[0]:-}" in
                'There is no' \
                "'${g_arg[0]}'" \
                'option.'
-        printf '\n Usage : radio [name] or radio option [arg ...]'
-        printf '\n option: -a displays all urls'
-        printf '\n         -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group'
-        printf '\n         -l ["regex"] plays a shuffled local music.'
-        printf '\n         -x ["regex"] plays a XXX for private.'
-        printf '\n         -y [option] [phrase] searches a phrase in youtube'
-        printf '\n         -t tests all radios'
-        printf '\n         -e edit this script.'
-        printf '\n         -h prints version'
-        printf '\n         -h prints help\n'
+        cat <<HEREDOC
+ Usage : radio [name] or radio option [arg ...]
+ Option: -a displays all urls
+         -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group
+         -l ["regex"] plays a shuffled local music.
+         -x ["regex"] plays a XXX for private.
+         -y [option] [phrase] searches a phrase in youtube
+         -t tests all radios
+         -e edit this script.
+         -h prints version
+         -h prints help
+HEREDOC
         exit 2
         ;;
 esac
