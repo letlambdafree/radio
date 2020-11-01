@@ -77,7 +77,7 @@
 #       - prints this help.
 #
 # Exit Status:
-# Returns success unless an invalid option is supplied or an error occurs.
+# Returns 0  unless an invalid option is supplied or an error occurs.
 
 ### TODO
 #
@@ -162,7 +162,8 @@ back_trace() {
     #        LINENO $LINENO
     for key in ${!BASH_LINENO[@]}; do
         printf "\n %-${max_length}s : %5d" \
-               ${FUNCNAME[$key]} ${BASH_LINENO[$key]}
+               ${FUNCNAME[$key]} \
+               ${BASH_LINENO[$key]}
     done
     printf '\n'
 }
@@ -174,7 +175,7 @@ test_print() {
     local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
     local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
     local p3='\n\e[1;38;5;220m%s %s\n\e[1;38;5;240m%s\e[0m'
-    local caller_line_number=$(caller | cut -d ' ' -f 1)
+    local caller_line_number=$(caller | cut -d ' ' -f 1) # test
     printf "$p3" \
            "${FUNCNAME[1]}()'s $arg1" \
            ":: $caller_line_number" \
@@ -372,7 +373,8 @@ make_shuffle_list() {
     local arg1="$1"
     local print_name print_names
     arg1=$(sed 's/^# //' <<< $arg1)
-    for line in "$arg1"; do
+    readarray -t arr_arg1 <<< $arg1
+    for line in "${arr_arg1[@]}"; do
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             print_name=$(sed 's/.*"title": "//' <<< $line \
                                   | sed 's/" "webpage_url": ".*//')
@@ -385,7 +387,7 @@ make_shuffle_list() {
         else
             print_name="$line"
         fi
-        print_names+=${print_names:+\n}"$print_name"
+        print_names+=${print_names:+$'\n'}"$print_name"
     done
     print_shuffle_list "$print_names"
     return 0
