@@ -197,6 +197,7 @@ print_shuffle_list() {
 }
 
 playing_youtube_print() {
+    local arg0=( $@ )
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
@@ -204,19 +205,16 @@ playing_youtube_print() {
     local arg5="$5"
     local arg6="$6"
     local arg7="$7"
+    local arg8="$8"
     local p1='\n\e[1;38;5;130m%s\e[0m\n'
-    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\e[0m\n"
+    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m\n"
     local p3="\n\e[1;38;5;144m%s\e[0m\n\n"
     local IGNORE_DESCRIPTION_WORDS=3
     local DISPLAY_DESCRIPTION_LINES=10
-    local arg5_h arg5_m arg5_s arg7_wc_w arg7_wc_l
-    # test_print arg1 "$arg1"
-    # test_print arg2 "$arg2"
-    # test_print arg3 "$arg3"
-    # test_print arg4 "$arg4"
-    # test_print arg5 "$arg5"
-    # test_print arg6 "$arg6"
-    # test_print arg7 "$arg7"
+    local arg3_h arg3_m arg3_s arg8_wc_w arg8_wc_l
+    # for i in "${arg0[@]}"; do
+    #   test_print arg$i "${arg0[i]}"
+    # done
     arg1=$(printf %b "$arg1")  # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
     if (( $arg3 )); then # duration
@@ -236,10 +234,14 @@ playing_youtube_print() {
     else
         arg3=LIVE
     fi
-    arg4=$(numfmt --to=si $arg4 | sed 's/G/B/') # count
+    #
+    # k, M, G, T, P, E, Z, Y
+    # k, M, B, T, Q, Q, S, S
+    #
+    arg4=$(numfmt --to=si $arg4 | sed 's/G/B/')
     arg5=$(echo "$arg5 * 20" | bc) # rating
     arg6=$(printf %b "$arg6") # uploader
-    arg7=$(printf %b "$arg7") # description
+    arg8=$(printf %b "$arg8") # description
     printf "$p1" \
            "$arg1"
     printf "$p2" \
@@ -247,18 +249,20 @@ playing_youtube_print() {
            "$arg3" \
            "$arg4" \
            $arg5 \
-           "$arg6"
+           "$arg6" \
+           "$arg7"
     #
     # remove too short or too long description
     #
-    arg7_wc_w=$(wc -w <<< $arg7)
-    arg7_wc_l=$(wc -l <<< $arg7)
-    if (( $arg7_wc_w >= $IGNORE_DESCRIPTION_WORDS )); then
-        if (( arg7_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
-            arg7=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg7)' ......'
+    arg8_wc_w=$(wc -w <<< $arg8)
+    arg8_wc_l=$(wc -l <<< $arg8)
+    if (( $arg8_wc_w >= $IGNORE_DESCRIPTION_WORDS )); then
+        if (( arg8_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
+            arg8=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg8)
+            arg8+=' ......'
         fi
         printf "$p3" \
-               "$arg7"
+               "$arg8"
     fi
     return 0
 }
@@ -325,8 +329,8 @@ make_shuffle_list() {
     readarray -t arr_arg1 <<< $arg1
     for line in "${arr_arg1[@]}"; do
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-            print_name=$(sed 's/.*"title": "//' <<< $line \
-                                  | sed 's/" "webpage_url": ".*//')
+            print_name=$(sed 's/"title": "//' <<< $line \
+                                  | sed 's/" "upload_date": ".*//')
         elif [[ $line =~  https?:// ]]; then
             print_name=$(sed 's/ http.*//' <<< $line)
         elif [[ $line =~ ^/mnt/ ]]; then
@@ -380,51 +384,41 @@ shuffle_list() {
 
 play_youtube() {
     local arg1="$1"
-    local execute_part name_part
-    local p_date p_average_rating p_view_count p_duration
-    local p_title p_uploader p_description
-    local s1 s2 s3 s4 s5 s6 s7 s8
-    # test_print arg1 "$arg1"
-    name_part=$(sed 's! "webpage_url": .*!!' <<< $arg1)
-    # test_print name_part "$name_part"
-    execute_part=$(sed 's!.* "webpage_url": !!' <<< $arg1)
-    # test_print execute_part "$execute_part"
-    s1='s/^\([0-9]\{8\}\) .*/\1/'
-    s2='s/.* "duration": \([0-9]\+\) .*/\1/'
-    s3='s/.* "view_count": \([0-9]\+\) .*/\1/'
-    s4='s/.* "average_rating": \([0-9.]\+\) .*/\1/'
-    s5='s/.* "title": "\(.*\)"$/\1/'
-    s6='s/.* "uploader": "\(.*\)" "description": ".*/\1/'
-    s7='s/.* "description": "\(.*\)"$/\1/'
-    s8='s/^"\(.*\)" "uploader": ".*/\1/'
-    p_date=$(sed "$s1" <<< $name_part)
-    p_duration=$(sed "$s2" <<< $name_part)
-    p_view_count=$(sed "$s3" <<< $name_part)
-    p_average_rating=$(sed "$s4" <<< $name_part)
-    p_title=$(sed "$s5" <<< $name_part)
-    p_uploader=$(sed "$s6" <<< $execute_part)
-    p_description=$(sed "$s7" <<< $execute_part)
-    execute_part=$(sed "$s8" <<< $execute_part)
-    # test_print p_date "$p_date"
-    # test_print p_duration "$p_duration"
-    # test_print p_view_count "$p_view_count"
-    # test_print p_average_rating "$p_average_rating"
-    # test_print p_title "$p_title"
-    # test_print p_uploader "$p_uploader"
-    # test_print p_description "$p_description"
+    local p_title p_date p_average_rating p_view_count
+    local p_duration p_uploader p_webpage_url p_description
+    local s1
+    s1=$(printf '%s' \
+                '"title": "\(.*\)" ' \
+                '"upload_date": "\([0-9]\{8\}\)" ' \
+                '"duration": \([0-9]\+\) ' \
+                '"view_count": \([0-9]\+\) ' \
+                '"average_rating": \([0-9.]\+\) ' \
+                '"uploader": "\(.*\)" ' \
+                '"webpage_url": "\(.*\)" ' \
+                '"description": "\(.*\)"')
+    # test_print s1 "$s1"
+    p_title=$(sed "s/$s1/\1/" <<< $arg1)
+    p_date=$(sed "s/$s1/\2/" <<< $arg1)
+    p_duration=$(sed "s/$s1/\3/" <<< $arg1)
+    p_view_count=$(sed "s/$s1/\4/" <<< $arg1)
+    p_average_rating=$(sed "s/$s1/\5/" <<< $arg1)
+    p_uploader=$(sed "s/$s1/\6/" <<< $arg1)
+    p_webpage_url=$(sed "s/$s1/\7/" <<< $arg1)
+    p_description=$(sed "s/$s1/\8/" <<< $arg1)
     playing_youtube_print "$p_title" \
                           $p_date \
                           $p_duration \
                           $p_view_count \
                           $p_average_rating \
                           "$p_uploader" \
+                          "$p_webpage_url" \
                           "$p_description"
     #
     # 1>/dev/null disable information
     # 2>/dev/null disable process-bar
     # &>/dev/null disable all
     #
-    $PLAYER "$execute_part" 2>/dev/null
+    $PLAYER "$p_webpage_url" 2>/dev/null
     return 0
 }
 
@@ -610,6 +604,7 @@ select_list() {
     local r1='[0-9]*[-\ ]+[0-9]*'
     local r2='[^0-9\ -]+'
     local p1='\n \e[1;31m%s\e[0m\n\n'
+    local s1
     local input_name_part
     grepcount=$(grep -ic .  <<< $input_lines)
     if (( $grepcount == 1 )); then
@@ -625,8 +620,8 @@ select_list() {
             # "title" "도시의 그림자 -\n이 어둠의 이슬픔"
             # in select(), added one more line
             #
-            input_name_part=$(sed 's/.* "title": "//' <<< $arg2 \
-                                  | sed 's/" "webpage_url": ".*//' \
+            s1='s/"title": "\(.*\)" "upload_date": ".*/\1/'
+            input_name_part=$(sed "$s1" <<< $arg2\
                                   | sed 's/\\n/ /')
             # test_print input_name_part "$input_name_part"
         elif [[ $arg2 =~  https?:// ]]; then
@@ -998,6 +993,8 @@ youtube_search() {
     # "duration" "age_limit" "annotations" "chapters" "webpage_url"
     # "view_count" "like_count" "dislike_count" "average_rating" "formats"
     #
+    r_title=$(grep -oP '"title": ".*?", "' <<< $result \
+                  | sed 's/, "$//')
     r_date=$(grep -oP '"upload_date": ".*?", "' <<< $result \
                  | sed 's/, "$//')
     r_duration=$(grep -oP '"duration": .*?, "' <<< $result \
@@ -1006,67 +1003,57 @@ youtube_search() {
                    | sed 's/, "$//')
     r_count=$(grep -oP '"view_count": .*?, "' <<< $result \
                   | sed 's/, "$//')
-    r_title=$(grep -oP '"title": ".*?", "' <<< $result \
-                  | sed 's/, "$//')
-    r_url=$(grep -oP '"webpage_url": ".*?", "' <<< $result \
-                | sed 's/, "$//')
     r_uploader=$(grep -oP '"uploader": ".*?", "' <<< $result \
                      | sed 's/, "$//')
+    r_url=$(grep -oP '"webpage_url": ".*?", "' <<< $result \
+                | sed 's/, "$//')
     r_description=$(grep -oP '"description": ".*?", "' <<< $result \
                         | sed 's/, "$//')
-    readarray -t arr_date <<< $r_date # first position for sort
+    readarray -t arr_title <<< $r_title
+    readarray -t arr_date <<< $r_date
     readarray -t arr_duration <<< $r_duration
     readarray -t arr_count <<< $r_count
     readarray -t arr_rating <<< $r_rating
-    readarray -t arr_title <<< $r_title
-    readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
+    readarray -t arr_url <<< $r_url
     readarray -t arr_description <<< $r_description # last position
-    # test_print arr_date "${arr_date[@]}"
-    # test_print arr_duration "${arr_duration[@]}"
-    # test_print arr_count "${arr_count[@]}"
-    # test_print arr_rating "${arr_rating[@]}"
-    # test_print arr_title "${arr_title[@]}"
-    # test_print arr_url "${arr_url[@]}"
-    # test_print arr_uploader "${arr_uploader[@]}"
-    # test_print arr_description "${arr_description[@]}"
-    arr_total=( ${#arr_duration[@]} ${#arr_count[@]} ${#arr_rating[@]}
-            ${#arr_title[@]} ${#arr_url[@]} ${#arr_uploader[@]}
-            ${#arr_description[@]} )
+    arr_total=( ${#arr_date[@]} ${#arr_duration[@]} ${#arr_count[@]}
+                ${#arr_rating[@]} ${#arr_uploader[@]} ${#arr_url[@]}
+                ${#arr_description[@]} )
     for each in ${arr_total[@]}; do
-        if (( ${#arr_date[@]} != $each )); then
-            printf '\n\e[1;38;5;240m%s\e[1;38;5;88m%s\e[1;38;5;240m%s\e[0m' \
+        if (( ${#arr_title[@]} == $each )); then
+            printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
                    '@@@' \
-                   ' error occurred ' \
+                   " error occurred :: ${FUNCNAME[0]}()_$LINENO " \
                    '@@@'
             printf '\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n' \
+                   "title       : ${#arr_title[@]}" \
                    "date        : ${#arr_date[@]}" \
                    "duration    : ${#arr_duration[@]}" \
                    "count       : ${#arr_count[@]}" \
                    "rating      : ${#arr_rating[@]}" \
-                   "title       : ${#arr_title[@]}" \
-                   "url         : ${#arr_url[@]}" \
                    "uploader    : ${#arr_uploader[@]}" \
+                   "url         : ${#arr_url[@]}" \
                    "description : ${#arr_description[@]}"
-            sleep 1
+            sleep 1 # time to recognise this error
             break
         fi
     done
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
+                         "${arr_title[i]}" \
                          "${arr_date[i]}" \
                          "${arr_duration[i]}" \
                          "${arr_count[i]}" \
                          "${arr_rating[i]}" \
-                         "${arr_title[i]}" \
-                         "${arr_url[i]}" \
                          "${arr_uploader[i]}" \
+                         "${arr_url[i]}" \
                          "${arr_description[i]}") # $ can be removed
         ((i++))
     done
-    r_list=$(sort <<< $r_list)
+    r_list=$(sort -t '"' -k 5 <<< $r_list) # k5-k8
     last_date=$(tail -n 1 <<< $r_list \
-                    | cut -d ' ' -f 2 \
+                    | sed 's/.* "upload_date": "\(.*\)" "duration": .*/\1/' \
                     | xargs date +%Y/%m/%d -d)
     input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
