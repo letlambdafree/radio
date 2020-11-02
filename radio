@@ -331,11 +331,11 @@ make_shuffle_list() {
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             print_name=$(sed 's/"title": "//' <<< $line \
                                   | sed 's/" "upload_date": ".*//')
-        elif [[ $line =~  https?:// ]]; then
+        elif [[ $line =~ [[:space:]]https?:// ]]; then
             print_name=$(sed 's/ http.*//' <<< $line)
         elif [[ $line =~ ^/mnt/ ]]; then
             print_name=$(sed 's!.*/Music/!!'<<< $line)
-        elif [[ $line =~  /mnt/ ]]; then
+        elif [[ $line =~ [[:space:]]/mnt/ ]]; then
             print_name=$(sed 's!/mnt/.*!!' <<< $line)
         else
             print_name="$line"
@@ -428,13 +428,13 @@ play() {
     local p1='\n \e[1;31m%s\e[0m\n\n' \
     # test_print arg1 "$arg1"
     arg1=$(sed 's/^# / /' <<< $arg1)
-    if [[ $arg1 =~  https?:// ]]; then
+    if [[ $arg1 =~ [[:space:]]https?:// ]]; then
         name_part=$(sed 's! https\?://.*!!' <<< $arg1)
     elif [[ $arg1 =~ /$ ]]; then
         name_part="$arg1"
     elif [[ $arg1 =~ ^/mnt/ ]]; then
         name_part=$(sed 's!.*/Music/!!g' <<< $arg1)
-    elif [[ $arg1 =~  /mnt/ ]]; then
+    elif [[ $arg1 =~ [[:space:]]/mnt/ ]]; then
         name_part=$(sed 's! /mnt/.*!!' <<< $arg1)
     else
         printf "$p1" \
@@ -443,13 +443,13 @@ play() {
         exit 1
     fi
     # test_print name_part "$name_part"
-    if [[ $arg1 =~  https?:// ]]; then
+    if [[ $arg1 =~ [[:space:]]https?:// ]]; then
         execute_part=${arg1/*http/http}
     elif [[ $arg1 =~ /$ ]]; then
         execute_part="$LOCAL_MUSIC_DIR""$arg1"
     elif [[ $arg1 =~ ^/mnt/ ]]; then
         execute_part="$arg1"
-    elif [[ $arg1 =~  /mnt/ ]]; then
+    elif [[ $arg1 =~ [[:space:]]/mnt/ ]]; then
         execute_part=${arg1/*mnt//mnt}
     else
         printf "$p1" \
@@ -460,7 +460,7 @@ play() {
     #test_print execute_part "$execute_part"
     playing_print "$name_part"
 
-    if [[ $execute_part =~  --[a-z]+ ]]; then
+    if [[ $execute_part =~ [[:space:]]--[a-z]+ ]]; then
         head_part=${execute_part%% --*} # need space for trailing
         option_part=${execute_part#"$head_part" } # need quotes
         # test_print head_part $head_part"
@@ -624,13 +624,13 @@ select_list() {
             input_name_part=$(sed "$s1" <<< $arg2\
                                   | sed 's/\\n/ /')
             # test_print input_name_part "$input_name_part"
-        elif [[ $arg2 =~  https?:// ]]; then
+        elif [[ $arg2 =~ [[:space:]]https?:// ]]; then
             input_name_part=$(sed 's! https\?://.*!!' <<< $arg2)
         elif [[ $arg2 =~ ^/mnt/ ]]; then
             input_name_part=$(sed 's!.*/Music/!!g' <<< $arg2)
-        elif [[ $arg2 =~  /mnt/ ]]; then
+        elif [[ $arg2 =~ [[:space:]]/mnt/ ]]; then
             input_name_part=$(sed 's! /mnt/.*!!' <<< $arg2)
-        elif [[ $arg2 =~  /$ ]]; then
+        elif [[ $arg2 =~ /$ ]]; then
             input_name_part="$arg2"
         else
             printf "$p1" \
@@ -838,7 +838,11 @@ play_xxx() { # private
 
 youtube_search() {
     #
-    # uses youtube-dl's json-dump
+    # youtube-dl's json-dump
+    #
+    # I'm blocked from US youtube server
+    #
+    # Do not request too many times in terminal command line
     #
     local s_phrase="${g_arg[@]:1}"
     local s_limit=100 # it takes 8 secs to get 10 items, so need cache
@@ -846,8 +850,8 @@ youtube_search() {
     local display_c_Phrase_limit=100 # modify later
     local retry_dump_limit=10
     local result=
-    local r_list r_date r_duration r_count r_rating
-    local r_title r_url r_uploader r_description
+    local r_list r_title r_date r_duration r_count
+    local r_rating r_uploader r_url r_description
     local c_phrase s_rate d_phrase d_matched u_matched
     local last_date dots
     local p1='\n \e[1;31m%s\e[0m\n\n'
@@ -864,7 +868,7 @@ youtube_search() {
         for line in "${!arr_result[@]}"; do
             ((j++))
             if (( j > $display_c_Phrase_limit )); then
-                c_phrase+="${c_phrase:+ }'$line' ..."
+                c_phrase+="${c_phrase:+ }'$line' ......"
                 break
             fi
             c_phrase+="${c_phrase:+ }'$line'"
@@ -1016,12 +1020,12 @@ youtube_search() {
     readarray -t arr_rating <<< $r_rating
     readarray -t arr_uploader <<< $r_uploader
     readarray -t arr_url <<< $r_url
-    readarray -t arr_description <<< $r_description # last position
+    readarray -t arr_description <<< $r_description
     arr_total=( ${#arr_date[@]} ${#arr_duration[@]} ${#arr_count[@]}
                 ${#arr_rating[@]} ${#arr_uploader[@]} ${#arr_url[@]}
                 ${#arr_description[@]} )
     for each in ${arr_total[@]}; do
-        if (( ${#arr_title[@]} == $each )); then
+        if (( ${#arr_title[@]} != $each )); then
             printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
                    '@@@' \
                    " error occurred :: ${FUNCNAME[0]}()_$LINENO " \
@@ -1051,7 +1055,7 @@ youtube_search() {
                          "${arr_description[i]}") # $ can be removed
         ((i++))
     done
-    r_list=$(sort -t '"' -k 5 <<< $r_list) # k5-k8
+    r_list=$(sort -t '"' -k 5 <<< $r_list) # allow 3 extra '"' in title
     last_date=$(tail -n 1 <<< $r_list \
                     | sed 's/.* "upload_date": "\(.*\)" "duration": .*/\1/' \
                     | xargs date +%Y/%m/%d -d)
