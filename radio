@@ -857,6 +857,7 @@ youtube_search() {
     local last_date dots
     local p1='\n \e[1;31m%s\e[0m\n\n'
     local p2 p3 youtube_dl_opt
+    local g1 g2
     local i=0 j=0 c=0
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
@@ -998,13 +999,12 @@ youtube_search() {
     # "view_count" "like_count" "dislike_count" "average_rating" "formats"
     #
     r_date=$(grep -oP '"upload_date": ".*?", "' <<< $result \
-                 | sed 's/^"upload_date": "//' \
-                 | sed 's/", "$//') # for sort
-    r_duration=$(grep -oP '"duration": [0-9]+, "' <<< $result \
+                 | sed 's/, "$//')
+    r_duration=$(grep -oP '"duration": .*?, "' <<< $result \
                    | sed 's/, "$//')
-    r_rating=$(grep -oP '"average_rating": [0-9.]+, "' <<< $result \
+    r_rating=$(grep -oP '"average_rating": .*?, "' <<< $result \
                    | sed 's/, "$//')
-    r_count=$(grep -oP '"view_count": [0-9]+, "' <<< $result \
+    r_count=$(grep -oP '"view_count": .*?, "' <<< $result \
                   | sed 's/, "$//')
     r_title=$(grep -oP '"title": ".*?", "' <<< $result \
                   | sed 's/, "$//')
@@ -1013,9 +1013,8 @@ youtube_search() {
     r_uploader=$(grep -oP '"uploader": ".*?", "' <<< $result \
                      | sed 's/, "$//')
     r_description=$(grep -oP '"description": ".*?", "' <<< $result \
-                        || grep -oP '"description": "", "' <<< $result)
-    r_description=$(sed 's/, "$//' <<< $r_description)
-    readarray -t arr_date <<< $r_date # first position
+                        | sed 's/, "$//')
+    readarray -t arr_date <<< $r_date # first position for sort
     readarray -t arr_duration <<< $r_duration
     readarray -t arr_count <<< $r_count
     readarray -t arr_rating <<< $r_rating
@@ -1023,14 +1022,36 @@ youtube_search() {
     readarray -t arr_url <<< $r_url
     readarray -t arr_uploader <<< $r_uploader
     readarray -t arr_description <<< $r_description # last position
-    # test_print arr_date ${#arr_date[@]}
-    # test_print arr_duration ${#arr_duration[@]}
-    # test_print arr_count ${#arr_count[@]}
-    # test_print arr_rating ${#arr_rating[@]}
-    # test_print arr_title ${#arr_title[@]}
-    # test_print arr_url ${#arr_url[@]}
-    # test_print arr_uploader ${#arr_uploader[@]}
-    # test_print arr_description ${#arr_description[@]}
+    # test_print arr_date "${arr_date[@]}"
+    # test_print arr_duration "${arr_duration[@]}"
+    # test_print arr_count "${arr_count[@]}"
+    # test_print arr_rating "${arr_rating[@]}"
+    # test_print arr_title "${arr_title[@]}"
+    # test_print arr_url "${arr_url[@]}"
+    # test_print arr_uploader "${arr_uploader[@]}"
+    # test_print arr_description "${arr_description[@]}"
+    arr_total=( ${#arr_duration[@]} ${#arr_count[@]} ${#arr_rating[@]}
+            ${#arr_title[@]} ${#arr_url[@]} ${#arr_uploader[@]}
+            ${#arr_description[@]} )
+    for each in ${arr_total[@]}; do
+        if (( ${#arr_date[@]} != $each )); then
+            printf '\n\e[1;38;5;240m%s\e[1;38;5;88m%s\e[1;38;5;240m%s\e[0m' \
+                   '@@@' \
+                   ' error occurred ' \
+                   '@@@'
+            printf '\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n' \
+                   "date        : ${#arr_date[@]}" \
+                   "duration    : ${#arr_duration[@]}" \
+                   "count       : ${#arr_count[@]}" \
+                   "rating      : ${#arr_rating[@]}" \
+                   "title       : ${#arr_title[@]}" \
+                   "url         : ${#arr_url[@]}" \
+                   "uploader    : ${#arr_uploader[@]}" \
+                   "description : ${#arr_description[@]}"
+            sleep 1
+            break
+        fi
+    done
     for title in "${arr_title[@]}"; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
                          "${arr_date[i]}" \
@@ -1044,7 +1065,9 @@ youtube_search() {
         ((i++))
     done
     r_list=$(sort <<< $r_list)
-    last_date=$(tail -n 1 <<< $r_list | grep -o '[0-9]\{8\}')
+    last_date=$(tail -n 1 <<< $r_list \
+                    | cut -d ' ' -f 2 \
+                    | xargs date +%Y/%m/%d -d)
     input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
     if [[ ${g_arg[1]} != -c ]]; then
