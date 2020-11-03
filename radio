@@ -79,7 +79,7 @@ URL_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                "$PLAY_LIST_PATH" \
                "$XXX_PATH")
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
-yt_prefix='https://www.youtube.com/watch?v='
+YT_PREFIX='https://www.youtube.com/watch?v='
 BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
 REPORT_PATH="$SCRIPT_DIR"/report
 REPORT_START_LINE='### ERROR REPORT'
@@ -99,18 +99,50 @@ E_NO_PARAM=99
 
 
 back_trace() {
-    local max_length
-    for key in ${!FUNCNAME[@]}; do
-        if (( ${#FUNCNAME[$key]} > ${max_length:-0} )); then
-            max_length=${#FUNCNAME[$key]}
+    # local max_length
+    local caller_line caller_funcname caller_frame caller_result
+    local max_line max_funcname max_frame
+    local i=0
+    for k in ${!FUNCNAME[@]}; do
+        if (( ${#FUNCNAME[k]} > ${max_length:-0} )); then
+            max_length=${#FUNCNAME[k]}
         fi
     done
-    # printf "\n %-${max_length}s : %5d" \
-    #        LINENO $LINENO
-    for key in ${!BASH_LINENO[@]}; do
+    printf "\n %-${max_length}s : %5d" \
+         LINENO $LINENO
+    for k in ${!BASH_LINENO[@]}; do
         printf "\n %-${max_length}s : %5d" \
-               ${FUNCNAME[$key]} \
-               ${BASH_LINENO[$key]}
+               ${FUNCNAME[k]} \
+               ${BASH_LINENO[k]}
+    done
+    while true ; do
+        caller_result=$(caller $i)
+        [[ -z $caller_result ]] && break
+        arr_caller_funcname+=( $(cut -d ' ' -f 2 <<< $caller_result) )
+        arr_caller_line+=( $(cut -d ' ' -f 1 <<< $caller_result) )
+        arr_caller_frame+=( $(cut -d ' ' -f 3 <<< $caller_result) )
+        ((i++))
+    done
+    for k in ${!arr_caller_funcname[@]}; do
+        if (( ${#arr_caller_funcname[k]} > ${max_funcname:-0} )); then
+            max_funcname=${#arr_caller_funcname[k]} # can remove [$] for index
+        fi
+    done
+    for k in ${!arr_caller_line[@]}; do
+        if (( ${#arr_caller_line[k]} > ${max_line:-0} )); then
+            max_line=${#arr_caller_line[k]}
+        fi
+    done
+    for k in ${!arr_caller_frame[@]}; do
+        if (( ${#arr_caller_frame[k]} > ${max_frame:-0} )); then
+            max_frame=${#arr_caller_frame[k]}
+        fi
+    done
+    for k in ${!arr_caller_frame[@]}; do
+        printf "\n %${max_funcname}s | %${max_line}s | %${max_frame}s" \
+               ${arr_caller_funcname[k]} \
+               ${arr_caller_line[k]} \
+               ${arr_caller_frame[k]}
     done
     printf '\n'
 }
@@ -121,11 +153,15 @@ test_print() {
     local items_number=0
     local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
     local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local p3='\n\e[1;38;5;220m%s %s\n\e[1;38;5;240m%s\e[0m'
-    local caller_line_number=$(caller | cut -d ' ' -f 1) # test
+    local p3='\n\e[1;38;5;220m%s | %s | %s\n\e[1;38;5;240m%s\e[0m'
+    local caller_result=$(caller 0)
+    local caller_line=$(cut -d ' ' -f 1 <<< $caller_result)
+    local caller_funcname=$(cut -d ' ' -f 2 <<< $caller_result)
+    local caller_frame=$(cut -d ' ' -f 3 <<< $caller_result)
     printf "$p3" \
-           "${FUNCNAME[1]}()'s $arg1" \
-           ":: $caller_line_number" \
+           "${caller_funcname}()'s $arg1" \
+           "$caller_line" \
+           "$caller_frame" \
            "$arg2"
     [[ -n $arg2 ]] && items_number=$(wc -l <<< $arg2)
     if (( $items_number == 1 )); then
@@ -197,7 +233,7 @@ print_shuffle_list() {
 }
 
 playing_youtube_print() {
-    local arg0=( $@ )
+    local arg0=( "$@" )
     local arg1="$1"
     local arg2="$2"
     local arg3="$3"
@@ -207,12 +243,12 @@ playing_youtube_print() {
     local arg7="$7"
     local arg8="$8"
     local p1='\n\e[1;38;5;130m%s\e[0m\n'
-    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m\n"
+    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m\n\n"
     local p3="\n\e[1;38;5;144m%s\e[0m\n\n"
     local IGNORE_DESCRIPTION_WORDS=3
     local DISPLAY_DESCRIPTION_LINES=10
     local arg3_h arg3_m arg3_s arg8_wc_w arg8_wc_l
-    # for i in "${arg0[@]}"; do
+    # for i in "${!arg0[@]}"; do
     #   test_print arg$i "${arg0[i]}"
     # done
     arg1=$(printf %b "$arg1")  # title
@@ -365,7 +401,7 @@ shuffle_list() {
         #
         if [[ $first_shuffle == ${last_shuffle:-} ]]; then
             printf '\n \e[1;31m%s\e[0m\n\n' \
-                   continue
+                   reshuffling ...
             return $E_IN_A_ROW
         else
             make_shuffle_list "$arg1"
@@ -416,7 +452,7 @@ play_youtube() {
     #
     # 1>/dev/null disable information
     # 2>/dev/null disable process-bar
-    # &>/dev/null disable all
+    # &>/dev/null disable all and can not control
     #
     $PLAYER "$p_webpage_url" 2>/dev/null
     return 0
@@ -730,7 +766,6 @@ print_version() {
     printf '\n%s: %s\n' \
            "$SCRIPT_NAME" \
            "$SCRIPT_VERSION"
-    test_print SCRIPT_NAME "$SCRIPT_NAME"
     return 0
 }
 
@@ -852,12 +887,14 @@ youtube_search() {
     local result=
     local r_list r_title r_date r_duration r_count
     local r_rating r_uploader r_url r_description
-    local c_phrase s_rate d_phrase d_matched u_matched
+    local c_phrase s_rate d_phrase
     local last_date dots
     local p1='\n \e[1;31m%s\e[0m\n\n'
     local p2 p3 youtube_dl_opt
-    local g1 g2
-    local i=0 j=0 c=0
+    local g1 g2 s1
+    local d_matched=0
+    local u_matched=0
+    local i=0 c=0
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
         source "$ARR_YOUTUBE_RESULT"
@@ -865,20 +902,20 @@ youtube_search() {
         declare -A arr_search arr_result
     fi
     if [[ -z ${g_arg[1]:-} ]]; then
-        for line in "${!arr_result[@]}"; do
-            ((j++))
-            if (( j > $display_c_Phrase_limit )); then
-                c_phrase+="${c_phrase:+ }'$line' ......"
+        for k in "${!arr_result[@]}"; do
+            ((i++))
+            if (( $i > $display_c_Phrase_limit )); then
+                c_phrase+="${c_phrase:+ }'$k' ......"
                 break
             fi
-            c_phrase+="${c_phrase:+ }'$line'"
+            c_phrase+="${c_phrase:+ }'$k'"
         done
         print_youtube_caches c_phrase "$c_phrase" ${#arr_result[@]}
         exit 2
     elif [[ ${g_arg[1]} == -d ]]; then  # -d delete the cached_phrase
         d_phrase="${g_arg[@]:2}"
-        for line in "${!arr_result[@]}"; do
-            if [[ $line == $d_phrase ]]; then
+        for k in "${!arr_result[@]}"; do
+            if [[ $k == $d_phrase ]]; then
                 d_matched=1
                 unset arr_result["$d_phrase"] # need $ and " "
                 unset arr_search["$d_phrase"]
@@ -899,9 +936,9 @@ youtube_search() {
         fi
     elif [[ ${g_arg[1]} == -c ]]; then  # -c search in the c_phrase
         s_phrase="${g_arg[@]:2}"
-        for key in "${!arr_result[@]}"; do
-            if [[ $key == $s_phrase ]]; then
-                result="${arr_result[$key]}" # remove " "?
+        for k in "${!arr_result[@]}"; do # need ""
+            if [[ $k == $s_phrase ]]; then
+                result="${arr_result[$k]}" # need $k for associative array key
                 s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 break
@@ -914,8 +951,8 @@ youtube_search() {
         fi
     elif [[ ${g_arg[1]} == -u ]]; then # -u update the cached_phrase
         s_phrase="${g_arg[@]:2}"
-        for key in "${!arr_result[@]}"; do
-            if [[ $key == $s_phrase ]]; then
+        for k in "${!arr_result[@]}"; do
+            if [[ $k == $s_phrase ]]; then
                 s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 u_matched=1
@@ -928,9 +965,9 @@ youtube_search() {
             exit 1
         fi
     else
-        for search in "${!arr_result[@]}"; do
+        for k in "${!arr_result[@]}"; do
             if [[ $search == $s_phrase ]]; then
-                result="${arr_result[$search]}"
+                result="${arr_result[$k]}"
                 s_rate=$((${arr_search[$s_phrase]}+1))
                 arr_search[$s_phrase]=$s_rate
                 break
@@ -969,10 +1006,10 @@ youtube_search() {
         printf '\n'
         $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null & # notice for success
         if (( ${#arr_result[@]} >= $max_cache )); then
-            for key in "${!arr_search[@]}"; do
-                if (( ${arr_search[$key]} <= ${min_rate:-10} )); then
-                    min_rate=${arr_search[$key]}
-                    min_key="$key"
+            for k in "${!arr_search[@]}"; do
+                if (( ${arr_search[$k]} <= ${min_rate:-10} )); then
+                    min_rate=${arr_search[$k]}
+                    min_key="$k"
                 fi
             done
             unset arr_result["$min_key"]
@@ -1024,6 +1061,9 @@ youtube_search() {
     arr_total=( ${#arr_date[@]} ${#arr_duration[@]} ${#arr_count[@]}
                 ${#arr_rating[@]} ${#arr_uploader[@]} ${#arr_url[@]}
                 ${#arr_description[@]} )
+    #
+    # concisely check for parsing result
+    #
     for each in ${arr_total[@]}; do
         if (( ${#arr_title[@]} != $each )); then
             printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
@@ -1043,7 +1083,7 @@ youtube_search() {
             break
         fi
     done
-    for title in "${arr_title[@]}"; do
+    for i in ${!arr_title[@]}; do
         r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
                          "${arr_title[i]}" \
                          "${arr_date[i]}" \
@@ -1053,11 +1093,11 @@ youtube_search() {
                          "${arr_uploader[i]}" \
                          "${arr_url[i]}" \
                          "${arr_description[i]}") # $ can be removed
-        ((i++))
     done
-    r_list=$(sort -t '"' -k 5 <<< $r_list) # allow 3 extra '"' in title
+    r_list=$(sort -t '"' -k 5 <<< $r_list) # allow to add 3 extra '"' in title
+    s1='s/.*" "upload_date": "\(.*\)" "duration": .*/\1/'
     last_date=$(tail -n 1 <<< $r_list \
-                    | sed 's/.* "upload_date": "\(.*\)" "duration": .*/\1/' \
+                    | sed "$s1" \
                     | xargs date +%Y/%m/%d -d)
     input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
