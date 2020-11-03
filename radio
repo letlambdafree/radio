@@ -94,6 +94,7 @@ SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
 E_IN_A_ROW=64
 E_NO_MATCH_REGEX=65
 E_FAIL_DUMP_YOUTUBE=66
+E_NOT_SYNC_SEARCH_AND_RESULT=67
 E_NO_PARAM=99
 
 
@@ -898,9 +899,16 @@ youtube_search() {
     if [[ -e $ARR_YOUTUBE_SEARCH ]]; then
         source "$ARR_YOUTUBE_SEARCH"
         source "$ARR_YOUTUBE_RESULT"
+        if (( ${#arr_search[@]} != ${#arr_result[@]} )); then
+            printf "\n\n%s\n%s\n\n" \
+                   "arr_search: ${#arr_search[@]}" \
+                   "arr_result: ${#arr_result[@]}"
+            exit E_NOT_SYNC_SEARCH_AND_RESULT
+        fi
     else
         declare -A arr_search arr_result
     fi
+
     if [[ -z ${g_arg[1]:-} ]]; then
         for k in "${!arr_result[@]}"; do
             ((i++))
@@ -922,6 +930,12 @@ youtube_search() {
                 declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
                 declare -p arr_result > "$ARR_YOUTUBE_RESULT"
                 source $BASH_COMPLETION_PATH
+                if (( ${#arr_search[@]} != ${#arr_result[@]} )); then
+                    printf "\n\n%s\n%s\n\n" \
+                           "arr_search: ${#arr_search[@]}" \
+                           "arr_result: ${#arr_result[@]}"
+                    exit E_NOT_SYNC_SEARCH_AND_RESULT
+                fi
                 break
             fi
         done
@@ -1105,6 +1119,12 @@ youtube_search() {
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
         source $BASH_COMPLETION_PATH
+        if (( ${#arr_search[@]} != ${#arr_result[@]} )); then
+            printf "\n\n%s\n%s\n\n" \
+                   "arr_search: ${#arr_search[@]}" \
+                   "arr_result: ${#arr_result[@]}"
+            exit E_NOT_SYNC_SEARCH_AND_RESULT
+        fi
     fi
     PS3="
 Last uploaded: $last_date
