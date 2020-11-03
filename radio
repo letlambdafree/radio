@@ -334,40 +334,74 @@ make_namelist() {
     #
     local arg1="$1"
     local reverse=
+    local name_part names_part
     declare -g input_lines=
+    #                      ^
+    # need null string
+    #
+    local input_line names_part_lines
     if [[ -n ${REPLY:-} ]]; then
-        readarray -t arr_namelist <<< ${REPLY/ /$'\n'} # test
+        #
+        # need ${REPLY/ /$'\n'}
+        #
+        # equivalent:
+        # oIFS="$IFS"; IFS=' '; ... <<< $REPLY ; IFS="$oIFS"
+        #
+        readarray -t arr_namelist <<< ${REPLY/ /$'\n'}
     else
         arr_namelist=( "${g_arg[@]}" )
         #              ^           ^
         # need " " such as 'lsd sia'
         #
     fi
-    for line in "${arr_namelist[@]}"; do
-        if [[ -z $input_lines ]]; then
-            # test_print line1 "$line"
-            [[ $line =~ ^-+[a-z]+ ]] && continue
-            input_lines=$(grep -i "$line" <<< $arg1)
+    readarray -t arr_arg1 <<< $arg1
+    for line in "${arr_arg1[@]}"; do # duplicated, to function
+        if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
+            name_part=$(sed 's/"title": "//' <<< $line \
+                                  | sed 's/" "upload_date": ".*//')
+        elif [[ $line =~ [[:space:]]https?:// ]]; then
+            name_part=$(sed 's/ http.*//' <<< $line)
+        elif [[ $line =~ ^/mnt/ ]]; then
+            name_part=$(sed 's!.*/Music/!!'<<< $line)
+        elif [[ $line =~ [[:space:]]/mnt/ ]]; then
+            name_part=$(sed 's!/mnt/.*!!' <<< $line)
         else
-            # test_print line2 "$line"
-            if [[ $line == -v ]]; then
+            name_part="$line"
+        fi
+        names_part+=${names_part:+$'\n'}"$name_part"
+    done
+    # test_print names_part "$names_part"
+    for value in "${arr_namelist[@]}"; do
+        if [[ -z ${names_part_lines:-} ]]; then
+            # test_print value1 "$value"
+            [[ $value =~ ^-+[a-z]+ ]] && continue
+            names_part_lines=$(grep -i "$value" <<< $names_part)
+        else
+            # test_print value2 "$value"
+            if [[ $value == -v ]]; then
                 reverse=v
                 continue
             fi
-            input_lines=$(grep -i$reverse "$line" <<< $input_lines)
+            names_part_lines=$(grep -i$reverse "$value" <<< $names_part_lines)
             [[ -n $reverse ]] && reverse=
         fi
     done
-    if [[ -z $input_lines ]]; then
+    test_print names_part_lines "$names_part_lines"
+    if [[ -z $names_part_lines ]]; then
         printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
                '@@@' \
                " error occurred | ${FUNCNAME[0]} | $LINENO " \
                '@@@'
         printf '\n \e[1;38;5;88m%s\e[0m\n\n' \
-               'No match with regex'
+               "No match with '${arr_namelist[@]}'"
         exit $E_NO_MATCH_REGEX
-
     fi
+    readarray -t arr_names_part_lines <<< $names_part_lines
+    for line in "${arr_names_part_lines[@]}"; do
+        input_line=$(grep -i "$line" <<< $arg1)
+        input_lines+=${input_lines:+$'\n'}"$input_line"
+    done
+    # test_print input_lines "$input_lines"
     return 0
 }
 
@@ -420,7 +454,7 @@ shuffle_list() {
             make_shuffle_list "$arg1"
             shuffle_list=$(grep -vF "$first_shuffle" <<< $arg1)
             #                     ^
-            # needed -F
+            # need -F
             #
             shuffle_radio="$first_shuffle"
         fi
@@ -430,7 +464,7 @@ shuffle_list() {
         shuffle_list=$(grep -vF "$last_shuffle" <<< $shuffle_list)
         shuffle_radio="$last_shuffle"
     fi
-    # eval "$2=\$arg2" # bash special form for returning a string
+    # eval "$2=\$arg2" # for returning a string
     return 0
 }
 
@@ -518,10 +552,10 @@ play() {
         # need space for trailing
         #
         option_part=${execute_part#"$head_part" }
-        #                          ^          ^
-        # need quotes
+        #                          ^          ^^
+        # need quotes and space
         #
-        # test_print head_part $head_part"
+        # test_print head_part "$head_part"
         # test_print option_part "$option_part"
         $PLAYER "$head_part" $option_part
         #                   ^            ^
@@ -672,7 +706,7 @@ select_list() {
         grep_line=$(grep -iF "$arg2" <<< $arg1)
         #                  ^
         # grep '-F' for only string, such as "[live] tv"
-        #
+        #                                     ^    ^
         play "$grep_line"
         sleep 0.1 # needed for C-c
     elif (( $grepcount > 1 )); then
