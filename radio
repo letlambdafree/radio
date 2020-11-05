@@ -33,6 +33,7 @@
 # 1-1 loop
 # select loop
 # last selected item coloring
+# custom_select() for default_value and coloring
 
 
 
@@ -168,9 +169,9 @@ test_print() {
            "$caller_frame" \
            "$arg2"
     [[ -n $arg2 ]] && items_number=$(wc -l <<< $arg2)
-    if (( $items_number == 1 )); then
+    if (( items_number == 1 )); then
         printf "$p1" $items_number
-    elif (( $items_number > 1 )); then
+    elif (( items_number > 1 )); then
         printf "$p2" $items_number
     else
         printf "$p1" no
@@ -188,9 +189,9 @@ print_youtube_caches() {
     printf "$p3" \
            "${FUNCNAME[1]}()'s $arg1" \
            "$arg2"
-    if (( $arg3 == 1 )); then
+    if (( arg3 == 1 )); then
         printf "$p1" $arg3
-    elif (( $arg3 > 1 )); then
+    elif (( arg3 > 1 )); then
         printf "$p2" $arg3
     else
         printf "$p1" no
@@ -215,17 +216,17 @@ print_shuffle_list() {
     # need " " for printf and " " for arg1
     #
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
-    if (( $n_init_shuffle_list == 0 )); then
+    if (( n_init_shuffle_list == 0 )); then
         printf "$p7" 'no item'
-    elif (( $n_init_shuffle_list == 1 )); then
+    elif (( n_init_shuffle_list == 1 )); then
         printf "$p7" '1 item'
-    elif (( $items_number == 1 )); then
+    elif (( items_number == 1 )); then
         printf "\n${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'item'
-    elif (( $items_number > 1 )); then
+    elif (( items_number > 1 )); then
         printf "\n${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
@@ -245,22 +246,29 @@ playing_youtube_print() {
     local arg2="$2"
     local arg3="$3"
     local arg4="$4"
-    local arg5="$5"
+    local arg5="${5:-0}"
     local arg6="$6"
     local arg7="$7"
     local arg8="$8"
     local p1='\n\e[1;38;5;130m%s\e[0m\n'
-    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m\n\n"
+    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m"
     local p3="\n\e[1;38;5;144m%s\e[0m\n\n"
-    local IGNORE_DESCRIPTION_WORDS=3
+    local IGNORE_DESCRIPTION_CHARS=3
     local DISPLAY_DESCRIPTION_LINES=10
+    local DISPLAY_DESCRIPTION_CHARS=500
     local arg3_h arg3_m arg3_s arg8_wc_w arg8_wc_l
+    local line_wc_c
+    local total=0
+    local max_char=0
     # for i in "${!arg0[@]}"; do
     #   test_print arg$i "${arg0[i]}"
     # done
-    arg1=$(printf %b "$arg1")  # title
+    arg1=$(printf %b "$arg1" | sed 's/\\"/"/g') # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
-    if (( $arg3 )); then # duration
+    if (( arg3 )); then # duration
+        # ^
+        # can remove $ in ((  ))
+        #
         arg3_h=$((arg3/3600))
         arg3_m=$((arg3/60%60))
         arg3_s=$((arg3%60))
@@ -284,7 +292,12 @@ playing_youtube_print() {
     arg4=$(numfmt --to=si $arg4 | sed 's/G/B/')
     arg5=$(echo "$arg5 * 20" | bc) # rating
     arg6=$(printf %b "$arg6") # uploader
-    arg8=$(printf %b "$arg8") # description
+    arg8=$(printf %b "$arg8" | sed 's/\\"/"/g') # description
+    #                                 ^^    ^
+    # need \\ for literally '\'
+    #
+    # g for all occurrence
+    #
     printf "$p1" \
            "$arg1"
     printf "$p2" \
@@ -297,12 +310,36 @@ playing_youtube_print() {
     #
     # remove too short or too long description
     #
-    arg8_wc_w=$(wc -w <<< $arg8)
-    arg8_wc_l=$(wc -l <<< $arg8)
-    if (( $arg8_wc_w >= $IGNORE_DESCRIPTION_WORDS )); then
-        if (( arg8_wc_l > $DISPLAY_DESCRIPTION_LINES )); then
-            arg8=$(head -n $DISPLAY_DESCRIPTION_LINES <<< $arg8)
-            arg8+=' ......'
+    # only 1 line can be too long
+    #
+    arg8_wc_c=$(wc -c <<< $arg8) # 500
+    arg8_wc_l=$(wc -l <<< $arg8) # 10
+    readarray -t arr_arg8 <<< $arg8
+    for line in "${arr_arg8[@]}"; do
+        line_wc_c=$(wc -c <<< $line)
+        if (( line_wc_c > max_char )); then
+            max_char=$line_wc_c
+        fi
+    done
+    if (( arg8_wc_c > IGNORE_DESCRIPTION_CHARS )); then # too short description
+        if (( max_char > 120 )); then # a long line
+            arg8= # need null string
+            for line in "${arr_arg8[@]}"; do
+                line_wc_c=$(wc -c <<< $line)
+                total=$((total+line_wc_c))
+                # printf "line0 is $line\n"
+                # printf "total0 is $total\n"
+                arg8+="${line:+$'\n'}$line" # this line's position matters
+                if (( total > DISPLAY_DESCRIPTION_CHARS )); then
+                    # printf "total is $total\n"
+                    # printf "line is $(wc -l <<< $arg8)/${#arr_arg8[@]}"
+                    arg8+=' ,,,'
+                    break
+                fi
+            done
+        elif (( arg8_wc_l > DISPLAY_DESCRIPTION_LINES )); then # too many lines
+            arg8=$(head -n 10 <<< $arg8)
+            arg8+=' ,,,'
         fi
         printf "$p3" \
                "$arg8"
@@ -386,7 +423,7 @@ make_namelist() {
             [[ -n $reverse ]] && reverse=
         fi
     done
-    test_print names_part_lines "$names_part_lines"
+    # test_print names_part_lines "$names_part_lines"
     if [[ -z $names_part_lines ]]; then
         printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
                '@@@' \
@@ -473,16 +510,15 @@ play_youtube() {
     local p_title p_date p_average_rating p_view_count
     local p_duration p_uploader p_webpage_url p_description
     local s1
-    s1=$(printf '%s' \
-                '"title": "\(.*\)" ' \
+    s1=$(printf '%s%s%s%s%s%s%s%s' \
+                '^"title": "\(.*\)" ' \
                 '"upload_date": "\([0-9]\{8\}\)" ' \
                 '"duration": \([0-9]\+\) ' \
                 '"view_count": \([0-9]\+\) ' \
                 '"average_rating": \([0-9.]\+\) ' \
                 '"uploader": "\(.*\)" ' \
                 '"webpage_url": "\(.*\)" ' \
-                '"description": "\(.*\)"')
-    # test_print s1 "$s1"
+                '"description": "\(.*\)"$')
     p_title=$(sed "s/$s1/\1/" <<< $arg1)
     p_date=$(sed "s/$s1/\2/" <<< $arg1)
     p_duration=$(sed "s/$s1/\3/" <<< $arg1)
@@ -571,7 +607,7 @@ play_radio() {
     while true; do
         radio_list=$(grep -v "$SKIP_PATTERN" <<< $RADIO_LIST)
         shuffle_list "$radio_list"
-        (( $? == $E_IN_A_ROW )) && continue
+        (( $? == E_IN_A_ROW )) && continue
         play "$shuffle_radio"
         sleep 0.1 # needed for C-c
     done
@@ -618,7 +654,7 @@ HEREDOC
     while true; do
         group_list=$(grep -v "$SKIP_PATTERN" <<< $group_list)
         shuffle_list "$group_list"
-        (( $? == $E_IN_A_ROW )) && continue
+        (( $? == E_IN_A_ROW )) && continue
         play "$shuffle_radio"
         sleep 0.1 # needed for C-c
     done
@@ -627,7 +663,7 @@ HEREDOC
 
 select_one_input_line() {
     local names_count=$(wc -l <<< $input_lines)
-    if (( $names_count > 1 )); then
+    if (( names_count > 1 )); then
         select_list "$arg1" "$input_lines" # select_list's arg1
     fi
     return 0
@@ -638,7 +674,7 @@ select_play() {
     # test_print arg1 "$arg1" # arg1 is select_list()'s
     while true; do
         shuffle_list "$input_lines"
-        (( $? == $E_IN_A_ROW )) && continue
+        (( $? == E_IN_A_ROW )) && continue
         # test_print shuffle_radio "$shuffle_radio"
         shuffle_line=$(grep -iF "$shuffle_radio" <<< $arg1)
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
@@ -702,17 +738,17 @@ select_list() {
     local s1
     local input_name_part
     grepcount=$(grep -ic .  <<< $input_lines)
-    if (( $grepcount == 1 )); then
+    if (( grepcount == 1 )); then
         grep_line=$(grep -iF "$arg2" <<< $arg1)
         #                  ^
         # grep '-F' for only string, such as "[live] tv"
         #                                     ^    ^
         play "$grep_line"
         sleep 0.1 # needed for C-c
-    elif (( $grepcount > 1 )); then
+    elif (( grepcount > 1 )); then
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
             s1='s/"title": "\(.*\)" "upload_date": ".*/\1/'
-            input_name_part=$(sed "$s1" <<< $arg2\
+            input_name_part=$(sed "$s1" <<< $arg2 \
                                   | sed 's/\\n/ /')
             #                              ^^^
             # "title" "도시의 그림자 -\n이 어둠의 이슬픔"
@@ -734,7 +770,8 @@ select_list() {
             back_trace
             exit 1
         fi
-        input_name_part=$(printf %b "$input_name_part") # Unicode-to-utf8
+        input_name_part=$(printf %b "$input_name_part" \
+                                  | sed 's/\\"/"/g') # Unicode-to-utf8
         # test_print input_name_part "$input_name_part"
         readarray -t arr_names <<< $input_name_part
         printf '\n' # needed
@@ -777,7 +814,7 @@ play_local() {
         while true; do
             local_list=$(grep -v "$SKIP_PATTERN" <<< $local_list)
             shuffle_list "$local_list"
-            (( $? == $E_IN_A_ROW )) && continue
+            (( $? == E_IN_A_ROW )) && continue
             play "$shuffle_radio"
             sleep 0.1 # needed for C-c
         done
@@ -919,7 +956,7 @@ play_xxx() { # private
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             shuffle_list "$xxx_list"
-            (( $? == $E_IN_A_ROW )) && continue
+            (( $? == E_IN_A_ROW )) && continue
             play "$shuffle_radio"
             sleep 0.1 # needed for C-c
         done
@@ -940,7 +977,7 @@ youtube_search() {
     # Do not request too many times in terminal command line
     #
     local s_phrase="${g_arg[@]:1}"
-    local s_limit=100 # it takes 8 secs to get 10 items, so need cache
+    local s_limit=100 # it takes secs to get items, so need cache
     local max_cache=1000000
     local display_c_Phrase_limit=100 # modify later
     local retry_dump_limit=10
@@ -951,7 +988,7 @@ youtube_search() {
     local last_date dots
     local p1='\n \e[1;38;5;88m%s\e[0m\n\n'
     local p2 p3
-    local g1 g2 s1
+    local g1 s1
     local d_matched=0
     local u_matched=0
     local i=0 c=0
@@ -969,12 +1006,11 @@ youtube_search() {
         declare -A arr_search=()
         declare -A arr_result=()
     fi
-
     if [[ -z ${g_arg[1]:-} ]]; then
         for k in "${!arr_result[@]}"; do
             ((i++))
-            if (( $i > $display_c_Phrase_limit )); then
-                c_phrase+="${c_phrase:+ }'$k' ......"
+            if (( i > display_c_Phrase_limit )); then
+                c_phrase+="${c_phrase:+ }'$k' ..."
                 break
             fi
             c_phrase+="${c_phrase:+ }'$k'"
@@ -1004,7 +1040,7 @@ youtube_search() {
                 break
             fi
         done
-        if (( $d_matched )); then
+        if (( d_matched )); then
             printf "$p1" \
                    "success for deletion with '$d_phrase'"
             exit 0
@@ -1044,16 +1080,18 @@ youtube_search() {
                 break
             fi
         done
-        if (( ! $u_matched )); then
+        if (( ! u_matched )); then
             printf "$p1" \
                    "not matched with '$update_phrase'"
             exit 1
         fi
     else
         for k in "${!arr_result[@]}"; do
-            if [[ $search == $s_phrase ]]; then
+            if [[ $k == $s_phrase ]]; then
                 result="${arr_result[$k]}"
                 s_rate=$((${arr_search[$s_phrase]}+1))
+                #      ^  ^            ^
+                # need all $
                 arr_search[$s_phrase]=$s_rate
                 break
             fi
@@ -1061,20 +1099,22 @@ youtube_search() {
     fi
     if [[ -z $result ]]; then
         printf '\n'
-        p2='\e[1;38;5;117m %s %s\e[1;38;5;0m %s\e[0m\r'
-        p3='\e[1;38;5;117m %s %s\e[1;38;5;40m %s\e[0m\r'
-        while [[ -z $result ]]; do # json-dump often fails
+        p2='\e[1;38;5;117m %s | %s | %s\e[1;38;5;0m %s\e[0m\r'
+        p3='\e[1;38;5;117m %s | %s | %s\e[1;38;5;40m %s\e[0m\r'
+        while [[ -z $result ]]; do
+            sleep $DUMP_RETRY_AFTER # you can be banned for too many request
             ((c++))
-            if (( $c > $retry_dump_limit )); then
+            if (( c > retry_dump_limit )); then
                 printf "$p1" \
                        'Fail dumping. Retry later!'
                 exit $E_FAIL_DUMP_YOUTUBE
 
             fi
-            if (( $c % 10 == 1)); then
+            if (( c % 10 == 1)); then
                 printf "$p2" \
                        "retry in ${DUMP_RETRY_AFTER}s"\
                        $c/$retry_dump_limit \
+                       "$s_limit items"\
                        ${dots:-.}
                 dots=.
             else
@@ -1083,14 +1123,13 @@ youtube_search() {
             printf "$p3" \
                    "retry in ${DUMP_RETRY_AFTER}s"\
                    $c/$retry_dump_limit \
+                   "$s_limit items" \
                    $dots
-            result=$(youtube-dl "-j ytsearch$s_limit:$s_phrase" \
-                                2>/dev/null)
-            sleep $DUMP_RETRY_AFTER # you can be banned for too many request
+            result=$(youtube-dl --dump-json "ytsearch${s_limit}:${s_phrase}")
         done
         printf '\n'
         $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null & # notice for success
-        if (( ${#arr_result[@]} >= $max_cache )); then
+        if (( ${#arr_result[@]} >= max_cache )); then
             for k in "${!arr_search[@]}"; do
                 if (( ${arr_search[$k]} <= ${min_rate:-10} )); then
                     min_rate=${arr_search[$k]}
@@ -1103,41 +1142,70 @@ youtube_search() {
                    "'$min_key' has been removed" \
                    "$min_rate rated."
         fi
-        arr_result+=( ["$s_phrase"]="$result" )
-        if [[ -n ${arr_search[$s_phrase]} ]]; then
+        arr_result+=( ["$s_phrase"]="$result" ) # test
+        if [[ -n ${arr_search[$s_phrase]:-} ]]; then
             arr_search+=( ["$s_phrase"]=${arr_search[$s_phrase]} )
         else
             arr_search+=( ["$s_phrase"]=1 )
         fi
     fi
     #
-    # json_dump_key_order:
+    # youtube-dl json_dump_key_order:
     #
-    # "id" "uploader" "uploader_id" "uploader_url" "channel_id"
-    # "channel_url" "upload_date" "license" "creator" "title"
-    # "alt_title" "thumbnails" "description" "categories" "tags"
-    # "subtitles" "automatic_captions" "duration" "age_limit"
-    # "annotations" "chapters" "webpage_url" "view_count"
-    # "like_count" "dislike_count" "average_rating" "formats"
+    # "id"                 "uploader"       "uploader_id" "uploader_url"
+    # "channel_id"         "channel_url"    "upload_date" "license"
+    # "creator"            "title"          "alt_title"   "thumbnails"
+    # "description"        "categories"     "tags"        "subtitles"
+    # "automatic_captions" "duration"       "age_limit"   "annotations"
+    # "chapters"           "webpage_url"    "view_count"  "like_count"
+    # "dislike_count"      "average_rating" "formats"
     #
-    r_title=$(grep -oP '"title": ".*?", "' <<< $result | sed 's/, "$//')
-    #                ^              ^
-    # -P for non greedy match
-    #
+    # test_print result "$result"
+    r_title=$(grep -oP '"title": ".*?", "alt_title": ' <<< $result \
+                  | sed 's/, "alt_title": .*//')
     r_date=$(grep -oP '"upload_date": ".*?", "' <<< $result \
                  | sed 's/, "$//')
-    r_duration=$(grep -oP '"duration": .*?, "' <<< $result \
-                     | sed 's/, "$//')
-    r_rating=$(grep -oP '"average_rating": .*?, "' <<< $result \
-                   | sed 's/, "$//')
-    r_count=$(grep -oP '"view_count": .*?, "' <<< $result \
-                  | sed 's/, "$//')
+    r_duration=$(grep -oP '"duration": .*?, "age_limit": ' <<< $result \
+                     | sed 's/, "age_limit": .*//')
+    #
+    # after updating youtube-dl-2020.11.01,
+    #
+    # "duration": \([0-9]\+\) => "duration": \([0-9.]\+\)
+    #
+    # 1234 => 1234.0
+    #
+    # I consider this a bug
+    #
+    if [[ $r_duration =~ \. ]]; then
+        #                ^
+        # \. for literally .
+        r_duration=${r_duration//.0/} # workaround
+        #                      ^^
+        # // for all occurrence
+    fi
+    # test_print r_duration "$r_duration"
+    r_rating=$(grep -oP '"average_rating": .*?,' <<< $result \
+                   | sed 's/,$//')
+    r_count=$(grep -oP '"view_count": .*?,' <<< $result \
+                  | sed 's/,$//')
+    #
+    # after updating youtube-dl-2020.11.01,
+    #
+    # "view_count": 4567 => "view_count": 4
+    #
     r_uploader=$(grep -oP '"uploader": ".*?", "' <<< $result \
                      | sed 's/, "$//')
-    r_url=$(grep -oP '"webpage_url": ".*?", "' <<< $result \
-                | sed 's/, "$//')
-    r_description=$(grep -oP '"description": ".*?", "' <<< $result \
-                        | sed 's/, "$//')
+    r_url=$(grep -oP '"webpage_url": ".*?",' <<< $result \
+                | sed 's/,$//')
+    #
+    # after updating youtube-dl-2020.11.01,
+    #
+    # "description": abc => "description": abc...
+    #
+    g1='"description": ".*?", "categories": '
+    r_description=$(grep -oP "$g1" <<< $result \
+                        | sed 's/, "categories": //')
+    #test_print r_description "$r_description"
     readarray -t arr_title <<< $r_title
     readarray -t arr_date <<< $r_date
     readarray -t arr_duration <<< $r_duration
@@ -1153,11 +1221,13 @@ youtube_search() {
     # concisely check for parsing result
     #
     for each in ${arr_total[@]}; do
-        if (( ${#arr_title[@]} != $each )); then
+        if (( ${#arr_title[@]} != each )); then
             printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
                    '@@@' \
-                   " error occurred :: ${FUNCNAME[0]}()_$LINENO " \
+                   ' error occurred ' \
                    '@@@'
+            printf '\n\e[1;38;5;240m%s\n\e[0m' \
+                   " ${FUNCNAME[0]} | $LINENO "
             printf '\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n' \
                    "title       : ${#arr_title[@]}" \
                    "date        : ${#arr_date[@]}" \
@@ -1182,12 +1252,12 @@ youtube_search() {
                          "${arr_url[i]}" \
                          "${arr_description[i]}")
         #                                   ^
-        # $ can be removed for just array index
+        # $ can be removed for array index
         #
     done
     r_list=$(sort -t '"' -k 5 <<< $r_list)
     #                       ^
-    # allow to add 3 extra '"' in title
+    # allow to add 3 extra " in title
     #
     s1='s/.*" "upload_date": "\(.*\)" "duration": .*/\1/'
     last_date=$(tail -n 1 <<< $r_list \
@@ -1195,17 +1265,21 @@ youtube_search() {
                     | xargs date +%Y/%m/%d -d)
     input_lines="$r_list" # for select_list()
     # test_print input_lines "$input_lines"
+    # arr_result+=( ["$s_phrase"]="$r_list" ) # test
     if [[ ${g_arg[1]} != -c ]]; then
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
         source $BASH_COMPLETION_PATH
         if (( ${#arr_search[@]} != ${#arr_result[@]} )); then
             printf "\n\e[1;38;5;88m%s\n\e[1;38;5;240m%s\n%s\e[0m\n\n" \
-                   'Not sync with search with result.' \
+                   'Not sync!' \
                    "arr_search: ${#arr_search[@]}" \
                    "arr_result: ${#arr_result[@]}"
             exit $E_NOT_SYNC_SEARCH_AND_RESULT
         fi
+    fi
+    if [[ ${g_arg[1]} = -U ]]; then # test
+        return 0
     fi
     PS3="
 Last uploaded: $last_date
@@ -1257,3 +1331,5 @@ input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                   | sed 's/^# //')
 # test_print input_lines "$input_lines"
 select_list "$URL_LIST" "$input_lines"
+
+#  LocalWords:  dl ytsearch
