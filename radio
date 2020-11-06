@@ -92,12 +92,24 @@ DUMP_SUCCESS_SOUND_PATH=/mnt/data/Sound/Alert.mp3
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
+# error code
 E_IN_A_ROW=64
 E_NO_MATCH_REGEX=65
 E_FAIL_DUMP_YOUTUBE=66
 E_NOT_SYNC_PROPERTIES=67
 E_NOT_SYNC_SEARCH_AND_RESULT=68
 E_NO_PARAM=99
+# color code
+C_ERROR='\e[1;38;5;88m'
+C_WARN='\e[1;38;5;88m'
+C_FAIL='\e[1;38;5;88m'
+C_SUCCESS='\e[1;38;5;98m'
+C_LIST_TITLE='\e[1;38;5;117m'
+C_LIST_BODY='\e[1;38;5;240m'
+C_LIST_NUMBER='\e[1;38;5;40m'
+C_TITLE='\e[1;38;5;88m'
+C_INFO='\e[1;38;5;88m'
+C_DESCRIPT='\e[1;38;5;88m'
 
 
 
@@ -266,6 +278,7 @@ playing_youtube_print() {
     # done
     arg1=$(printf %b "$arg1" | sed 's/\\"/"/g') # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
+    arg3=${arg3%.*} # workaround for 1234.0
     if (( arg3 )); then # duration
         # ^
         # can remove $ in ((  ))
@@ -511,10 +524,11 @@ play_youtube() {
     local p_title p_date p_average_rating p_view_count
     local p_duration p_uploader p_webpage_url p_description
     local s1
+    # test_print arg1 "$arg1"
     s1=$(printf '%s%s%s%s%s%s%s%s' \
                 '^"title": "\(.*\)" ' \
                 '"upload_date": "\([0-9]\{8\}\)" ' \
-                '"duration": \([0-9]\+\) ' \
+                '"duration": \([0-9.]\+\) ' \
                 '"view_count": \([0-9]\+\) ' \
                 '"average_rating": \([0-9.]\+\) ' \
                 '"uploader": "\(.*\)" ' \
@@ -972,7 +986,7 @@ play_xxx() { # private
 
 youtube_search() {
     #
-    # with youtube-dl's --json-dump
+    # with youtube-dl --json-dump
     #
     # Do not request too many times
     #
@@ -1132,12 +1146,12 @@ choose : "
         for k in "${!arr_result[@]}"; do
             while [[ -z $result ]] ; do
                 ((c++))
-                ((i++))
                 if (( c > RETRY_DUMP_LIMIT )); then
                     printf "$p1" \
                            'failed dumping, retry later!'
                     exit $E_FAIL_DUMP_YOUTUBE
                 fi
+                ((i++))
                 if (( c % 10 == 1)); then
                     printf "$p2" \
                            "'$k': $i/${#arr_search[@]}" \
@@ -1157,22 +1171,22 @@ choose : "
                        $dots
                 result=$(youtube-dl -j ytsearch$S_LIMIT:"$k")
                 [[ -z $result ]] && sleep $DUMP_RETRY_AFTER && continue
-                r_title=$(grep -oP "$g1"  <<< $result \
+                r_title=$(grep -oP "$g1" <<< $result \
                               | sed 's/, "alt_title": .*//')
-                r_date=$(grep -oP "$g2"  <<< $result \
+                r_date=$(grep -oP "$g2" <<< $result \
                              | sed 's/, "$//')
-                r_duration=$(grep -oP "$g3"  <<< $result \
+                r_duration=$(grep -oP "$g3" <<< $result \
                                  | sed 's/, "age_limit": .*//' \
-                                   |  sed 's/\.*$//') # workaround
-                r_rating=$(grep -oP "$g4"  <<< $result \
+                                 | sed 's/\.0//') # workaround for 1234.0
+                r_rating=$(grep -oP "$g4" <<< $result \
                                | sed 's/,$//')
-                r_count=$(grep -oP "$g5"  <<< $result \
+                r_count=$(grep -oP "$g5" <<< $result \
                               | sed 's/,$//')
-                r_uploader=$(grep -oP "$g6"  <<< $result \
+                r_uploader=$(grep -oP "$g6" <<< $result \
                                  | sed 's/, "$//')
-                r_url=$(grep -oP "$g7"  <<< $result \
+                r_url=$(grep -oP "$g7" <<< $result \
                             | sed 's/,$//')
-                r_description=$(grep -oP "$g8"  <<< $result \
+                r_description=$(grep -oP "$g8" <<< $result \
                                     | sed 's/, "categories": //')
                 # test_print r_description "$r_description"
                 readarray -t arr_title <<< $r_title
@@ -1276,13 +1290,13 @@ choose : "
             # you can be banned for too many request
             #
             ((c++))
-            ((i++))
             if (( c > RETRY_DUMP_LIMIT )); then
                 printf "$p1" \
                        'Fail dumping. Retry later!'
                 exit $E_FAIL_DUMP_YOUTUBE
 
             fi
+            ((i++))
             if (( c % 10 == 1)); then
                 printf "$p2" \
                        "'$k': $i/${#arr_search[@]}" \
@@ -1357,7 +1371,7 @@ choose : "
     #
     r_duration=$(grep -oP "$g3" <<< $result \
                      | sed 's/, "age_limit": .*//' \
-                     |  sed 's/\.*$//') # workaround
+                     | sed 's/\.0//') # workaround for 1234.0
     # test_print r_duration "$r_duration"
     r_rating=$(grep -oP "$g4" <<< $result \
                    | sed 's/,$//')
