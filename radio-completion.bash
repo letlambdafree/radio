@@ -25,7 +25,6 @@
 
 ### TODO
 #
-# options(-, --)
 # column assignment
 
 
@@ -48,9 +47,9 @@ test_print() {
            "$arg3"
 
     [[ -n $arg3 ]] && itemsnumber=$(wc -l <<< $arg3)
-    if (( $itemsnumber == 1 )); then
+    if (( itemsnumber == 1 )); then
         printf "$format1" $itemsnumber
-    elif (( $itemsnumber > 1 )); then
+    elif (( itemsnumber > 1 )); then
         printf "$format2" $itemsnumber
     else
         printf "$format1" no
@@ -62,16 +61,15 @@ _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
-    local opt2 s_opt2 l_opt2_1 l_opt2_2
-    local opt3 s_opt3 l_opt3_1 l_opt3_2
+    local opt2 l_opt2
+    local opt3 s_opt3 l_opt3
     local _search
     case ${#COMP_WORDS[@]} in
         2)
-            # echo -n "$cur_arg"
             if [[ $cur_arg =~ ^-- ]]; then
-                l_opt2_1="--all --group --local --xxx"
-                l_opt2_2=" --youtube --test --edit --version --help"
-                opt2="$l_opt2_1""$l_opt2_2"
+                l_opt2="--all --group --local --xxx "
+                l_opt2+="--youtube --test --edit --version --help"
+                opt2="$l_opt2"
             elif [[ $cur_arg =~ ^-|'' ]]; then
                 opt2="-a -g -l -x -y -t -e -v -h"
 
@@ -80,12 +78,13 @@ _radio_completions() {
             ;;
 
         3)
-            # echo -n "$cur_arg"
             if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
                 s_opt3="en kr jp mv lt ln lc pl"
-                l_opt3_1=" english korean japanese musicvideo"
-                l_opt3_2=" livetv livenews livecam playlist"
-                opt3="$s_opt3""$l_opt3_1""$l_opt3_2"
+                l_opt3="english korean japanese musicvideo "
+                l_opt3+="livetv livenews livecam playlist"
+                opt3="$s_opt3 $l_opt3"
+            elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
+                opt3="-c -d -u -U"
             fi
             COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             ;;
