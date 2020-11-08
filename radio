@@ -44,6 +44,7 @@
 
 shopt -s globstar # Allow ** for recursive matches
 set -u # avoid a undeclared variable
+# set -x # for debugging
 g_arg=( "$@" )
 g_arg0="$0"
 SCRIPT_VERSION=0.2.0
@@ -69,6 +70,9 @@ LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
 MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
 PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
 XXX_PATH="$SCRIPT_DIR"/xxx # no public
+#
+# last line need ^$ for cat
+#
 RADIO_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                  "$KOREAN_RADIO_PATH" \
                  "$JAPANESE_RADIO_PATH")
@@ -191,26 +195,6 @@ test_print() {
         printf "$p1" $items_number
     elif (( items_number > 1 )); then
         printf "$p2" $items_number
-    else
-        printf "$p1" no
-    fi
-    return 0
-}
-
-print_youtube_caches() {
-    local arg1="$1"
-    local arg2="$2"
-    local arg3="$3"
-    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n\n'
-    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n\n'
-    local p3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
-    printf "$p3" \
-           "${FUNCNAME[1]}()'s $arg1" \
-           "$arg2"
-    if (( arg3 == 1 )); then
-        printf "$p1" $arg3
-    elif (( arg3 > 1 )); then
-        printf "$p2" $arg3
     else
         printf "$p1" no
     fi
@@ -643,14 +627,14 @@ play_group() {
     local group_list
     # test_print URL_LIST $URL_LIST
     case "${g_arg[1]}" in
-        en | english    ) group_list=$(cat "$ENGLISH_RADIO_PATH");;
-        kr | korean     ) group_list=$(cat "$KOREAN_RADIO_PATH");;
-        jp | japanese   ) group_list=$(cat "$JAPANESE_RADIO_PATH");;
-        mv | musicvideo ) group_list=$(cat "$MUSIC_VIDEO_PATH");;
-        lt | livetv     ) group_list=$(cat "$LIVE_TV_PATH");;
-        ln | livenews   ) group_list=$(cat "$LIVE_NEWS_PATH");;
-        lc | livecam    ) group_list=$(cat "$LIVE_CAMERA_PATH");;
-        pl | playlist   ) group_list=$(cat "$PLAY_LIST_PATH");;
+        en | english    ) group_list=$(<"$ENGLISH_RADIO_PATH");;
+        kr | korean     ) group_list=$(<"$KOREAN_RADIO_PATH");;
+        jp | japanese   ) group_list=$(<"$JAPANESE_RADIO_PATH");;
+        mv | musicvideo ) group_list=$(<"$MUSIC_VIDEO_PATH");;
+        lt | livetv     ) group_list=$(<"$LIVE_TV_PATH");;
+        ln | livenews   ) group_list=$(<"$LIVE_NEWS_PATH");;
+        lc | livecam    ) group_list=$(<"$LIVE_CAMERA_PATH");;
+        pl | playlist   ) group_list=$(<"$PLAY_LIST_PATH");;
         *)
             printf '\n %s\e[1;31m %s\e[0m %s\n' \
                    'There is no' \
@@ -828,8 +812,7 @@ select_list() {
 
 play_local() {
     local local_list
-    local_list=$(cat "$LOCAL_MUSIC_PATH" \
-                     | sed 's/^# //')
+    local_list=$(sed 's/^# //' "$LOCAL_MUSIC_PATH")
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             local_list=$(grep -v "$SKIP_PATTERN" <<< $local_list)
@@ -868,9 +851,9 @@ test_items() {
             kill $last_bg_pid
         fi
     done <<< $testlist
-    printf '\n %s\n\n%s\n\n' \
+    printf '\n %s\n\n' \
            'REPORT:'
-           "$(cat $REPORT_PATH)"
+    cat "$REPORT_PATH"
     return 0
 }
 
@@ -971,9 +954,8 @@ bypass_site() {
 
 play_xxx() { # private
     bypass_site
-    xxx_list=$(cat "$XXX_PATH" \
-                  | grep -v "$SKIP_PATTERN" \
-                  | sed 's/^# //')
+    xxx_list=$(grep -v "$SKIP_PATTERN" <<< $XXX_PATH \
+                   | sed 's/^# //')
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             shuffle_list "$xxx_list"
@@ -1003,22 +985,34 @@ check_arr_youtube_sync() {
 }
 
 display_cached_phrases() {
-    #
-    # parent : youtube_search()
-    #
-    # local arg1="$1"
-    # local arg2="$2"
+    local search_sort old_LANG
+    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n\n'
+    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n\n'
+    local p3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
     local i=0
-    test_print arr_search "${!arr_search[@]}"
-    for k in "${!arr_search[@]}"; do
+    old_LANG=$LANG
+    LANG=ko_KR.utf-8 # for Korean style sort
+    search_sort=$(printf '%s\n' "${!arr_search[@]}" | sort -f)
+    readarray -t arr_search_sort <<< $search_sort
+    LANG=$old_LANG # restore
+    for k in "${arr_search_sort[@]}"; do
         ((i++))
         if (( i > DISPLAY_C_PHRASE_LIMIT )); then
-            c_phrase+="${c_phrase:+ | }$k ..."
+            c_phrase+=" | $k ..."
             break
         fi
         c_phrase+="${c_phrase:+ | }$k"
     done
-    print_youtube_caches c_phrase "$c_phrase" $i
+    printf "$p3" \
+           'the cached phrases' \
+           "$c_phrase"
+    if (( i == 1 )); then
+        printf "$p1" $i
+    elif (( i > 1 )); then
+        printf "$p2" $i
+    else
+        printf "$p1" no
+    fi
     exit 0
 }
 
@@ -1108,11 +1102,11 @@ update_cached_phrase() {
     fi
 }
 
-update_cached_all(){
+update_cached_all() {
     #
     # -U update all the cached_phrase
     #
-    # use for re-initializing list
+    # use for re-initializing cached list
     #
     local i=0 c=0
     for k in "${!arr_result[@]}"; do
@@ -1343,12 +1337,6 @@ youtube_search() {
                    "interval: $DUMP_RETRY_AFTER" \
                    "retry: $c/$RETRY_DUMP_LIMIT" \
                    $dots
-            #
-            # --get-title
-            # --get-id
-            # --get-description
-            # --get-duration
-            #
             result=$(youtube-dl -j ytsearch${S_LIMIT}:"${s_phrase}")
             [[ -z $result ]] && sleep $DUMP_RETRY_AFTER
         done
@@ -1530,7 +1518,7 @@ case "${g_arg[0]:-}" in
          -y [option] [phrase] searches a phrase in youtube
          -t tests all radios
          -e edit this script.
-         -h prints version
+         -v prints version
          -h prints help
 HEREDOC
         exit 2
