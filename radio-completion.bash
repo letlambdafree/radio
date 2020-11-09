@@ -63,7 +63,7 @@ _radio_completions() {
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
     local opt2 l_opt2
     local opt3 s_opt3 l_opt3
-    local _search oIFS
+    local _result oIFS
     source "$HOME/git/radio/arr_youtube_result"
     for item in "${!arr_result[@]}"; do
         _result+=( "$item" )
