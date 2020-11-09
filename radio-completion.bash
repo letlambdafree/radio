@@ -63,7 +63,11 @@ _radio_completions() {
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
     local opt2 l_opt2
     local opt3 s_opt3 l_opt3
-    local _search
+    local _search oIFS
+    source "$HOME/git/radio/arr_youtube_result"
+    for item in "${!arr_result[@]}"; do
+        _result+=( "$item" )
+    done
     case ${#COMP_WORDS[@]} in
         2)
             if [[ $cur_arg =~ ^-- ]]; then
@@ -83,22 +87,27 @@ _radio_completions() {
                 l_opt3="english korean japanese musicvideo "
                 l_opt3+="livetv livenews livecam playlist"
                 opt3="$s_opt3 $l_opt3"
+                COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
-                opt3="-c -d -u -U"
+                if [[ ! $cur_arg =~ ^- ]]; then
+                    local oIFS="$IFS"
+                    IFS=$'\n'
+                    _result=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$_result" -- "$cur_arg") )
+                    IFS="$oIFS"
+                else
+                    opt3="-d -u -U"
+                    COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
+                fi
             fi
-            COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             ;;
         4)
             local oIFS="$IFS"
             local IFS=$'\n'
-            source "$HOME/git/radio/arr_youtube_search"
-            for item in "${!arr_search[@]}"; do
-                _search+=( "$item" )
-            done
             if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
-                if [[ $pre_arg =~ ^-(c|u|d)$ ]]; then
-                    _search=$(printf "%s\n" "${_search[@]}")
-                    COMPREPLY=( $(compgen -W "$_search" -- "$cur_arg") )
+                if [[ $pre_arg =~ ^-(u|d)$ ]]; then
+                    _result=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$_result" -- "$cur_arg") )
                 fi
             fi
                 IFS="$oIFS"
