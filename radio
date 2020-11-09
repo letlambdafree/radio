@@ -950,11 +950,12 @@ bypass_site() {
              --queue-bypass
         sudo "$NOTSODEEP_PATH" &
     fi
+    return 0
 }
 
 play_xxx() { # private
     bypass_site
-    xxx_list=$(grep -v "$SKIP_PATTERN" <<< $XXX_PATH \
+    xxx_list=$(grep -v "$SKIP_PATTERN" "$XXX_PATH" \
                    | sed 's/^# //')
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
@@ -971,29 +972,16 @@ play_xxx() { # private
     return 0
 }
 
-check_arr_youtube_sync() {
-    if (( ${#arr_search[@]} != ${#arr_result[@]} )); then
-        printf "\n\e[1;38;5;88m%s\n\e[1;38;5;240m%s\n%s\e[0m\n\n" \
-               'Not sync!' \
-               "arr_search: ${#arr_search[@]}" \
-               "${!arr_search[@]}" \
-               "arr_result: ${#arr_result[@]}" \
-               "${!arr_result[@]}"
-        exit $E_NOT_SYNC_SEARCH_AND_RESULT
-    fi
-    return 0
-}
-
 display_cached_phrases() {
-    local search_sort old_LANG
+    local old_LANG
     local p1='\n\e[1;38;5;40m%s item %s\e[0m\n\n'
     local p2='\n\e[1;38;5;40m%s items %s\e[0m\n\n'
     local p3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\e[0m'
     local i=0
     old_LANG=$LANG
     LANG=ko_KR.utf-8 # for Korean style sort
-    search_sort=$(printf '%s\n' "${!arr_search[@]}" | sort -f)
-    readarray -t arr_search_sort <<< $search_sort
+    readarray -t arr_search_sort <<< \
+              $(printf '%s\n' "${!arr_search[@]}" | sort -f)
     LANG=$old_LANG # restore
     for k in "${arr_search_sort[@]}"; do
         ((i++))
@@ -1006,13 +994,11 @@ display_cached_phrases() {
     printf "$p3" \
            'the cached phrases' \
            "$c_phrase"
-    if (( i == 1 )); then
-        printf "$p1" $i
-    elif (( i > 1 )); then
-        printf "$p2" $i
-    else
-        printf "$p1" no
-    fi
+    case $i in
+        0) printf "$p1" no;;
+        1) printf "$p1" $i;;
+        *) printf "$p2" $i;;
+    esac
     exit 0
 }
 
@@ -1020,7 +1006,9 @@ delete_cached_phrase() {
     #
     # -d delete the cached_phrase
     #
-    d_phrase="${g_arg[@]:2}"
+    local p1='\n\e[1;38;5;98m%s\e[0m\n\n'
+    local p2='\n\e[1;38;5;88m%s\e[0m\n\n'
+    local d_phrase="${g_arg[@]:2}"
     for k in "${!arr_result[@]}"; do
         if [[ $k == $d_phrase ]]; then
             d_matched=1
@@ -1032,41 +1020,37 @@ delete_cached_phrase() {
             declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
             declare -p arr_result > "$ARR_YOUTUBE_RESULT"
             source $BASH_COMPLETION_PATH
-            check_arr_youtube_sync
             break
         fi
     done
-    if (( d_matched )); then
-        printf "$p1" \
-               "success for deletion with '$d_phrase'"
-        exit 0
-    else
-        printf "$p1" \
-               "not matched with '$d_phrase'"
-        exit 1
-    fi
+    case $d_matched in
+        1) printf "$p1" "deleted with '$d_phrase'"     exit 0;;
+        *) printf "$p2" "not matched with '$d_phrase'" exit 1;;
+    esac
+    return 0
 }
 
 search_cached_phrase() {
     #
     # -c search in the c_phrases
     #
-    s_phrase="${g_arg[@]:2}"
+    local c_phrase="${g_arg[@]:2}"
     for k in "${!arr_result[@]}"; do
         #    ^                 ^
         # need " " for key with blank
         #
-        if [[ $k == $s_phrase ]]; then
+        if [[ $k == $c_phrase ]]; then
             r_list="${arr_result[$k]}"
             #                    ^
             # need $ for associative array key
             #
-            s_rate=$((${arr_search[$s_phrase]}+1))
-            arr_search[$s_phrase]=$s_rate
+            s_rate=$((${arr_search[$c_phrase]}+1))
+            arr_search[$c_phrase]=$s_rate
             break
         fi
     done
     if [[ -n $r_list ]]; then
+        declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         last_date=$(tail -n 1 <<< $r_list \
                         | sed "$s1" \
                         | xargs date +%Y/%m/%d -d)
@@ -1077,9 +1061,10 @@ choose : "
         select_list "$r_list" "$input_lines"
     else
         printf "$p1" \
-               "There is no '$s_phrase' cached_phrase."
+               "There is no '$c_phrase' cached_phrase."
         exit 2
     fi
+    return 0
 }
 
 update_cached_phrase() {
@@ -1100,6 +1085,7 @@ update_cached_phrase() {
                "not matched with '$s_phrase'"
         exit 1
     fi
+    return 0
 }
 
 update_cached_all() {
@@ -1200,7 +1186,6 @@ update_cached_all() {
             done
             r_list=$(sort -t '"' -k 5 <<< $r_list)
             arr_result+=( ["$k"]="$r_list" ) # test
-            check_arr_youtube_sync
         done
         # reset vars
         result=
@@ -1267,9 +1252,8 @@ youtube_search() {
     local r_list=
     local r_title r_date r_duration r_count
     local r_rating r_uploader r_url r_description
-    local c_phrase s_rate d_phrase
+    local c_phrase s_rate
     local last_date dots
-    local d_matched=0
     local u_matched=0
     local i=0 c=0
     local s1='s/.*" "upload_date": "\(.*\)" "duration": .*/\1/'
@@ -1287,7 +1271,6 @@ youtube_search() {
     if [[ -e $ARR_YOUTUBE_SEARCH && -e $ARR_YOUTUBE_RESULT ]]; then
         source "$ARR_YOUTUBE_SEARCH"
         source "$ARR_YOUTUBE_RESULT"
-        check_arr_youtube_sync
     elif [[ -z $ARR_YOUTUBE_SEARCH && -z $ARR_YOUTUBE_RESULT ]]; then
         declare -A arr_search=()
         declare -A arr_result=()
@@ -1475,7 +1458,6 @@ youtube_search() {
         declare -p arr_search > "$ARR_YOUTUBE_SEARCH"
         declare -p arr_result > "$ARR_YOUTUBE_RESULT"
         source $BASH_COMPLETION_PATH
-        check_arr_youtube_sync
     fi
     PS3="
 Last uploaded: $last_date
