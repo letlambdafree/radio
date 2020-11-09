@@ -1008,6 +1008,7 @@ delete_cached_phrase() {
     local p1='\n\e[1;38;5;98m%s\e[0m\n\n'
     local p2='\n\e[1;38;5;88m%s\e[0m\n\n'
     local d_phrase="${g_arg[@]:2}"
+    local d_matched
     for k in "${!arr_result[@]}"; do
         if [[ $k == $d_phrase ]]; then
             d_matched=1
@@ -1031,17 +1032,29 @@ update_cached_phrase() {
     #
     # -u update the cached_phrase
     #
-    local u_matched
+    local u_matched last_search_date s_rate
     s_phrase="${g_arg[@]:2}"
     for k in "${!arr_result[@]}"; do
         if [[ $k == $s_phrase ]]; then
-            s_rate=$((${arr_search[$s_phrase]}+1))
-            arr_search[$s_phrase]=$s_rate
+            r_list="${arr_result[$k]}"
+            s_rate=$(head -n 1 <<< $r_list | cut -d ' ' -f 2)
+            s_rate=$((s_rate+1))
+            r_list=$(sed "s/ [0-9]\+/ $s_rate/" <<< $r_list)
+            arr_result[$s_phrase]="$r_list"
             u_matched=1
             break
         fi
     done
-    if (( ! u_matched )); then
+    if (( u_matched )); then
+        get_result "$s_phrase"
+        last_search_date=$(head -n 1 <<< $r_list | cut -d ' ' -f 1)
+        input_lines=$(tail -n +2 <<< $r_list) # for select_list()
+        declare -p arr_result > "$ARR_YOUTUBE_RESULT"
+        PS3="
+Last updated: $last_search_date
+choose : "
+        select_list "$input_lines" "$input_lines"
+    else
         printf "$p1" \
                "not matched with '$s_phrase'"
         exit 1
@@ -1049,14 +1062,10 @@ update_cached_phrase() {
     return 0
 }
 
-update_cached_all() {
-    #
-    # -U update all the cached_phrase
-    #
-    # use for re-initializing cached list
-    #
+get_result() {
+    arg1=( "$1" )
     local i=0 c=0
-    for k in "${!arr_result[@]}"; do
+    for k in "${arg1[@]}"; do
         while [[ -z $result ]] ; do
             ((c++))
             if (( c > RETRY_DUMP_LIMIT )); then
@@ -1084,6 +1093,40 @@ update_cached_all() {
                    $dots
             result=$(youtube-dl -j ytsearch$S_LIMIT:"$k")
             [[ -z $result ]] && sleep $DUMP_RETRY_AFTER && continue
+
+
+
+            # if (( ${#arr_result[@]} >= MAX_CACHE )); then
+            #     for k in "${!arr_search[@]}"; do
+            #         if (( ${arr_result[$k]} <= ${min_rate:-10} )); then
+            #             min_rate=${arr_result[$k]}
+            #             min_key="$k"
+            #         fi
+            #     done
+            #     unset arr_result["$min_key"]
+            #     #                ^^       ^
+            #     # all needed # test
+            #     #
+            #     printf '\n \e[1;31m%s - %s\e[0m\n' \
+            #            "'$min_key' has been removed" \
+            #            "$min_rate rated."
+            # fi
+
+
+
+            #
+            # youtube-dl json_dump_key_order:
+            #
+            # "id"            "uploader"           "uploader_id"
+            # "uploader_url"  "channel_id"         "channel_url"
+            # "upload_date"   "license"            "creator"
+            # "title"         "alt_title"          "thumbnails"
+            # "description"   "categories"         "tags"
+            # "subtitles"     "automatic_captions" "duration"
+            # "age_limit"     "annotations"        "chapters"
+            # "webpage_url"   "view_count"         "like_count"
+            # "dislike_count" "average_rating"     "formats"
+            #
             r_title=$(grep -oP "$g1" <<< $result \
                           | sed 's/, "alt_title": .*//')
             r_date=$(grep -oP "$g2" <<< $result \
@@ -1114,6 +1157,9 @@ update_cached_all() {
                         ${#arr_count[@]}       ${#arr_rating[@]}
                         ${#arr_uploader[@]}    ${#arr_url[@]}
                         ${#arr_description[@]} )
+            #
+            # concisely check for parsing result
+            #
             for each in ${arr_total[@]}; do
                 # test_print each  $each
                 if (( ${#arr_title[@]} != each )); then
@@ -1144,8 +1190,14 @@ update_cached_all() {
                                  "${arr_uploader[l]}" \
                                  "${arr_url[l]}" \
                                  "${arr_description[l]}")
+                #                                   ^
+                # $ can be removed for array index
+                #
             done
             r_list=$(sort -t '"' -k 5 <<< $r_list)
+            #                       ^
+            # allow to add 3 extra " in title
+            #
             last_search_date=$(date +%Y/%m/%d)
             if [[ $r_list =~ ^[0-9]{4}/[0-9]{2}/[0-9]{2} ]]; then
                 search_count=$(cut -d ' ' -f 2 <<< $r_list)
@@ -1155,9 +1207,9 @@ update_cached_all() {
             #
             # add last_search_date and search_count
             #
-            r_list=$(printf "%s %s\n%s" \
-                            "$last_search_date" \
-                            "$search_count" \
+            head_list="$last_search_date $search_count"
+            r_list=$(printf "%s\n%s" \
+                            "$head_list" \
                             "$r_list")
             arr_result+=( ["$k"]="$r_list" ) # test
         done
@@ -1171,9 +1223,19 @@ update_cached_all() {
                "'$k' is updated"
     done
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
-    exit 0 # end all update
+    source "$BASH_COMPLETION_PATH"
+    return 0 # end all update
 }
 
+update_cached_all() {
+    #
+    # -U update all the cached_phrase
+    #
+    # use for re-initializing cached list
+    #
+    get_result "${!arr_result[@]}"
+    exit 0
+    }
 invalid_youtube_option() {
     printf '\n %s\e[1;31m %s\e[0m %s\n' \
            'There is no' \
@@ -1201,15 +1263,16 @@ without_youtube_option() {
             break
         fi
     done
-    if [[ -n $r_list ]]; then
-        declare -p arr_result > "$ARR_YOUTUBE_RESULT"
-        last_search_date=$(head -n 1 <<< $r_list | cut -d ' ' -f 1)
-        input_lines=$(tail -n +2 <<< $r_list) # for select_list()
-        PS3="
+    if [[ -z $r_list ]]; then
+        get_result "$s_phrase"
+    fi
+    last_search_date=$(head -n 1 <<< $r_list | cut -d ' ' -f 1)
+    input_lines=$(tail -n +2 <<< $r_list) # for select_list()
+    declare -p arr_result > "$ARR_YOUTUBE_RESULT"
+    PS3="
 Last updated: $last_search_date
 choose : "
-        select_list "$input_lines" "$input_lines"
-    fi
+    select_list "$input_lines" "$input_lines"
     return 0
 }
 
@@ -1242,8 +1305,8 @@ youtube_search() {
     local p1='\n \e[1;38;5;88m%s\e[0m\n\n'
     local p2='\r\e[1;38;5;117m%s | %s | %s | %s\e[1;38;5;0m %s\e[0m'
     local p3='\r\e[1;38;5;117m%s | %s | %s | %s\e[1;38;5;40m %s\e[0m'
-    [[ -e $ARR_YOUTUBE_RESULT ]] \
-        && source "$ARR_YOUTUBE_RESULT" || declare -A arr_result=()
+    [[ -e $ARR_YOUTUBE_RESULT ]] && source "$ARR_YOUTUBE_RESULT" \
+            || declare -A arr_result=()
     case ${g_arg[1]:-} in
         ''                ) display_cached_phrases ;;
         -d | --delete     ) delete_cached_phrase   ;;
@@ -1252,179 +1315,6 @@ youtube_search() {
         -*                ) invalid_youtube_option ;;
         *                 ) without_youtube_option ;;
     esac
-    if [[ -z $result ]]; then
-        printf '\n'
-        p2='\e[1;38;5;117m %s | %s | %s | %s\e[1;38;5;0m %s\e[0m\r'
-        p3='\e[1;38;5;117m %s | %s | %s | %s\e[1;38;5;40m %s\e[0m\r'
-        c=0
-        i=0
-        while [[ -z $result ]]; do
-            ((c++))
-            if (( c > RETRY_DUMP_LIMIT )); then
-                printf "$p1" \
-                       'Fail dumping. Retry later!'
-                exit $E_FAIL_DUMP_YOUTUBE
-
-            fi
-            ((i++))
-            if (( c % 10 == 1)); then
-                printf "$p2" \
-                       "$s_phrase" \
-                       "list: $S_LIMIT" \
-                       "interval: $DUMP_RETRY_AFTER" \
-                       "retry: $c/$RETRY_DUMP_LIMIT" \
-                       ${dots:-.}
-                dots=.
-            else
-                dots+=.
-            fi
-            printf "$p3" \
-                   "$s_phrase" \
-                   "list: $S_LIMIT" \
-                   "interval: $DUMP_RETRY_AFTER" \
-                   "retry: $c/$RETRY_DUMP_LIMIT" \
-                   $dots
-            result=$(youtube-dl -j ytsearch${S_LIMIT}:"${s_phrase}")
-            [[ -z $result ]] && sleep $DUMP_RETRY_AFTER
-        done
-        printf '\n'
-        $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null & # notice for success
-        if (( ${#arr_result[@]} >= MAX_CACHE )); then
-            for k in "${!arr_search[@]}"; do
-                if (( ${arr_result[$k]} <= ${min_rate:-10} )); then
-                    min_rate=${arr_result[$k]}
-                    min_key="$k"
-                fi
-            done
-            unset arr_result["$min_key"]
-            #                ^^       ^
-            # all needed # test
-            #
-            printf '\n \e[1;31m%s - %s\e[0m\n' \
-                   "'$min_key' has been removed" \
-                   "$min_rate rated."
-        fi
-    fi
-    #
-    # youtube-dl json_dump_key_order:
-    #
-    # "id"                 "uploader"       "uploader_id" "uploader_url"
-    # "channel_id"         "channel_url"    "upload_date" "license"
-    # "creator"            "title"          "alt_title"   "thumbnails"
-    # "description"        "categories"     "tags"        "subtitles"
-    # "automatic_captions" "duration"       "age_limit"   "annotations"
-    # "chapters"           "webpage_url"    "view_count"  "like_count"
-    # "dislike_count"      "average_rating" "formats"
-    #
-    # test_print result "$result"
-    r_title=$(grep -oP "$g1" <<< $result \
-                  | sed 's/, "alt_title": .*//')
-    r_date=$(grep -oP "$g2" <<< $result \
-                 | sed 's/, "$//')
-    #
-    # after updating youtube-dl-2020.11.01,
-    #
-    # "duration": 1243 => "duration": 1234.0
-    #
-    r_duration=$(grep -oP "$g3" <<< $result \
-                     | sed 's/, "age_limit": .*//' \
-                     | sed 's/\.0//') # workaround for 1234.0
-    # test_print r_duration "$r_duration"
-    r_rating=$(grep -oP "$g4" <<< $result \
-                   | sed 's/,$//')
-    #
-    # after updating youtube-dl-2020.11.01,
-    #
-    # "view_count": 4567 => "view_count": 4
-    #
-    r_count=$(grep -oP "$g5" <<< $result \
-                  | sed 's/,$//')
-    r_uploader=$(grep -oP "$g6" <<< $result \
-                     | sed 's/, "$//')
-    r_url=$(grep -oP "$g7" <<< $result \
-                | sed 's/,$//')
-    #
-    # after updating youtube-dl-2020.11.01,
-    #
-    # "description": abc => "description": abc...
-    #
-    r_description=$(grep -oP "$g8" <<< $result \
-                        | sed 's/, "categories": //')
-    #test_print r_description "$r_description"
-    readarray -t arr_title <<< $r_title
-    readarray -t arr_date <<< $r_date
-    readarray -t arr_duration <<< $r_duration
-    readarray -t arr_count <<< $r_count
-    readarray -t arr_rating <<< $r_rating
-    readarray -t arr_uploader <<< $r_uploader
-    readarray -t arr_url <<< $r_url
-    readarray -t arr_description <<< $r_description
-    arr_total=( ${#arr_date[@]}        ${#arr_duration[@]}
-                ${#arr_count[@]}       ${#arr_rating[@]}
-                ${#arr_uploader[@]}    ${#arr_url[@]}
-                ${#arr_description[@]} )
-    #
-    # concisely check for parsing result
-    #
-    for each in ${arr_total[@]}; do
-        if (( ${#arr_title[@]} != each )); then
-            printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
-                   '@@@' \
-                   ' error occurred ' \
-                   '@@@'
-            printf '\n\e[1;38;5;240m%s\n\e[0m' \
-                   " ${FUNCNAME[0]} | $LINENO "
-            printf '\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n' \
-                   "title       : ${#arr_title[@]}" \
-                   "date        : ${#arr_date[@]}" \
-                   "duration    : ${#arr_duration[@]}" \
-                   "count       : ${#arr_count[@]}" \
-                   "rating      : ${#arr_rating[@]}" \
-                   "uploader    : ${#arr_uploader[@]}" \
-                   "url         : ${#arr_url[@]}" \
-                   "description : ${#arr_description[@]}"
-            sleep 1 # time to recognise this error
-            break
-        fi
-    done
-    for l in ${!arr_title[@]}; do
-        r_list+=$(printf "${r_list:+\n}%s %s %s %s %s %s %s %s" \
-                         "${arr_title[l]}" \
-                         "${arr_date[l]}" \
-                         "${arr_duration[l]}" \
-                         "${arr_count[l]}" \
-                         "${arr_rating[l]}" \
-                         "${arr_uploader[l]}" \
-                         "${arr_url[l]}" \
-                         "${arr_description[l]}")
-        #                                   ^
-        # $ can be removed for array index
-        #
-    done
-    r_list=$(sort -t '"' -k 5 <<< $r_list)
-    #                       ^
-    # allow to add 3 extra " in title
-    #
-    last_search_date=$(date +%Y/%m/%d)
-    search_count=1
-    # last_date=$(tail -n 1 <<< $r_list \
-    #                 | sed "$s1" \
-    #                 | xargs date +%Y/%m/%d -d)
-    input_lines="$r_list" # for select_list()
-    # test_print input_lines "$input_lines"
-    r_list=$(printf "%s %s\n%s" \
-                    "$last_search_date" \
-                    "$search_count" \
-                    "$r_list")
-    arr_result+=( ["$s_phrase"]="$r_list" ) # test
-    if [[ ${g_arg[1]} != -c ]]; then
-        declare -p arr_result > "$ARR_YOUTUBE_RESULT"
-        source $BASH_COMPLETION_PATH
-    fi
-    PS3="
-Last uploaded: $last_search_date
-choose : "
-    select_list "$r_list" "$input_lines"
     return 0
 }
 
