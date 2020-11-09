@@ -916,7 +916,6 @@ Options:
         -d : delete the cached phrase
         -u : update the cached phrase
         -U : update all the cached phrases
-        -c : only search in the cached phrases
 
 -t | --test
       - tests all radios whether work or not.
@@ -1184,7 +1183,6 @@ invalid_youtube_option() {
  Usage : radio -y option [ phrase ... ]
  Option: '' displays all cached phrases
          -d delete cached phrase
-         -c search only in cached phrases
          -u update the cached phrase
          -U update all the cached phrases
 HEREDOC
@@ -1249,7 +1247,6 @@ youtube_search() {
     case ${g_arg[1]:-} in
         ''                ) display_cached_phrases ;;
         -d | --delete     ) delete_cached_phrase   ;;
-        -c | --cached     ) search_cached_phrase   ;;
         -u | --update     ) update_cached_phrase   ;;
         -U | --update_all ) update_cached_all      ;;
         -*                ) invalid_youtube_option ;;
