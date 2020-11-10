@@ -103,17 +103,22 @@ E_FAIL_DUMP_YOUTUBE=66
 E_NOT_SYNC_PROPERTIES=67
 E_NO_PARAM=99
 # color code
-C_ERROR='\e[1;38;5;88m'
-C_WARN='\e[1;38;5;88m'
-C_FAIL='\e[1;38;5;88m'
-C_SUCCESS='\e[1;38;5;98m'
-C_LIST_TITLE='\e[1;38;5;117m'
-C_LIST_BODY='\e[1;38;5;240m'
-C_LIST_NUMBER='\e[1;38;5;40m'
-C_TITLE='\e[1;38;5;88m'
-C_INFO='\e[1;38;5;144m'
-C_DESCRIPT='\e[1;38;5;88m'
-C_0='\e[0m'
+for i in {0..255}; do
+    declare -n X=C_${i}
+    X="\e[1;38;5;${i}m" # 256color base format
+done
+C_ERROR=$C_88 # need ' ' ?
+C_WARN=$C_88
+C_FAIL=$C_88
+C_SUCCESS=$C_98
+C_LIST_TITLE=$C_117
+C_LIST_BODY=$C_240
+C_LIST_NUMBER=$C_40
+C_TITLE=$C_88
+C_INFO=$C_144
+C_DESCRIPT=$C_88
+C_='\e[0m'
+# printf "${C_29}this is test${C_}"
 
 
 
@@ -173,9 +178,9 @@ test_print() {
     local arg1="$1"
     local -n arg2="$1" # name reference
     local items_number=0
-    local p1='\n\e[1;38;5;40m%s list %s\e[0m\n'
-    local p2='\n\e[1;38;5;40m%s lists %s\e[0m\n'
-    local p3='\n\e[1;38;5;220m%s | %s | %s\n\e[1;38;5;240m%s\e[0m'
+    local p1="\n${C_40}%s list %s${C_}\n"
+    local p2="\n${C_40}%s lists %s${C_}\n"
+    local p3="\n${C_220}%s | %s | %s\n${C_240}%s${C_}"
     local caller_result=$(caller 0)
     local caller_line=$(cut -d ' ' -f 1 <<< $caller_result)
     local caller_funcname=$(cut -d ' ' -f 2 <<< $caller_result)
@@ -198,13 +203,13 @@ test_print() {
 
 print_shuffle_list() {
     local arg1="$1"
-    local p1='\n\e[1;38;5;220m%s\e[0m\n'
-    local p2='\n\e[1;38;5;240m%s\e[0m\n'
-    local p3='\n\e[1;38;5;196m%s\e[0m\n\n'
-    local p4='\e[1;38;5;24m%s\e[0m'
-    local p5='\e[1;38;5;25m%s\e[0m'
-    local p6='\e[1;38;5;26m%s\e[0m'
-    local p7='\e[1;38;5;27m%s\e[0m'
+    local p1="\n${C_220}%s${C_}\n"
+    local p2="\n${C_240}%s${C_}\n"
+    local p3="\n${C_196}%s${C_}\n\n"
+    local p4="${C_24}%s${C_}"
+    local p5="${C_25}%s${C_}"
+    local p6="${C_26}%s${C_}"
+    local p7="${C_27}%s${C_}"
     local items_number=0
     printf "$p1" shuffle_list
     printf "$p2" \
@@ -247,9 +252,9 @@ playing_youtube_print() {
     local arg6="$6"
     local arg7="$7"
     local arg8="$8"
-    local p1='\n\e[1;38;5;130m%s\e[0m\n'
-    local p2="\n\e[1;38;5;142m%s | %s | %s | %.2f | %s\n%s\e[0m"
-    local p3="\n\e[1;38;5;144m%s\e[0m\n\n"
+    local p1="\n${C_130}%s${C_}\n"
+    local p2="\n${C_142}%s | %s | %s | %.2f | %s\n%s${C_}"
+    local p3="\n${C_144}%s${C_}\n\n"
     local IGNORE_DESCRIPTION_CHARS=3
     local DISPLAY_DESCRIPTION_LINES=10
     local DISPLAY_DESCRIPTION_CHARS=500
@@ -343,7 +348,7 @@ playing_youtube_print() {
 
 playing_print() {
     local arg1="$1"
-    local p1='\n\e[1;38;5;130m %s\e[0m\n\n'
+    local p1="\n${C_130} %s${C_}\n\n"
     # test_print arg1
     if [[ $arg1 =~ (.*)[[:space:]]https?:// ]]; then
         # printf "$p1" "$(sed 's/http.*//' <<< $arg1)"
@@ -419,11 +424,11 @@ make_namelist() {
     done
     # test_print names_part_lines
     if [[ -z $names_part_lines ]]; then
-        printf '\n\e[1;38;5;88m%s\e[1;38;5;240m%s\e[1;38;5;88m%s\n\e[0m' \
+        printf "\n${C_88}%s${C_240}%s${C_88}%s\n${C_}" \
                '@@@' \
                " error occurred | ${FUNCNAME[0]} | $LINENO " \
                '@@@'
-        printf '\n \e[1;38;5;88m%s\e[0m\n\n' \
+        printf "\n ${C_88}%s${C_}\n\n" \
                "No match with '${arr_namelist[@]}'"
         exit $E_NO_MATCH_REGEX
     fi
@@ -478,7 +483,7 @@ shuffle_list() {
         # avoid selecting the same item in a row
         #
         if [[ $first_shuffle == ${last_shuffle:-} ]]; then
-            printf '\n \e[1;31m%s\e[0m\n\n' \
+            printf "\n ${C_88}%s${C_}\n\n" \
                    reshuffling ...
             return $E_IN_A_ROW
         else
@@ -542,7 +547,7 @@ play_youtube() {
 play() {
     local arg1="$1"
     local execute_part name_part head_part option_part
-    local p1='\n \e[1;31m%s\e[0m\n\n' \
+    local p1="\n ${C_88}%s${C_}\n\n" \
     # test_print arg1
     arg1=$(sed 's/^# / /' <<< $arg1)
     if [[ $arg1 =~ [[:space:]]https?:// ]]; then
@@ -627,7 +632,7 @@ play_group() {
         lc | livecam    ) group_list=$(<"$LIVE_CAMERA_PATH");;
         pl | playlist   ) group_list=$(<"$PLAY_LIST_PATH");;
         *)
-            printf '\n %s\e[1;31m %s\e[0m %s\n' \
+            printf "\n %s${C_88} %s${C_} %s\n" \
                    'There is no' \
                    "'${g_arg[1]}'" \
                    'group.'
@@ -729,7 +734,7 @@ select_list() {
     local arg2="$2"
     local r1='[0-9]*[-\ ]+[0-9]*'
     local r2='[^0-9\ -]+'
-    local p1='\n \e[1;31m%s\e[0m\n\n'
+    local p1="\n ${C_88}%s${C_}\n\n"
     local s1
     local input_name_part
     # test_print arg2
@@ -964,9 +969,9 @@ play_xxx() { # private
 }
 
 display_cached_phrases() {
-    local p1='\n\e[1;38;5;40m%s phrase\e[0m\n\n'
-    local p2='\n\e[1;38;5;40m%s phrases\e[0m\n\n'
-    local p3='\n\e[1;38;5;220m%s\n\e[1;38;5;240m%s\n\e[0m'
+    local p1="\n${C_40}%s phrase${C_}\n\n"
+    local p2="\n${C_40}%s phrases${C_}\n\n"
+    local p3="\n${C_220}%s\n${C_240}%s\n${C_}"
     local i=0
     readarray -t arr_result_sort <<< \
               $(printf '%s\n' "${!arr_result[@]}" | sort -f)
@@ -993,8 +998,8 @@ delete_cached_phrase() {
     #
     # -d delete the cached_phrase
     #
-    local p1='\n\e[1;38;5;98m%s\e[0m\n\n'
-    local p2='\n\e[1;38;5;88m%s\e[0m\n\n'
+    local p1="\n${C_98}%s${C_}\n\n"
+    local p2="\n${C_88}%s${C_}\n\n"
     local d_phrase="${g_arg[@]:2}"
     local d_matched
     for k in "${!arr_result[@]}"; do
@@ -1059,7 +1064,7 @@ get_result() {
     local i=0 c=0
     local r_list=
     local head_list dots
-    printf "${C_INFO}%s | %s | %s${C_0}" \
+    printf "${C_INFO}%s | %s | %s${C_}" \
            "get_lists: $GET_LISTS" \
            "retry_after: $DUMP_RETRY_AFTER" \
            "retry_limit: $RETRY_DUMP_LIMIT"
@@ -1134,9 +1139,9 @@ get_result() {
             for each in ${arr_total[@]}; do
                 # test_print each
                 if (( ${#arr_title[@]} != each )); then
-                    printf "\n\n\e[1;38;5;88m%s\e[0m\n" \
+                    printf "\n\n${C_88}%s${C_}\n" \
                            'Not sync!'
-                    printf '\n\e[1;38;5;240m%s\n\e[0m' \
+                    printf "\n${C_240}%s\n${C_}" \
                            " ${FUNCNAME[0]} | $LINENO "
                     printf '\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n %s\n' \
                            "title       : ${#arr_title[@]}" \
@@ -1190,7 +1195,7 @@ get_result() {
         dots=
         c=0
         $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null &
-        printf '\n \e[1;38;5;98m%s\e[0m\n\n' \
+        printf "\n ${C_98}%s${C_}\n\n" \
                "'$k' is updated"
     done
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
@@ -1209,7 +1214,7 @@ update_cached_all() {
 }
 
 invalid_youtube_option() {
-    printf '\n %s\e[1;31m %s\e[0m %s\n' \
+    printf "\n %s${C_88} %s${C_} %s\n" \
            'There is no' \
            "'${g_arg[1]}'" \
            'option.'
@@ -1272,9 +1277,9 @@ youtube_search() {
     local g6='"uploader": ".*?", "'
     local g7='"webpage_url": ".*?",'
     local g8='"description": ".*?", "categories": '
-    local p1='\n \e[1;38;5;88m%s\e[0m\n\n'
-    local p2='\r\e[1;38;5;117m%s\e[1;38;5;0m %s\e[0m'
-    local p3='\r\e[1;38;5;117m%s\e[1;38;5;40m %s\e[0m'
+    local p1="\n ${C_88}%s${C_}\n\n"
+    local p2="\r${C_117}%s${C_0} %s${C_}"
+    local p3="\r${C_117}%s${C_40} %s${C_}"
     [[ -e $ARR_YOUTUBE_RESULT ]] && source "$ARR_YOUTUBE_RESULT" \
             || declare -A arr_result=()
     case ${g_arg[1]:-} in
@@ -1309,7 +1314,7 @@ case "${g_arg[0]:-}" in
     -v | --version ) print_version  && exit 0;;
     -h | --help    ) help_usage     && exit 0;;
     -*)
-        printf '\n %s\e[1;31m %s\e[0m %s\n' \
+        printf "\n %s${C_88} %s %s${C_}\n" \
                'There is no' \
                "'${g_arg[0]}'" \
                'option.'
