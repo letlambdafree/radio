@@ -96,31 +96,55 @@ DUMP_SUCCESS_SOUND_PATH=/mnt/data/Sound/Alert.mp3
 # basic regex escape ‘\?’, ‘\+’, ‘\|’, ‘\{’, '\}', ‘\(’, and ‘\)’
 #
 SKIP_PATTERN='^#\?$\|^##\+\|^#[^ ]\|^#  \+'
+#
 # error code
+#
 E_IN_A_ROW=64
 E_NO_MATCH_REGEX=65
 E_FAIL_DUMP_YOUTUBE=66
 E_NOT_SYNC_PROPERTIES=67
 E_NO_PARAM=99
+#
 # color code
+#
+C_='\e[0m'
 for i in {0..255}; do
-    declare -n X=C_${i}
-    X="\e[1;38;5;${i}m" # 256color base format
+    declare -n X=C_${i} # declare -n , eval , export
+    X="\e[1;38;5;${i}m" # 256 foreground color format
 done
-C_ERROR=$C_88 # need ' ' ?
-C_WARN=$C_88
-C_FAIL=$C_88
+C_ERROR=$C_1
+C_WARN=$C_128
+C_FAIL=$C_124
 C_SUCCESS=$C_98
 C_LIST_TITLE=$C_117
 C_LIST_BODY=$C_240
 C_LIST_NUMBER=$C_40
-C_TITLE=$C_88
-C_INFO=$C_144
-C_DESCRIPT=$C_88
-C_='\e[0m'
-# printf "${C_29}this is test${C_}"
+C_TITLE=$C_130
+C_INFO=$C_142
+C_DESCRIPTION=$C_144
 
 
+
+display_color_code() {
+    local s1='s/.*;\([0-9]\+\)m$/\1/'
+    local max_length=0
+    color_codes=( C_ERROR     C_WARN        C_FAIL  C_SUCCESS C_LIST_TITLE
+                  C_LIST_BODY C_LIST_NUMBER C_TITLE C_INFO    C_DESCRIPTION )
+    for i in "${!color_codes[@]}"; do
+        if (( ${#color_codes[i]} >= max_length )); then
+            max_length=$((${#color_codes[i]}+1))
+        fi
+    done
+    printf '\n'
+    for k in "${color_codes[@]}"; do
+        declare -n X=$k
+        printf "$X %-${max_length}s: %3s\n" \
+               $k \
+               $(sed "$s1" <<< $X)
+    done
+    printf "${C_}"
+    printf '\n'
+}
 
 back_trace() {
     # local max_length
@@ -860,7 +884,7 @@ edit_this() {
 }
 
 print_version() {
-    printf '\n%s: %s\n' \
+    printf '\n%s: %s\n\n' \
            "$SCRIPT_NAME" \
            "$SCRIPT_VERSION"
     return 0
@@ -1294,6 +1318,8 @@ youtube_search() {
 }
 
 
+
+display_color_code
 
 #
 # case uses * ? [...] | as matching pattern
