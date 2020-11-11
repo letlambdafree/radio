@@ -108,6 +108,7 @@ E_NO_PARAM=99
 # color code
 #
 C_='\e[0m'
+local i
 for i in {0..255}; do
     declare -n X=C_${i} # declare -n , eval , export
     X="\e[1;38;5;${i}m" # 256 foreground color format
@@ -129,6 +130,7 @@ C_DESCRIPTION=$C_144
 
 display_color_code() {
     local max_length=0
+    local i k
     color_codes=( C_ERROR       C_WARN        C_FAIL
                   C_SUCCESS     C_LIST_TITLE  C_LIST_BODY
                   C_LIST_NUMBER C_TITLE       C_INFO_TITLE
@@ -138,10 +140,11 @@ display_color_code() {
             max_length=${#color_codes[i]}
         fi
     done
-    printf "\n${C_INFO_TITLE}color code${C_0}\n "
+    printf "\n${C_INFO_TITLE}%s${C_0}\n" \
+           "color code"
     for k in "${color_codes[@]}"; do
         declare -n X=$k
-        printf "$X %-${max_length}s :  %3s\n" \
+        printf "$X%-${max_length}s :  %3s\n" \
                $k \
                $(sed 's/.*;\([0-9]\+\)m$/\1/' <<< $X)
     done
@@ -149,11 +152,78 @@ display_color_code() {
     printf '\n'
 }
 
+display_256color_code_v() {
+    local FB c
+    printf '\n'
+    for FB in {3,4}; do
+        for c in {0..255}; do
+            printf "\e[${FB}8;5;%sm %3s ${C_}" \
+                   $c \
+                   $c
+            (( c%6 == 3 )) && printf '\n'
+        done
+        printf '\n'
+    done
+    printf '\n'
+    exit 0
+}
+
+display_256color_code_h() {
+    local split_width=10
+    local i=0
+    local start_color
+    local c
+    printf '\n'
+    for c in {0..255}; do
+        ((i++))
+        printf "\e[38;5;%sm %3s ${C_}" $c $c
+        if (( c%6 == 3 )); then
+            if (( i == 4 )); then
+                start_color=$((c-3))
+                printf '%*s' $((split_width+10))
+            else
+                start_color=$((c-5))
+                printf '%*s' $split_width
+            fi
+            for c in $(eval echo {$start_color..$c}); do
+                printf "\e[7;38;5;%sm %3s ${C_}" $c $c
+            done
+            printf '\n'
+            i=0
+        fi
+    done
+    printf '\n'
+    exit 0
+}
+
+display_256color_code() {
+    local split_width=10
+    local start_color sub_color add_width
+    local c
+    printf '\n'
+    for c in {0..255}; do
+        printf "\e[38;5;%sm %3s ${C_}" $c $c
+        if (( c%6 == 3 )); then
+            start_color=$((c-${sub_color:-3}))
+            printf '%*s' $((split_width+${add_width:-10}))
+            sub_color=5
+            add_width=0
+            for c in $(eval echo {$start_color..$c}); do
+                printf "\e[7;38;5;%sm %3s ${C_}" $c $c
+            done
+            printf '\n'
+        fi
+    done
+    printf '\n'
+    exit 0
+}
+
 back_trace() {
     # local max_length
     local caller_line caller_funcname caller_frame caller_result
     local max_line max_funcname max_frame
     local i=0
+    local k
     # for k in ${!FUNCNAME[@]}; do
     #     if (( ${#FUNCNAME[k]} > ${max_length:-0} )); then
     #         max_length=${#FUNCNAME[k]}
@@ -289,6 +359,7 @@ playing_youtube_print() {
     local line_wc_c
     local total=0
     local max_char=0
+    local line
     arg1=$(printf %b "$arg1" | sed 's/\\"/"/g') # title
     arg2=$(date -d $arg2 +%Y/%m/%d) # date
     if (( arg3 )); then # duration
@@ -398,6 +469,7 @@ make_namelist() {
     local arg1="$1"
     local reverse=
     local name_part names_part
+    local line value
     declare -g input_lines=
     #                      ^
     # need null string
@@ -471,6 +543,7 @@ make_namelist() {
 make_shuffle_list() {
     local arg1="$1"
     local print_name print_names
+    local line
     arg1=$(sed 's/^# //' <<< $arg1)
     readarray -t arr_arg1 <<< $arg1
     for line in "${arr_arg1[@]}"; do
@@ -835,8 +908,8 @@ select_list() {
 }
 
 play_local() {
-    local local_list
-    local_list=$(sed 's/^# //' "$LOCAL_MUSIC_PATH")
+    local file
+    local local_list=$(sed 's/^# //' "$LOCAL_MUSIC_PATH")
     if [[ -z ${g_arg[1]:-} ]]; then
         while true; do
             local_list=$(grep -v "$SKIP_PATTERN" <<< $local_list)
@@ -861,6 +934,7 @@ play_local() {
 
 test_items() {
     local last_bg_pid
+    local line
     testlist=$(grep . <<< $URL_LIST)
     cat > "$REPORT_PATH" <<< $REPORT_START_LINE
     while read -r line; do
@@ -1029,6 +1103,7 @@ delete_cached_phrase() {
     local p2="\n${C_88}%s${C_}\n\n"
     local d_phrase="${g_arg[@]:2}"
     local d_matched
+    local k
     for k in "${!arr_result[@]}"; do
         if [[ $k == $d_phrase ]]; then
             d_matched=1
@@ -1053,6 +1128,7 @@ update_cached_phrase() {
     # -u update the cached_phrase
     #
     local last_search_date s_rate
+    local k
     local r_list=
     s_phrase="${g_arg[@]:2}"
     for k in "${!arr_result[@]}"; do
@@ -1090,7 +1166,9 @@ get_result() {
     fi
     local i=0 c=0
     local r_list=
+    local k l each
     local head_list dots
+    local last_search_date search_count
     printf "${C_INFO}%s | %s | %s${C_}" \
            "get_lists: $GET_LISTS" \
            "retry_after: $DUMP_RETRY_AFTER" \
@@ -1105,6 +1183,7 @@ get_result() {
             fi
             ((i++))
             if (( c % 10 == 1)); then
+                local p2="\r${C_117}%s\e[8m %s${C_}" # 8:hidden test
                 printf "$p2" \
                        "'$k': $i/${#arg1[@]}" \
                        ${dots:-.}
@@ -1257,6 +1336,7 @@ exit 2
 
 without_youtube_option() {
     local last_search_date s_rate
+    local k
     for k in "${!arr_result[@]}"; do
         if [[ $k == $s_phrase ]]; then
             r_list="${arr_result[$k]}"
@@ -1320,8 +1400,8 @@ youtube_search() {
     return 0
 }
 
-invalid_others_option() {
-    printf "\n %s${C_88} %s${C_} %s\n\n" \
+invalid_other_options() {
+    printf "\n %s${C_124} %s${C_} %s\n\n" \
            'There is no' \
            "'${g_arg[1]}'" \
            'option.'
@@ -1330,11 +1410,11 @@ invalid_others_option() {
  Option: -c display_color_code
 HEREDOC
     printf '\n'
-exit 2
+    exit 2
 }
 
-without_others_option() {
-    printf "\n %s${C_88} %s${C_}\n\n" \
+without_other_options() {
+    printf "\n %s${C_124} %s${C_}\n\n" \
            'There is nothing to do with' \
            "'${g_arg[1]}'"
     cat << HEREDOC
@@ -1347,9 +1427,10 @@ HEREDOC
 
 other_options() {
     case ${g_arg[1]:-} in
-        -c | --color_code ) display_color_code   ;;
-        -*                ) invalid_others_option ;;
-        *                 ) without_others_option ;;
+        -c | --color_code  ) display_color_code    ;;
+        -C | --color_codes ) display_256color_code ;;
+        -*                 ) invalid_other_options ;;
+        *                  ) without_other_options ;;
     esac
     return 0
 }
@@ -1370,7 +1451,7 @@ case "${g_arg[0]:-}" in
     -l | --local   ) play_local     && exit 0;;
     -x | --xxx     ) play_xxx       && exit 0;;
     -y | --youtube ) youtube_search && exit 0;;
-    -o | --other   ) other_options   && exit 0;;
+    -o | --others  ) other_options  && exit 0;;
     -t | --test    ) test_items     && exit 0;;
     -e | --edit    ) edit_this      && exit 0;;
     -v | --version ) print_version  && exit 0;;
