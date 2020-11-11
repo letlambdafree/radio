@@ -120,27 +120,30 @@ C_LIST_TITLE=$C_117
 C_LIST_BODY=$C_240
 C_LIST_NUMBER=$C_40
 C_TITLE=$C_130
-C_INFO=$C_142
+C_INFO_TITLE=$C_220
+C_INFO_BODY=$C_142
+C_INFO_NUMBER=$C_40
 C_DESCRIPTION=$C_144
 
 
 
 display_color_code() {
-    local s1='s/.*;\([0-9]\+\)m$/\1/'
     local max_length=0
-    color_codes=( C_ERROR     C_WARN        C_FAIL  C_SUCCESS C_LIST_TITLE
-                  C_LIST_BODY C_LIST_NUMBER C_TITLE C_INFO    C_DESCRIPTION )
-    for i in "${!color_codes[@]}"; do
-        if (( ${#color_codes[i]} >= max_length )); then
-            max_length=$((${#color_codes[i]}+1))
+    color_codes=( C_ERROR       C_WARN        C_FAIL
+                  C_SUCCESS     C_LIST_TITLE  C_LIST_BODY
+                  C_LIST_NUMBER C_TITLE       C_INFO_TITLE
+                  C_INFO_BODY   C_INFO_NUMBER C_DESCRIPTION )
+    for i in ${!color_codes[@]}; do
+        if (( ${#color_codes[i]} > max_length )); then
+            max_length=${#color_codes[i]}
         fi
     done
-    printf '\n'
+    printf "\n${C_INFO_TITLE}color code${C_0}\n "
     for k in "${color_codes[@]}"; do
         declare -n X=$k
-        printf "$X %-${max_length}s: %3s\n" \
+        printf "$X %-${max_length}s :  %3s\n" \
                $k \
-               $(sed "$s1" <<< $X)
+               $(sed 's/.*;\([0-9]\+\)m$/\1/' <<< $X)
     done
     printf "${C_}"
     printf '\n'
@@ -1317,9 +1320,41 @@ youtube_search() {
     return 0
 }
 
+invalid_others_option() {
+    printf "\n %s${C_88} %s${C_} %s\n\n" \
+           'There is no' \
+           "'${g_arg[1]}'" \
+           'option.'
+    cat << HEREDOC
+ Usage : radio -o option
+ Option: -c display_color_code
+HEREDOC
+    printf '\n'
+exit 2
+}
+
+without_others_option() {
+    printf "\n %s${C_88} %s${C_}\n\n" \
+           'There is nothing to do with' \
+           "'${g_arg[1]}'"
+    cat << HEREDOC
+ Usage : radio -o option
+ Option: -c display_color_code
+HEREDOC
+    printf '\n'
+    exit 2
+}
+
+other_options() {
+    case ${g_arg[1]:-} in
+        -c | --color_code ) display_color_code   ;;
+        -*                ) invalid_others_option ;;
+        *                 ) without_others_option ;;
+    esac
+    return 0
+}
 
 
-display_color_code
 
 #
 # case uses * ? [...] | as matching pattern
@@ -1335,6 +1370,7 @@ case "${g_arg[0]:-}" in
     -l | --local   ) play_local     && exit 0;;
     -x | --xxx     ) play_xxx       && exit 0;;
     -y | --youtube ) youtube_search && exit 0;;
+    -o | --other   ) other_options   && exit 0;;
     -t | --test    ) test_items     && exit 0;;
     -e | --edit    ) edit_this      && exit 0;;
     -v | --version ) print_version  && exit 0;;
@@ -1351,6 +1387,7 @@ case "${g_arg[0]:-}" in
          -l ["regex"] plays a shuffled local music.
          -x ["regex"] plays a XXX for private.
          -y [option] [phrase] searches a phrase in youtube
+         -o other options
          -t tests all radios
          -e edit this script.
          -v prints version
