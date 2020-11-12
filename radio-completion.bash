@@ -72,10 +72,10 @@ _radio_completions() {
         2)
             if [[ $cur_arg =~ ^-- ]]; then
                 l_opt2="--all --group --local --xxx "
-                l_opt2+="--youtube --test --edit --version --help"
+                l_opt2+="--youtube --others --test --edit --version --help"
                 opt2="$l_opt2"
             elif [[ $cur_arg =~ ^-|'' ]]; then
-                opt2="-a -g -l -x -y -t -e -v -h"
+                opt2="-a -g -l -x -y -o -t -e -v -h"
 
             fi
             COMPREPLY=( $(compgen -W "$opt2" -- "$cur_arg") )
@@ -99,6 +99,9 @@ _radio_completions() {
                     opt3="-d -u -U"
                     COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
                 fi
+            elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
+                opt3="-c -C"
+                COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             fi
             ;;
         4)
