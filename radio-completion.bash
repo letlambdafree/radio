@@ -38,21 +38,21 @@ test_print() {
     local arg2="$2"
     local arg3="$3"
     local itemsnumber=0
-    local format1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local format2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local format3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
-    printf "$format3" \
+    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
+    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
+    local p3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
+    printf "$p3" \
            "${FUNCNAME[1]}()'s at $arg1" \
            "$arg2" \
            "$arg3"
 
     [[ -n $arg3 ]] && itemsnumber=$(wc -l <<< $arg3)
     if (( itemsnumber == 1 )); then
-        printf "$format1" $itemsnumber
+        printf "$p1" $itemsnumber
     elif (( itemsnumber > 1 )); then
-        printf "$format2" $itemsnumber
+        printf "$p2" $itemsnumber
     else
-        printf "$format1" no
+        printf "$p1" no
     fi
     return 0
 }
@@ -61,59 +61,53 @@ _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
-    local opt2 l_opt2
-    local opt3 s_opt3 l_opt3
+    local opt2 opt3 opt4
     local _result oIFS
-    source "$HOME/git/radio/arr_youtube_result"
-    for item in "${!arr_result[@]}"; do
-        _result+=( "$item" )
+    source "$HOME"/git/radio/arr_youtube_result
+    for i in "${!arr_result[@]}"; do
+        _result+=( "$i" )
     done
     case ${#COMP_WORDS[@]} in
         2)
             if [[ $cur_arg =~ ^-- ]]; then
-                l_opt2="--all --group --local --xxx "
-                l_opt2+="--youtube --others --test --edit --version --help"
-                opt2="$l_opt2"
+                opt2="--all --group --local --xxx "
+                opt2+="--youtube --others --test --edit --version --help"
             elif [[ $cur_arg =~ ^-|'' ]]; then
                 opt2="-a -g -l -x -y -o -t -e -v -h"
-
             fi
             COMPREPLY=( $(compgen -W "$opt2" -- "$cur_arg") )
             ;;
-
         3)
             if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
-                s_opt3="en kr jp mv lt ln lc pl"
-                l_opt3="english korean japanese musicvideo "
-                l_opt3+="livetv livenews livecam playlist"
-                opt3="$s_opt3 $l_opt3"
-                COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
+                opt3="en kr jp mv lt ln lc pl "
+                opt3+="english korean japanese musicvideo "
+                opt3+="livetv livenews livecam playlist"
             elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ ! $cur_arg =~ ^- ]]; then
-                    local oIFS="$IFS"
+                    oIFS="$IFS"
                     IFS=$'\n'
-                    _result=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$_result" -- "$cur_arg") )
+                    opt3=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
                     IFS="$oIFS"
+                    return 0
                 else
                     opt3="-d -u -U"
-                    COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
                 fi
             elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
                 opt3="-c -C"
-                COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             fi
+            COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
             ;;
         4)
-            local oIFS="$IFS"
-            local IFS=$'\n'
             if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ $pre_arg =~ ^-(u|d)$ ]]; then
-                    _result=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$_result" -- "$cur_arg") )
+                    oIFS="$IFS"
+                    IFS=$'\n'
+                    opt4=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$opt4" -- "$cur_arg") )
+                    IFS="$oIFS"
                 fi
             fi
-                IFS="$oIFS"
             ;;
     esac
     return 0
