@@ -35,6 +35,7 @@
 # curl, google code
 # completion suggest for zsh
 # visit the web-page played by youtube_search's result
+# how to kill all radio with C-c
 
 
 
@@ -108,11 +109,11 @@ E_NO_PARAM=99
 # color code
 #
 C_='\e[0m'
-local i
 for i in {0..255}; do
     declare -n X=C_${i} # declare -n , eval , export
     X="\e[1;38;5;${i}m" # 256 foreground color format
 done
+i=0
 C_ERROR=$C_1
 C_WARN=$C_128
 C_FAIL=$C_124
@@ -129,19 +130,21 @@ C_DESCRIPTION=$C_144
 
 
 display_color_code() {
+    #
+    # TODO: add bg
+    #
     local max_length=0
     local i k
     color_codes=( C_ERROR       C_WARN        C_FAIL
                   C_SUCCESS     C_LIST_TITLE  C_LIST_BODY
                   C_LIST_NUMBER C_TITLE       C_INFO_TITLE
                   C_INFO_BODY   C_INFO_NUMBER C_DESCRIPTION )
+    printf '\n'
     for i in ${!color_codes[@]}; do
         if (( ${#color_codes[i]} > max_length )); then
             max_length=${#color_codes[i]}
         fi
     done
-    printf "\n${C_INFO_TITLE}%s${C_0}\n" \
-           "color code"
     for k in "${color_codes[@]}"; do
         declare -n X=$k
         printf "$X%-${max_length}s :  %3s\n" \
@@ -202,7 +205,7 @@ display_256color_code() {
     local c
     printf '\n'
     for c in {0..255}; do
-        printf "\e[38;5;%sm %3s ${C_}" $c $c
+        printf "\e[1;38;5;%sm %3s ${C_}" $c $c
         if (( c%6 == 3 )); then
             start_color=$((c-${sub_color:-3}))
             printf '%*s' $((split_width+${add_width:-10}))
@@ -722,7 +725,7 @@ show_all(){
 play_group() {
     local group_list
     # test_print URL_LIST
-    case "${g_arg[1]}" in
+    case ${g_arg[1]} in
         en | english    ) group_list=$(<"$ENGLISH_RADIO_PATH");;
         kr | korean     ) group_list=$(<"$KOREAN_RADIO_PATH");;
         jp | japanese   ) group_list=$(<"$JAPANESE_RADIO_PATH");;
@@ -736,8 +739,10 @@ play_group() {
                    'There is no' \
                    "'${g_arg[1]}'" \
                    'group.'
-            cat <<HEREDOC
+            cat <<EOF
+
  Usage : radio -g option
+
  Option: en - English Radio
          kr - Korean Radio
          jp - Japanese Radio
@@ -746,7 +751,8 @@ play_group() {
          ln - Live News
          lc - Live Camera
          pl - Play List
-HEREDOC
+
+EOF
             # back_trace
             exit 2
             ;;
@@ -968,7 +974,7 @@ print_version() {
 }
 
 help_usage() {
-    cat << HEREDOC
+    cat <<EOF
 
 Usage: radio [name] or radio option [arg ...]
 
@@ -1022,13 +1028,16 @@ Options:
 -e | --edit
       - edit this script.
 
+-v | --version
+      - prints this script version.
+
 -h | --help
       - prints this help.
 
 Exit Status:
-Returns 0  unless an invalid option is supplied or an error occurs.
+Returns 0 unless an invalid option is supplied or an error occurs.
 
-HEREDOC
+EOF
     return 0
 }
 
@@ -1169,9 +1178,9 @@ get_result() {
     local k l each
     local head_list dots
     local last_search_date search_count
-    printf "${C_INFO}%s | %s | %s${C_}" \
+    printf "\n${C_INFO_TITLE}%s | %s | %s${C_}\n\n" \
            "get_lists: $GET_LISTS" \
-           "retry_after: $DUMP_RETRY_AFTER" \
+           "retry_after: $DUMP_RETRY_AFTER"s \
            "retry_limit: $RETRY_DUMP_LIMIT"
     for k in "${arg1[@]}"; do
         while [[ -z $result ]] ; do
@@ -1320,17 +1329,20 @@ update_cached_all() {
 }
 
 invalid_youtube_option() {
-    printf "\n %s${C_88} %s${C_} %s\n" \
+    printf "\n %s${C_124} %s${C_} %s\n" \
            'There is no' \
            "'${g_arg[1]}'" \
            'option.'
-    cat << HEREDOC
+    cat <<EOF
+
  Usage : radio -y option [ phrase ... ]
+
  Option: '' displays all cached phrases
          -d delete cached phrase
          -u update the cached phrase
          -U update all the cached phrases
-HEREDOC
+
+EOF
 exit 2
 }
 
@@ -1405,10 +1417,13 @@ invalid_other_options() {
            'There is no' \
            "'${g_arg[1]}'" \
            'option.'
-    cat << HEREDOC
+    cat <<EOF
+
  Usage : radio -o option
+
  Option: -c display_color_code
-HEREDOC
+
+EOF
     printf '\n'
     exit 2
 }
@@ -1417,10 +1432,13 @@ without_other_options() {
     printf "\n %s${C_124} %s${C_}\n\n" \
            'There is nothing to do with' \
            "'${g_arg[1]}'"
-    cat << HEREDOC
+    cat <<EOF
+
  Usage : radio -o option
+
  Option: -c display_color_code
-HEREDOC
+
+EOF
     printf '\n'
     exit 2
 }
@@ -1444,7 +1462,7 @@ other_options() {
 #
 # if you need these, use regex condition: [[  =~  ]]
 #
-case "${g_arg[0]:-}" in
+case ${g_arg[0]:-} in
     ''             ) play_radio     && exit 0;;
     -a | --all     ) show_all       && exit 0;;
     -g | --group   ) play_group     && exit 0;;
@@ -1461,8 +1479,10 @@ case "${g_arg[0]:-}" in
                'There is no' \
                "'${g_arg[0]}'" \
                'option.'
-        cat <<HEREDOC
+        cat <<EOF
+
  Usage : radio [name] or radio option [arg ...]
+
  Option: -a displays all urls
          -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group
          -l ["regex"] plays a shuffled local music.
@@ -1473,7 +1493,8 @@ case "${g_arg[0]:-}" in
          -e edit this script.
          -v prints version
          -h prints help
-HEREDOC
+
+EOF
         exit 2
         ;;
 esac
