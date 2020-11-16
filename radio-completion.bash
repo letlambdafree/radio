@@ -29,47 +29,82 @@
 
 
 # set -u # avoid a undeclared variable
-PROGRAM_VERSION=0.1
+PROGRAM_VERSION=0.1.0
 
 
 
-comp_words_2() {
-    if [[ $cur_arg =~ ^-- ]]; then
-        comp2="--all --group --local --xxx --youtube "
-        comp2+="--others --test --edit --version --help"
-    elif [[ $cur_arg =~ ^-|'' ]]; then
-        comp2="-a -g -l -x -y -o -t -e -v -h"
-    fi
+make_youtube_result() {
+    local i
+    source "$HOME"/git/radio/arr_youtube_result
+    for i in "${!arr_result[@]}"; do
+        _result+=( "$i" )
+    done
+}
+
+comp_words_2_long(){
+    comp2="--all --group --local --xxx --youtube "
+    comp2+="--others --test --edit --version --help"
     COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
     return 0
 }
 
-comp_words_3() {
-    if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
-        comp3="en kr jp mv lt ln lc pl "
-        comp3+="english korean japanese musicvideo "
-        comp3+="livetv livenews livecam playlist"
-    elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
-        if [[ ! $cur_arg =~ ^- ]]; then
-            oIFS="$IFS"
-            IFS=$'\n'
-            comp3=$(printf "%s\n" "${_result[@]}")
-            COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-            IFS="$oIFS"
-            return 0
-        else
-            comp3="-d -u -U"
-        fi
-    elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
-        comp3="-c -C"
-    fi
+comp_words_2_short(){
+    comp2="-a -g -l -x -y -o -t -e -v -h"
+    COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_2() {
+    case "$cur_arg" in
+        --* ) comp_words_2_long  ;;
+        -*  ) comp_words_2_short ;;
+    esac
+    return 0
+}
+
+comp_words_3_group() {
+    comp3="en kr jp mv lt ln lc pl "
+    comp3+="english korean japanese musicvideo "
+    comp3+="livetv livenews livecam playlist"
     COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_3_youtube() {
+    if [[ ! $cur_arg =~ ^- ]]; then
+        make_youtube_result
+        oIFS="$IFS"
+        IFS=$'\n'
+        comp3=$(printf "%s\n" "${_result[@]}")
+        COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+        IFS="$oIFS"
+        return 0
+    else
+        comp3="-d -u -U"
+        COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    fi
+    return 0
+}
+
+comp_words_3_others() {
+    comp3="-c -C"
+    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_3() {
+    case "$pre_arg" in
+        -g | --group   ) comp_words_2_long  ;;
+        -y | --youtube ) comp_words_2_short ;;
+        -o | --others  ) comp_words_2_short ;;
+    esac
     return 0
 }
 
 comp_words_4() {
     if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
         if [[ $pre_arg =~ ^-(u|d)$ ]]; then
+            make_youtube_result
             oIFS="$IFS"
             IFS=$'\n'
             comp4=$(printf "%s\n" "${_result[@]}")
@@ -86,11 +121,7 @@ _radio_completions() {
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
     local comp2 comp3 comp4
     local _result oIFS
-    source "$HOME"/git/radio/arr_youtube_result
-    for i in "${!arr_result[@]}"; do
-        _result+=( "$i" )
-    done
-    case ${#COMP_WORDS[@]} in
+    case "${#COMP_WORDS[@]}" in
         2) comp_words_2 ;;
         3) comp_words_3 ;;
         4) comp_words_4 ;;
