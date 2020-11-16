@@ -39,6 +39,7 @@ make_youtube_result() {
     for i in "${!arr_result[@]}"; do
         _result+=( "$i" )
     done
+    return 0
 }
 
 comp_words_2_long(){
@@ -70,19 +71,27 @@ comp_words_3_group() {
     return 0
 }
 
+comp_words_3_youtube_option(){
+    comp3="-d -u -U"
+    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_3_youtube_no_option(){
+    make_youtube_result
+    oIFS="$IFS"
+    IFS=$'\n'
+    comp3=$(printf "%s\n" "${_result[@]}")
+    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    IFS="$oIFS"
+    return 0
+}
+
 comp_words_3_youtube() {
-    if [[ ! $cur_arg =~ ^- ]]; then
-        make_youtube_result
-        oIFS="$IFS"
-        IFS=$'\n'
-        comp3=$(printf "%s\n" "${_result[@]}")
-        COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-        IFS="$oIFS"
-        return 0
-    else
-        comp3="-d -u -U"
-        COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-    fi
+    case "$cur_arg" in
+        -* ) comp_words_3_youtube_option    ;;
+        *  ) comp_words_3_youtube_no_option ;;
+    esac
     return 0
 }
 
@@ -94,9 +103,9 @@ comp_words_3_others() {
 
 comp_words_3() {
     case "$pre_arg" in
-        -g | --group   ) comp_words_2_long  ;;
-        -y | --youtube ) comp_words_2_short ;;
-        -o | --others  ) comp_words_2_short ;;
+        -g | --group   ) comp_words_3_group   ;;
+        -y | --youtube ) comp_words_3_youtube ;;
+        -o | --others  ) comp_words_3_others  ;;
     esac
     return 0
 }
