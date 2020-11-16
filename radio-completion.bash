@@ -41,9 +41,10 @@ comp_words_2() {
         comp2="-a -g -l -x -y -o -t -e -v -h"
     fi
     COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
+    return 0
 }
 
-comp_words_2() {
+comp_words_3() {
     if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
         comp3="en kr jp mv lt ln lc pl "
         comp3+="english korean japanese musicvideo "
@@ -63,6 +64,20 @@ comp_words_2() {
         comp3="-c -C"
     fi
     COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_4() {
+    if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
+        if [[ $pre_arg =~ ^-(u|d)$ ]]; then
+            oIFS="$IFS"
+            IFS=$'\n'
+            comp4=$(printf "%s\n" "${_result[@]}")
+            COMPREPLY=( $(compgen -W "$comp4" -- "$cur_arg") )
+            IFS="$oIFS"
+        fi
+    fi
+    return 0
 }
 
 _radio_completions() {
@@ -78,17 +93,7 @@ _radio_completions() {
     case ${#COMP_WORDS[@]} in
         2) comp_words_2 ;;
         3) comp_words_3 ;;
-        4)
-            if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
-                if [[ $pre_arg =~ ^-(u|d)$ ]]; then
-                    oIFS="$IFS"
-                    IFS=$'\n'
-                    comp4=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$comp4" -- "$cur_arg") )
-                    IFS="$oIFS"
-                fi
-            fi
-            ;;
+        4) comp_words_4 ;;
     esac
     return 0
 }
