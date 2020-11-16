@@ -15,6 +15,9 @@
 # GNU General Public License at <http://www.gnu.org/licenses/> for
 # more details.
 
+
+### description
+#
 # COMP_WORDS
 #     - an array containing all individual words in the current command line.
 # COMP_CWORD
@@ -23,9 +26,11 @@
 #     - an array variable from which Bash reads the possible completions
 
 
+
 ### TODO
 #
 # column assignment
+
 
 
 # set -u # avoid a undeclared variable
@@ -138,6 +143,9 @@ comp_words_4() {
 }
 
 _radio_completion() {
+    #
+    # main function
+    #
     local     cur_arg="${COMP_WORDS[COMP_CWORD  ]}"
     local     pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local pre_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
@@ -155,4 +163,4 @@ _radio_completion() {
 
 complete -F _radio_completion radio
 
-#  LocalWords:  musicvideo
+#  LocalWords:  musicvideo pre COMPREPLY
