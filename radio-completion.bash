@@ -61,7 +61,7 @@ _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
-    local opt2 opt3 opt4
+    local comp2 comp3 comp4
     local _result oIFS
     source "$HOME"/git/radio/arr_youtube_result
     for i in "${!arr_result[@]}"; do
@@ -70,41 +70,41 @@ _radio_completions() {
     case ${#COMP_WORDS[@]} in
         2)
             if [[ $cur_arg =~ ^-- ]]; then
-                opt2="--all --group --local --xxx "
-                opt2+="--youtube --others --test --edit --version --help"
+                comp2="--all --group --local --xxx --youtube "
+                comp2+="--others --test --edit --version --help"
             elif [[ $cur_arg =~ ^-|'' ]]; then
-                opt2="-a -g -l -x -y -o -t -e -v -h"
+                comp2="-a -g -l -x -y -o -t -e -v -h"
             fi
-            COMPREPLY=( $(compgen -W "$opt2" -- "$cur_arg") )
+            COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
             ;;
         3)
             if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
-                opt3="en kr jp mv lt ln lc pl "
-                opt3+="english korean japanese musicvideo "
-                opt3+="livetv livenews livecam playlist"
+                comp3="en kr jp mv lt ln lc pl "
+                comp3+="english korean japanese musicvideo "
+                comp3+="livetv livenews livecam playlist"
             elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ ! $cur_arg =~ ^- ]]; then
                     oIFS="$IFS"
                     IFS=$'\n'
-                    opt3=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
+                    comp3=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
                     IFS="$oIFS"
                     return 0
                 else
-                    opt3="-d -u -U"
+                    comp3="-d -u -U"
                 fi
             elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
-                opt3="-c -C"
+                comp3="-c -C"
             fi
-            COMPREPLY=( $(compgen -W "$opt3" -- "$cur_arg") )
+            COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
             ;;
         4)
             if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ $pre_arg =~ ^-(u|d)$ ]]; then
                     oIFS="$IFS"
                     IFS=$'\n'
-                    opt4=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$opt4" -- "$cur_arg") )
+                    comp4=$(printf "%s\n" "${_result[@]}")
+                    COMPREPLY=( $(compgen -W "$comp4" -- "$cur_arg") )
                     IFS="$oIFS"
                 fi
             fi
