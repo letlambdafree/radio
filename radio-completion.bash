@@ -63,11 +63,24 @@ comp_words_2() {
     return 0
 }
 
-comp_words_3_group() {
-    comp3="en kr jp mv lt ln lc pl "
-    comp3+="english korean japanese musicvideo "
+comp_words_3_group_long() {
+    comp3="english korean japanese musicvideo "
     comp3+="livetv livenews livecam playlist"
     COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_3_group_short() {
+    comp3="en kr jp mv lt ln lc pl"
+    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+    return 0
+}
+
+comp_words_3_group() {
+    case "$pre_arg" in
+        --group ) comp_words_3_group_long  ;;
+        -g | '' ) comp_words_3_group_short ;;
+    esac
     return 0
 }
 
@@ -79,11 +92,11 @@ comp_words_3_youtube_option() {
 
 comp_words_3_youtube_no_option() {
     make_youtube_result
-    oIFS="$IFS"
+    old_IFS="$IFS"
     IFS=$'\n'
     comp3=$(printf "%s\n" "${_result[@]}")
     COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-    IFS="$oIFS"
+    IFS="$old_IFS"
     return 0
 }
 
@@ -111,25 +124,25 @@ comp_words_3() {
 }
 
 comp_words_4() {
-    if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
+    if [[ $pre_pre_arg =~ ^(-y|--youtube)$ ]]; then
         if [[ $pre_arg =~ ^-(u|d)$ ]]; then
             make_youtube_result
-            oIFS="$IFS"
+            old_IFS="$IFS"
             IFS=$'\n'
             comp4=$(printf "%s\n" "${_result[@]}")
             COMPREPLY=( $(compgen -W "$comp4" -- "$cur_arg") )
-            IFS="$oIFS"
+            IFS="$old_IFS"
         fi
     fi
     return 0
 }
 
 _radio_completion() {
-    local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
-    local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
-    local cur_arg="${COMP_WORDS[COMP_CWORD]}"
+    local     cur_arg="${COMP_WORDS[COMP_CWORD  ]}"
+    local     pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
+    local pre_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local comp2 comp3 comp4
-    local _result oIFS
+    local _result old_IFS
     case "${#COMP_WORDS[@]}" in
         2) comp_words_2 ;;
         3) comp_words_3 ;;
@@ -141,3 +154,5 @@ _radio_completion() {
 
 
 complete -F _radio_completion radio
+
+#  LocalWords:  musicvideo
