@@ -1083,8 +1083,8 @@ display_cached_phrases() {
     local p2="\n${C_40}%s phrases${C_}\n\n"
     local p3="\n${C_220}%s\n${C_240}%s\n${C_}"
     local i=0
-    readarray -t arr_result_sort <<< \
-              $(printf '%s\n' "${!arr_result[@]}" | sort -f)
+    local result_sort=$(printf '%s\n' "${!arr_result[@]}" | sort -f)
+    readarray -t arr_result_sort <<< $result_sort
     for k in "${arr_result_sort[@]}"; do
         ((i++))
         if (( i > DISPLAY_C_PHRASE_LIMIT )); then
