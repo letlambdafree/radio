@@ -1422,6 +1422,7 @@ invalid_other_options() {
  Usage : radio -o option
 
  Option: -c display_color_code
+         -C display_256color_code
 
 EOF
     printf '\n'
@@ -1437,6 +1438,7 @@ without_other_options() {
  Usage : radio -o option
 
  Option: -c display_color_code
+         -C display_256color_code
 
 EOF
     printf '\n'
@@ -1445,10 +1447,10 @@ EOF
 
 other_options() {
     case ${g_arg[1]:-} in
-        -c | --color_code  ) display_color_code    ;;
-        -C | --color_codes ) display_256color_code ;;
-        -*                 ) invalid_other_options ;;
-        *                  ) without_other_options ;;
+        -c | --color_code    ) display_color_code    ;;
+        -C | --256color_code ) display_256color_code ;;
+        -*                   ) invalid_other_options ;;
+        *                    ) without_other_options ;;
     esac
     return 0
 }
