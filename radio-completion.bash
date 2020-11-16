@@ -153,8 +153,8 @@ _radio_completion() {
     #
     # main function
     #
-    local     cur_arg="${COMP_WORDS[COMP_CWORD  ]}"
-    local     pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
+    local cur_arg="${COMP_WORDS[COMP_CWORD]}"
+    local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local pre_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local comp_list _result old_IFS
     case "${#COMP_WORDS[@]}" in
