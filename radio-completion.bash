@@ -33,30 +33,6 @@ PROGRAM_VERSION=0.1
 
 
 
-test_print() {
-    local arg1="${1:-0}"
-    local arg2="$2"
-    local arg3="$3"
-    local itemsnumber=0
-    local p1='\n\e[1;38;5;40m%s item %s\e[0m\n'
-    local p2='\n\e[1;38;5;40m%s items %s\e[0m\n'
-    local p3='\n\e[1;38;5;220m%s: %s\n\e[1;38;5;240m%s\e[0m'
-    printf "$p3" \
-           "${FUNCNAME[1]}()'s at $arg1" \
-           "$arg2" \
-           "$arg3"
-
-    [[ -n $arg3 ]] && itemsnumber=$(wc -l <<< $arg3)
-    if (( itemsnumber == 1 )); then
-        printf "$p1" $itemsnumber
-    elif (( itemsnumber > 1 )); then
-        printf "$p2" $itemsnumber
-    else
-        printf "$p1" no
-    fi
-    return 0
-}
-
 _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
