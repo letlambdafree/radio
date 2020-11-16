@@ -33,6 +33,16 @@ PROGRAM_VERSION=0.1
 
 
 
+comp_words_2() {
+    if [[ $cur_arg =~ ^-- ]]; then
+        comp2="--all --group --local --xxx --youtube "
+        comp2+="--others --test --edit --version --help"
+    elif [[ $cur_arg =~ ^-|'' ]]; then
+        comp2="-a -g -l -x -y -o -t -e -v -h"
+    fi
+    COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
+}
+
 _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
@@ -44,15 +54,7 @@ _radio_completions() {
         _result+=( "$i" )
     done
     case ${#COMP_WORDS[@]} in
-        2)
-            if [[ $cur_arg =~ ^-- ]]; then
-                comp2="--all --group --local --xxx --youtube "
-                comp2+="--others --test --edit --version --help"
-            elif [[ $cur_arg =~ ^-|'' ]]; then
-                comp2="-a -g -l -x -y -o -t -e -v -h"
-            fi
-            COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
-            ;;
+        2) comp_words_2 ;;
         3)
             if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
                 comp3="en kr jp mv lt ln lc pl "
