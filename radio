@@ -36,6 +36,7 @@
 # completion suggest for zsh
 # visit the web-page played by youtube_search's result
 # how to kill all radio with C-c
+#
 
 
 
@@ -110,7 +111,7 @@ E_NO_PARAM=99
 #
 C_='\e[0m'
 for i in {0..255}; do
-    declare -n X=C_${i} # declare -n , eval , export
+    declare -n X=C_$i # declare -n, eval, export
     X="\e[1;38;5;${i}m" # 256 foreground color format
 done
 i=0
@@ -353,7 +354,7 @@ playing_youtube_print() {
     local arg7="$7"
     local arg8="$8"
     local p1="\n${C_130}%s${C_}\n"
-    local p2="\n${C_142}%s | %s | %s | %.2f | %s\n%s${C_}"
+    local p2="\n${C_142}%s | %s | %s | %.2f | %s\n%s${C_}\n"
     local p3="\n${C_144}%s${C_}\n\n"
     local IGNORE_DESCRIPTION_CHARS=3
     local DISPLAY_DESCRIPTION_LINES=10
@@ -1174,10 +1175,10 @@ get_result() {
         local arg1=( "$1" )
     fi
     local i=0 c=0
-    local r_list=
     local k l each
     local head_list dots
     local last_search_date search_count
+    r_list= # need not local
     printf "\n${C_INFO_TITLE}%s | %s | %s${C_}\n\n" \
            "get_lists: $GET_LISTS" \
            "retry_after: $DUMP_RETRY_AFTER"s \
@@ -1455,33 +1456,12 @@ other_options() {
     return 0
 }
 
-
-
-#
-# case uses * ? [...] | as matching pattern
-#
-# it doesn't use regex and variables basically
-#
-# if you need these, use regex condition: [[  =~  ]]
-#
-case ${g_arg[0]:-} in
-    ''             ) play_radio     && exit 0;;
-    -a | --all     ) show_all       && exit 0;;
-    -g | --group   ) play_group     && exit 0;;
-    -l | --local   ) play_local     && exit 0;;
-    -x | --xxx     ) play_xxx       && exit 0;;
-    -y | --youtube ) youtube_search && exit 0;;
-    -o | --others  ) other_options  && exit 0;;
-    -t | --test    ) test_items     && exit 0;;
-    -e | --edit    ) edit_this      && exit 0;;
-    -v | --version ) print_version  && exit 0;;
-    -h | --help    ) help_usage     && exit 0;;
-    -*)
-        printf "\n %s${C_88} %s %s${C_}\n" \
-               'There is no' \
-               "'${g_arg[0]}'" \
-               'option.'
-        cat <<EOF
+invailed_option() {
+    printf "\n %s${C_88} %s %s${C_}\n" \
+           'There is no' \
+           "'${g_arg[0]}'" \
+           'option.'
+    cat <<EOF
 
  Usage : radio [name] or radio option [arg ...]
 
@@ -1497,9 +1477,34 @@ case ${g_arg[0]:-} in
          -h prints help
 
 EOF
-        exit 2
-        ;;
+    return 0
+}
+
+
+
+#
+# case uses * ? [...] | as matching pattern
+#
+# it doesn't use regex and variables basically
+#
+# if you need these, use regex condition: [[  =~  ]]
+#
+# set -x
+case ${g_arg[0]:-} in
+    ''             ) play_radio      && exit 0 ;;
+    -a | --all     ) show_all        && exit 0 ;;
+    -g | --group   ) play_group      && exit 0 ;;
+    -l | --local   ) play_local      && exit 0 ;;
+    -x | --xxx     ) play_xxx        && exit 0 ;;
+    -y | --youtube ) youtube_search  && exit 0 ;;
+    -o | --others  ) other_options   && exit 0 ;;
+    -t | --test    ) test_items      && exit 0 ;;
+    -e | --edit    ) edit_this       && exit 0 ;;
+    -v | --version ) print_version   && exit 0 ;;
+    -h | --help    ) help_usage      && exit 0 ;;
+    -*             ) invailed_option && exit 2 ;;
 esac
+# set +x
 make_namelist "$URL_LIST"
 input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
                   | sed 's/^# //')
