@@ -42,14 +42,14 @@ make_youtube_result() {
     return 0
 }
 
-comp_words_2_long(){
+comp_words_2_long() {
     comp2="--all --group --local --xxx --youtube "
     comp2+="--others --test --edit --version --help"
     COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
     return 0
 }
 
-comp_words_2_short(){
+comp_words_2_short() {
     comp2="-a -g -l -x -y -o -t -e -v -h"
     COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
     return 0
@@ -57,8 +57,8 @@ comp_words_2_short(){
 
 comp_words_2() {
     case "$cur_arg" in
-        --* ) comp_words_2_long  ;;
-        -*  ) comp_words_2_short ;;
+        --*     ) comp_words_2_long  ;;
+        -* | '' ) comp_words_2_short ;;
     esac
     return 0
 }
@@ -71,13 +71,13 @@ comp_words_3_group() {
     return 0
 }
 
-comp_words_3_youtube_option(){
+comp_words_3_youtube_option() {
     comp3="-d -u -U"
     COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
     return 0
 }
 
-comp_words_3_youtube_no_option(){
+comp_words_3_youtube_no_option() {
     make_youtube_result
     oIFS="$IFS"
     IFS=$'\n'
@@ -124,7 +124,7 @@ comp_words_4() {
     return 0
 }
 
-_radio_completions() {
+_radio_completion() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
     local cur_arg="${COMP_WORDS[COMP_CWORD]}"
@@ -140,4 +140,4 @@ _radio_completions() {
 
 
 
-complete -F _radio_completions radio
+complete -F _radio_completion radio
