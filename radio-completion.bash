@@ -43,6 +43,28 @@ comp_words_2() {
     COMPREPLY=( $(compgen -W "$comp2" -- "$cur_arg") )
 }
 
+comp_words_2() {
+    if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
+        comp3="en kr jp mv lt ln lc pl "
+        comp3+="english korean japanese musicvideo "
+        comp3+="livetv livenews livecam playlist"
+    elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
+        if [[ ! $cur_arg =~ ^- ]]; then
+            oIFS="$IFS"
+            IFS=$'\n'
+            comp3=$(printf "%s\n" "${_result[@]}")
+            COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+            IFS="$oIFS"
+            return 0
+        else
+            comp3="-d -u -U"
+        fi
+    elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
+        comp3="-c -C"
+    fi
+    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
+}
+
 _radio_completions() {
     local p_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local pre_arg="${COMP_WORDS[COMP_CWORD-1]}"
@@ -55,27 +77,7 @@ _radio_completions() {
     done
     case ${#COMP_WORDS[@]} in
         2) comp_words_2 ;;
-        3)
-            if [[ $pre_arg =~ ^(-g|--group)$ ]]; then
-                comp3="en kr jp mv lt ln lc pl "
-                comp3+="english korean japanese musicvideo "
-                comp3+="livetv livenews livecam playlist"
-            elif [[ $pre_arg =~ ^(-y|--youtube)$ ]]; then
-                if [[ ! $cur_arg =~ ^- ]]; then
-                    oIFS="$IFS"
-                    IFS=$'\n'
-                    comp3=$(printf "%s\n" "${_result[@]}")
-                    COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-                    IFS="$oIFS"
-                    return 0
-                else
-                    comp3="-d -u -U"
-                fi
-            elif [[ $pre_arg =~ ^(-o|--others)$ ]]; then
-                comp3="-c -C"
-            fi
-            COMPREPLY=( $(compgen -W "$comp3" -- "$cur_arg") )
-            ;;
+        3) comp_words_3 ;;
         4)
             if [[ $p_pre_arg =~ ^(-y|--youtube)$ ]]; then
                 if [[ $pre_arg =~ ^-(u|d)$ ]]; then
