@@ -1139,7 +1139,7 @@ update_cached_phrase() {
     #
     local last_search_date s_rate
     local k
-    local r_list=
+    r_list=
     s_phrase="${g_arg[@]:2}"
     for k in "${!arr_result[@]}"; do
         if [[ $k == $s_phrase ]]; then
@@ -1305,14 +1305,16 @@ get_result() {
                             "$r_list")
             arr_result+=( ["$k"]="$r_list" ) # test
         done
-        # reset vars
-        result=
-        r_list= # need
-        dots=
-        c=0
-        $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null &
-        printf "\n ${C_98}%s${C_}\n\n" \
-               "'$k' is updated"
+        # reset vars for update_cached_all()
+        if [[ ${FUNCNAME[1]} == update_cached_all ]]; then
+            result=
+            r_list= # need
+            dots=
+            c=0
+            $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null &
+            printf "\n ${C_98}%s${C_}\n\n" \
+                   "'$k' is updated"
+        fi
     done
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
     source "$BASH_COMPLETION_PATH"
