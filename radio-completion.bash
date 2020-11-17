@@ -33,7 +33,7 @@
 
 
 
-_make_youtube_result() {
+__make_youtube_result() {
     local i
     source "$HOME"/git/radio/arr_youtube_result
     for i in "${!arr_result[@]}"; do
@@ -42,106 +42,106 @@ _make_youtube_result() {
     return 0
 }
 
-_comp_2_long() {
-    comp_list="--all --group --local --xxx --youtube "
-    comp_list+="--others --test --edit --version --help"
+__comp_2_long() {
+    comp_list='--all --group --local --xxx --youtube '
+    comp_list+='--others --test --edit --version --help'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     return 0
 }
 
-_comp_2_short() {
-    comp_list="-a -g -l -x -y -o -t -e -v -h"
+__comp_2_short() {
+    comp_list='-a -g -l -x -y -o -t -e -v -h'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     return 0
 }
 
-_comp_2() {
+__comp_2() {
     case "$cur_arg" in
-        --*     ) _comp_2_long  ;;
-        -* | '' ) _comp_2_short ;;
+        --*     ) __comp_2_long  ;;
+        -* | '' ) __comp_2_short ;;
     esac
     return 0
 }
 
-_comp_3_group_long() {
-    comp_list="english korean japanese musicvideo "
-    comp_list+="livetv livenews livecam playlist"
+__comp_3_group_long() {
+    comp_list='english korean japanese musicvideo '
+    comp_list+='livetv livenews livecam playlist'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     return 0
 }
 
-_comp_3_group_short() {
-    comp_list="en kr jp mv lt ln lc pl"
+__comp_3_group_short() {
+    comp_list='en kr jp mv lt ln lc pl'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     return 0
 }
 
-_comp_3_group() {
+__comp_3_group() {
     case "$pre_arg" in
-        --group ) _comp_3_group_long  ;;
-        -g | '' ) _comp_3_group_short ;;
+        --group ) __comp_3_group_long  ;;
+        -g | '' ) __comp_3_group_short ;;
     esac
     return 0
 }
 
-_comp_3_youtube_option() {
-    comp_list="-d -u -U"
+__comp_3_youtube_option() {
+    comp_list='-d -u -U'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     return 0
 }
 
-_comp_3_youtube_no_option() {
-    _make_youtube_result
+__comp_3_youtube_no_option() {
+    __make_youtube_result
     old_IFS="$IFS"
     IFS=$'\n'
-    comp_list=$(printf "%s\n" "${_result[@]}")
+    comp_list=$(printf '%s\n' "${_result[@]}")
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
     IFS="$old_IFS"
     return 0
 }
 
-_comp_3_youtube() {
+__comp_3_youtube() {
     case "$cur_arg" in
-        -* ) _comp_3_youtube_option    ;;
-        *  ) _comp_3_youtube_no_option ;;
+        -* ) __comp_3_youtube_option    ;;
+        *  ) __comp_3_youtube_no_option ;;
     esac
     return 0
 }
 
-_comp_3_others_long() {
-    comp_list="--color_code --256color_code"
+__comp_3_others_long() {
+    comp_list='--color_code --256color_code'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
 }
 
-_comp_3_others_short() {
-    comp_list="-c -C"
+__comp_3_others_short() {
+    comp_list='-c -C'
     COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
 }
 
-_comp_3_others() {
+__comp_3_others() {
     case "$cur_arg" in
-        --*     ) _comp_3_others_long  ;;
-        -* | '' ) _comp_3_others_short ;;
+        --*     ) __comp_3_others_long  ;;
+        -* | '' ) __comp_3_others_short ;;
     esac
     return 0
 }
 
-_comp_3() {
+__comp_3() {
     case "$pre_arg" in
-        -g | --group   ) _comp_3_group   ;;
-        -y | --youtube ) _comp_3_youtube ;;
-        -o | --others  ) _comp_3_others  ;;
+        -g | --group   ) __comp_3_group   ;;
+        -y | --youtube ) __comp_3_youtube ;;
+        -o | --others  ) __comp_3_others  ;;
     esac
     return 0
 }
 
-_comp_4() {
+__comp_4() {
     if [[ $pre_pre_arg =~ ^(-y|--youtube)$ ]]; then
         if [[ $pre_arg =~ ^-(u|d)$ ]]; then
-            _make_youtube_result
+            __make_youtube_result
             old_IFS="$IFS"
             IFS=$'\n'
-            comp_list=$(printf "%s\n" "${_result[@]}")
+            comp_list=$(printf '%s\n' "${_result[@]}")
             COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
             IFS="$old_IFS"
         fi
@@ -149,7 +149,7 @@ _comp_4() {
     return 0
 }
 
-_radio_completion() {
+__radio_completion() {
     #
     # main function
     #
@@ -158,15 +158,15 @@ _radio_completion() {
     local pre_pre_arg="${COMP_WORDS[COMP_CWORD-2]}"
     local comp_list _result old_IFS
     case "${#COMP_WORDS[@]}" in
-        2) _comp_2 ;;
-        3) _comp_3 ;;
-        4) _comp_4 ;;
+        2) __comp_2 ;;
+        3) __comp_3 ;;
+        4) __comp_4 ;;
     esac
     return 0
 }
 
 
 
-complete -F _radio_completion radio
+complete -F __radio_completion radio
 
 #  LocalWords:  musicvideo pre COMPREPLY
