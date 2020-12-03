@@ -314,9 +314,9 @@ print_shuffle_list() {
     local items_number=0
     printf "$p1" shuffle_list
     printf "$p2" \
-           "$(printf %b "$arg1")"
-    #      ^            ^     ^ ^
-    # need " " for printf and " " for arg1
+           "$(printf %b "$arg1" | sed 's/\\"/"/g')"
+    #      ^            ^     ^                   ^
+    # need " " for printf output and arg1
     #
     [[ -n $arg1 ]] && items_number=$(wc -l <<< $arg1)
     if (( n_init_shuffle_list == 0 )); then
@@ -639,6 +639,22 @@ play_youtube() {
                           "$p_uploader" \
                           "$p_webpage_url" \
                           "$p_description"
+    #
+    # in mpv.conf
+    #
+    # no     complete silence
+    # fatal  fatal messages only
+    # error  error messages
+    # warn   warning messages
+    # info   informational messages
+    # status status messages (default)
+    # v      verbose messages
+    # debug  debug messages
+    # trace  very noisy debug messages
+    #
+    # msg-level=all=error
+    #
+    # or
     #
     # 1>/dev/null disable information
     # 2>/dev/null disable process-bar
@@ -1082,7 +1098,7 @@ play_xxx() { # private
 display_cached_phrases() {
     local p1="\n${C_40}%s phrase${C_}\n\n"
     local p2="\n${C_40}%s phrases${C_}\n\n"
-    local p3="\n${C_220}%s\n${C_240}%s\n${C_}"
+    local p3="\n${C_220}%s\n${C_240}%s${C_}"
     local i=0
     local result_sort=$(printf '%s\n' "${!arr_result[@]}" | sort -f)
     readarray -t arr_result_sort <<< $result_sort
@@ -1195,14 +1211,14 @@ get_result() {
             if (( c % 10 == 1)); then
                 local p2="\r${C_117}%s\e[8m %s${C_}" # 8:hidden test
                 printf "$p2" \
-                       "'$k': $i/${#arg1[@]}" \
+                       "($i/${#arg1[@]}) '$k' " \
                        ${dots:-.}
                 dots=.
             else
                 dots+=.
             fi
             printf "$p3" \
-                   "'$k': $i/${#arg1[@]}" \
+                   "($i/${#arg1[@]}) '$k' " \
                    $dots
             result=$(youtube-dl -j ytsearch$GET_LISTS:"$k")
             [[ -z $result ]] && sleep $DUMP_RETRY_AFTER && continue
@@ -1312,8 +1328,8 @@ get_result() {
             dots=
             c=0
             $PLAYER "$DUMP_SUCCESS_SOUND_PATH" &>/dev/null &
-            printf "\n ${C_98}%s${C_}\n\n" \
-                   "'$k' is updated"
+            printf " ${C_98}%s${C_}\n\n" \
+                   "updated."
         fi
     done
     declare -p arr_result > "$ARR_YOUTUBE_RESULT"
