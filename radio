@@ -304,7 +304,7 @@ test_print() {
 
 print_shuffle_list() {
     local arg1="$1"
-    local p1="\n${C_220}%s${C_}\n"
+    local p1="\n${C_220}%s${C_}"
     local p2="\n${C_240}%s${C_}\n"
     local p3="\n${C_196}%s${C_}\n\n"
     local p4="${C_24}%s${C_}"
@@ -324,13 +324,13 @@ print_shuffle_list() {
     elif (( n_init_shuffle_list == 1 )); then
         printf "$p7" '1 list'
     elif (( items_number == 1 )); then
-        printf "\n${p7}${p6}${p5} ${p4}\n" \
+        printf "${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
                'list'
     elif (( items_number > 1 )); then
-        printf "\n${p7}${p6}${p5} ${p4}\n" \
+        printf "${p7}${p6}${p5} ${p4}\n" \
                $items_number \
                '/' \
                $n_init_shuffle_list \
@@ -735,7 +735,9 @@ play_radio() {
 }
 
 show_all(){
-    radio .
+    radio ..
+    #     ^^
+    # one . increases x3 items
     return 0
 }
 
@@ -1475,7 +1477,7 @@ other_options() {
 }
 
 invailed_option() {
-    printf "\n %s${C_88} %s %s${C_}\n" \
+    printf "\n %s${C_88} %s ${C_}%s\n" \
            'There is no' \
            "'${g_arg[0]}'" \
            'option.'
@@ -1485,12 +1487,12 @@ invailed_option() {
 
  Option: -a displays all urls
          -g {en|kr|jp|mv|lt|ln|lc|pl} plays a group
-         -l ["regex"] plays a shuffled local music.
-         -x ["regex"] plays a XXX for private.
+         -l ["regex"] plays a shuffled local music
+         -x ["regex"] plays a XXX for private
          -y [option] [phrase] searches a phrase in youtube
          -o other options
          -t tests all radios
-         -e edit this script.
+         -e edit this script
          -v prints version
          -h prints help
 
