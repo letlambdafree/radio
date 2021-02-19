@@ -613,24 +613,42 @@ play_youtube() {
     local p_title p_date p_average_rating p_view_count
     local p_duration p_uploader p_webpage_url p_description
     local s1
-    # test_print arg1
-    s1=$(printf '%s%s%s%s%s%s%s%s' \
-                '^"title": "\(.*\)" ' \
-                '"upload_date": "\([0-9]\{8\}\)" ' \
-                '"duration": \([0-9.]\+\) ' \
-                '"view_count": \([0-9]\+\) ' \
-                '"average_rating": \([0-9.]\+\) ' \
-                '"uploader": "\(.*\)" ' \
-                '"webpage_url": "\(.*\)" ' \
-                '"description": "\(.*\)"$')
-    p_title=$(sed "s/$s1/\1/" <<< $arg1)
-    p_date=$(sed "s/$s1/\2/" <<< $arg1)
-    p_duration=$(sed "s/$s1/\3/" <<< $arg1)
-    p_view_count=$(sed "s/$s1/\4/" <<< $arg1)
-    p_average_rating=$(sed "s/$s1/\5/" <<< $arg1)
-    p_uploader=$(sed "s/$s1/\6/" <<< $arg1)
-    p_webpage_url=$(sed "s/$s1/\7/" <<< $arg1)
-    p_description=$(sed "s/$s1/\8/" <<< $arg1)
+    #
+    # s1 is something wrong
+    #
+    # s1=$(printf '%s%s%s%s%s%s%s%s' \
+    #             '"title": "\(.*\)" ' \
+    #             '"upload_date": "\([0-9]\{8\}\)" ' \
+    #             '"duration": \([0-9]\+\) ' \
+    #             '"view_count": \([0-9]\+\) ' \
+    #             '"average_rating": \([0-9.]\+\) ' \
+    #             '"uploader": "\(.*\)" ' \
+    #             '"webpage_url": "\(.*\)" ' \
+    #             '"description": "\(.*\)"')
+    # p_title=$(sed "s/$s1/\1/" <<< $arg1)
+    # p_date=$(sed "s/$s1/\2/" <<< $arg1)
+    # p_duration=$(sed "s/$s1/\3/" <<< $arg1)
+    # p_view_count=$(sed "s/$s1/\4/" <<< $arg1)
+    # p_average_rating=$(sed "s/$s1/\5/" <<< $arg1)
+    # p_uploader=$(sed "s/$s1/\6/" <<< $arg1)
+    # p_webpage_url=$(sed "s/$s1/\7/" <<< $arg1)
+    # p_description=$(sed "s/$s1/\8/" <<< $arg1)
+    p_title=$(sed 's/"title": "//' <<< $arg1 \
+                  | sed 's/" "upload_date":.*//')
+    p_date=$(sed 's/.*"upload_date": "//' <<< $arg1 \
+                 | sed 's/" "duration":.*//')
+    p_duration=$(sed 's/.*"duration": //' <<< $arg1 \
+                     | sed 's/ "view_count":.*//')
+    p_view_count=$(sed 's/.*"view_count": //' <<< $arg1 \
+                       | sed 's/ "average_rating":.*//')
+    p_average_rating=$(sed 's/.*"average_rating": //' <<< $arg1 \
+                           | sed 's/ "uploader":.*//')
+    p_uploader=$(sed 's/.*"uploader": "//' <<< $arg1 \
+                     | sed 's/" "webpage_url":.*//')
+    p_webpage_url=$(sed 's/.*"webpage_url": "//' <<< $arg1 \
+                        | sed 's/" "description":.*//')
+    p_description=$(sed 's/.*"description": "//' <<< $arg1 \
+                        | sed 's/"//')
     playing_youtube_print "$p_title" \
                           $p_date \
                           $p_duration \
@@ -873,9 +891,9 @@ select_list() {
         sleep 0.1 # needed for C-c
     elif (( grepcount > 1 )); then
         if [[ ${FUNCNAME[@]} =~ youtube_search ]]; then
-            s1='s/"title": "\(.*\)" "upload_date": ".*/\1/'
-            input_name_part=$(sed "$s1" <<< $arg2 \
-                                  | sed 's/\\n/ /')
+            input_name_part=$(sed 's/"title": "//' <<< $arg2 \
+                                  | sed 's/" "upload_date":.*//' \
+                                  | sed 's/\\n/ /g')
             #                              ^^^
             # "title" "도시의 그림자 -\n이 어둠의 이슬픔"
             #                      ^^
@@ -1263,7 +1281,7 @@ get_result() {
             # r_description=$(grep -oP "$g8" <<< $result \
             #                     | sed 's/, "upload_date": $//')
             #
-            # To use jq is simpler than grep in json
+            # jq is better than grep in json
             #
             r_title=$(jq '.title' <<< $result \
                           | sed 's/.*/"title": \0/')
@@ -1558,4 +1576,4 @@ input_lines=$(grep -v "$SKIP_PATTERN" <<< $input_lines \
 # test_print input_lines
 select_list "$URL_LIST" "$input_lines"
 
-#  LocalWords:  dl ytsearch
+#  LocalWords:  dl ytsearch jq
