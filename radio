@@ -1225,7 +1225,7 @@ get_result() {
             result=$(youtube-dl -j ytsearch$GET_LISTS:"$k")
             [[ -z $result ]] && sleep $DUMP_RETRY_AFTER && continue
             #
-            # youtube-dl json_dump_key_order:
+            # youtube-dl json_dump_keys:
             #
             # "id"            "uploader"           "uploader_id"
             # "uploader_url"  "channel_id"         "channel_url"
@@ -1237,24 +1237,51 @@ get_result() {
             # "webpage_url"   "view_count"         "like_count"
             # "dislike_count" "average_rating"     "formats"
             #
-            r_title=$(grep -oP "$g1" <<< $result \
-                          | sed 's/, "formats": .*//')
-            r_date=$(grep -oP "$g2" <<< $result \
-                         | sed 's/, "$//')
-            r_duration=$(grep -oP "$g3" <<< $result \
-                             | sed 's/, "view_count": .*//' \
+            # local g1='"title": ".*?", "formats": '
+            # local g2='"upload_date": ".*?", "'
+            # local g3='"duration": .*?, "view_count": '
+            # local g4='"average_rating": .*?,'
+            # local g5='"view_count": .*?,'
+            # local g6='"uploader": ".*?", "'
+            # local g7='"webpage_url": ".*?",'
+            # local g8='"description": ".*?", "upload_date": '
+            # r_title=$(grep -oP "$g1" <<< $result \
+            #               | sed 's/, "formats": $//')
+            # r_date=$(grep -oP "$g2" <<< $result \
+            #              | sed 's/, "$//')
+            # r_duration=$(grep -oP "$g3" <<< $result \
+            #                  | sed 's/, "view_count": $//' \
+            #                  | sed 's/\.0//') # workaround for 1234.0
+            # r_rating=$(grep -oP "$g4" <<< $result \
+            #                | sed 's/,$//')
+            # r_count=$(grep -oP "$g5" <<< $result \
+            #               | sed 's/,$//')
+            # r_uploader=$(grep -oP "$g6" <<< $result \
+            #                  | sed 's/, "$//')
+            # r_url=$(grep -oP "$g7" <<< $result \
+            #             | sed 's/,$//')
+            # r_description=$(grep -oP "$g8" <<< $result \
+            #                     | sed 's/, "upload_date": $//')
+            #
+            # To use jq is simpler than grep in json
+            #
+            r_title=$(jq '.title' <<< $result \
+                          | sed 's/.*/"title": \0/')
+            r_date=$(jq '.upload_date' <<< $result \
+                         | sed 's/.*/"upload_date": \0/')
+            r_duration=$(jq '.duration' <<< $result \
+                             | sed 's/.*/"duration": \0/' \
                              | sed 's/\.0//') # workaround for 1234.0
-            r_rating=$(grep -oP "$g4" <<< $result \
-                           | sed 's/,$//')
-            r_count=$(grep -oP "$g5" <<< $result \
-                          | sed 's/,$//')
-            r_uploader=$(grep -oP "$g6" <<< $result \
-                             | sed 's/, "$//')
-            r_url=$(grep -oP "$g7" <<< $result \
-                        | sed 's/,$//')
-            r_description=$(grep -oP "$g8" <<< $result \
-                                | sed 's/, "upload_date": //')
-            # test_print r_description
+            r_count=$(jq '.view_count' <<< $result \
+                          | sed 's/.*/"view_count": \0/')
+            r_rating=$(jq '.average_rating' <<< $result \
+                           | sed 's/.*/"average_rating": \0/')
+            r_uploader=$(jq '.uploader' <<< $result \
+                             | sed 's/.*/"uploader": \0/')
+            r_url=$(jq '.webpage_url' <<< $result \
+                        | sed 's/.*/"webpage_url": \0/')
+            r_description=$(jq '.description' <<< $result \
+                                | sed 's/.*/"description": \0/')
             readarray -t arr_title <<< $r_title
             readarray -t arr_date <<< $r_date
             readarray -t arr_duration <<< $r_duration
