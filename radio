@@ -1238,11 +1238,11 @@ get_result() {
             # "dislike_count" "average_rating"     "formats"
             #
             r_title=$(grep -oP "$g1" <<< $result \
-                          | sed 's/, "alt_title": .*//')
+                          | sed 's/, "formats": .*//')
             r_date=$(grep -oP "$g2" <<< $result \
                          | sed 's/, "$//')
             r_duration=$(grep -oP "$g3" <<< $result \
-                             | sed 's/, "age_limit": .*//' \
+                             | sed 's/, "view_count": .*//' \
                              | sed 's/\.0//') # workaround for 1234.0
             r_rating=$(grep -oP "$g4" <<< $result \
                            | sed 's/,$//')
@@ -1253,7 +1253,7 @@ get_result() {
             r_url=$(grep -oP "$g7" <<< $result \
                         | sed 's/,$//')
             r_description=$(grep -oP "$g8" <<< $result \
-                                | sed 's/, "categories": //')
+                                | sed 's/, "upload_date": //')
             # test_print r_description
             readarray -t arr_title <<< $r_title
             readarray -t arr_date <<< $r_date
@@ -1408,15 +1408,15 @@ youtube_search() {
     local c_phrase s_rate
     local last_search_date
     local i=0 c=0
-    local s1='s/.*" "upload_date": "\(.*\)" "duration": .*/\1/'
-    local g1='"title": ".*?", "alt_title": '
+    local s1='s/.*" "upload_date": "\(.*\)" "uploader": .*/\1/'
+    local g1='"title": ".*?", "formats": '
     local g2='"upload_date": ".*?", "'
-    local g3='"duration": .*?, "age_limit": '
+    local g3='"duration": .*?, "view_count": '
     local g4='"average_rating": .*?,'
     local g5='"view_count": .*?,'
     local g6='"uploader": ".*?", "'
     local g7='"webpage_url": ".*?",'
-    local g8='"description": ".*?", "categories": '
+    local g8='"description": ".*?", "upload_date": '
     local p1="\n ${C_88}%s${C_}\n\n"
     local p2="\r${C_117}%s${C_0} %s${C_}"
     local p3="\r${C_117}%s${C_40} %s${C_}"
