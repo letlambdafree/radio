@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# KBS World Japanese Radio http://101.79.244.199:1935/cocotv/_definst_/CH00007/playlist.m3u8
+# Kishiwada Radio http://61.89.201.27:8000/radikishi.mp3
+# Kyoto Living FM (京都リビング FM/きょうと りびんぐ FM) http://musicbird.leanstream.co/JCB104-MP3
+# FmHaro!76.1（エフエムハロー!） http://musicbird.leanstream.co/JCB034-MP3
+# FM Fujiyama (FMふじやま, JOZZ3CA-FM, 77.6 MHz, Fujikawaguchiko, Yamanashi) http://musicbird.leanstream.co/JCB026-MP3
+# Shuunan FM (しゅうなんFM, JOZZ8AJ-FM, 78.4 MHz, Shūnan, Yamaguchi) http://musicbird.leanstream.co/JCB085-MP3
+# Air Tesshi (Airてっし, JOZZ1AU-FM, 78.8 MHz, Nayoro, Hokkaido) http://musicbird.leanstream.co/JCB003-MP3
+# Umeda FM Be Happy! (ウメダFM Be Happy! 789/エフエムキタ, JOZZ7AK-FM, 78.9MHz, Kita-ku, Osaka) http://musicbird.leanstream.co/JCB068-MP3
+# Happy FM Itami (ハッピーエフエムいたみ, JOZZ7AJ-FM, 79.4 MHz, Itami, Hyōgo) http://musicbird.leanstream.co/JCB070-MP3
+# FM Yame (FM八女, JOZZ0BY-FM, 80.1 MHz, Yame, Fukuoka) http://musicbird.leanstream.co/JCB086-MP3
+# FM Hanako (JOZZ7AA-FM, 82.4 MHz, Moriguchi City, Osaka) http://musicbird.leanstream.co/JCB069-MP3
+# Kamakura FM 82.8 (かまくらFM, JOZZ3AF-FM, 82.8 MHz, Kamakura, Kanagawa) http://musicbird.leanstream.co/JCB016-MP3?args=tunein_02
+# Ichikawa Urara FM (市川うららFM. JOZZ3AY-FM, 83.0 MHz, Ichikawa, Chiba) http://musicbird.leanstream.co/JCB020-MP3
+# Humming FM Takarazuka (ハミングFM宝塚, JOZZ7AT-FM, 83.5 MHz, Takarazuka, Hyōgo) http://musicbird.leanstream.co/JCB071-MP3
+# 84.3 FM Edogawa (FMえどがわ, JOZZ3AS-FM, Edogawa City, Tokyo) http://musicbird.leanstream.co/JCB032-MP3
+# Shonan Magic Wave (湘南マジックウェィブ, JOZZ3CI-FM, 85.6 MHz, Ōiso, Kanagawa) http://musicbird.leanstream.co/JCB018-MP3
+# FM Hana (FMはな, JOZZ1AZ-FM, 87.0 MHz, Nakashibetsu, Hokkaido) http://musicbird.leanstream.co/JCB001-MP3
+# Banana FM (バナナエフエム, JOZZ7BE-FM, 87.7 MHz, Wakayama City) http://musicbird.leanstream.co/JCB075-MP3

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Дария «Нуки» Ставрович «Zombie» - Слепые прослушивания – Голос – Сезон 5 https://www.youtube.com/watch?v=pLN-EnS_QLA
+# Дария Ставрович «Круги на воде» - Нокауты - Голос - Сезон 5 https://www.youtube.com/watch?v=AW3EJiRD0ho
+# Дария Ставрович «Chandelier» - Полуфинал - Голос - Сезон 5 https://www.youtube.com/watch?v=ltV1yoeIoPM
+# Sting - Shape of My Heart (Leon) https://www.youtube.com/watch?v=QK-Z1K67uaA
+# What's up - EXCELENTE COVER!!! https://www.youtube.com/watch?v=1NNE0b55AoM
+# nakashima mika - 僕が死のうと思ったのは (내가 죽으려고 마음먹었던 것은) https://www.youtube.com/watch?v=C6st9z_iaao
+# nakashima mika - 中島美嘉『雪の華』 Music Video https://www.youtube.com/watch?v=oIoaIlPpIcA
+# Amazarash(아마자라시 - 한글자막)  - 내가 죽으려고 생각한 것은【acoustic live ver】 https://www.youtube.com/watch?v=6SNscvxLP4E
+# Sia - Big Girls Cry (Official Video) https://www.youtube.com/watch?v=4NhKWZpkw1Q
+# Sia - The Greatest https://www.youtube.com/watch?v=GKSRyLdjsPA
+# Sia - Together (from the motion picture Music) https://www.youtube.com/watch?v=vnfGni4_RlI
+# Sia - Alive https://www.youtube.com/watch?v=t2NgsJrrAyM
+# Sia - Unstoppable https://www.youtube.com/watch?v=H3evCDEXp4I
+# Sia - Chandelier (Official Music Video) https://www.youtube.com/watch?v=2vjPBrBU-TM
+# Sia - Elastic Heart feat. Shia LaBeouf & Maddie Ziegler (Official Video) https://www.youtube.com/watch?v=KWZGAExj-es
+# Sia - Courage to Change (Live at the 2020 Billboard Music Awards) https://www.youtube.com/watch?v=j4OXRtQy5As
+# LSD - Thunderclouds (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=mILth-K6KvM
+# LSD - No New Friends (Official Video) ft. Labrinth, Sia, Diplo https://www.youtube.com/watch?v=kkUIdK9eaIk
+# LSD - Audio (Official Video) ft. Sia, Diplo, Labrinth https://www.youtube.com/watch?v=tjA7nAHOAww
+# Queen - Love of My Life https://www.youtube.com/watch?v=v3xwCkhmies
+# Queen - Love Of My Life (Live, 1979) https://www.youtube.com/watch?v=Idj__EDPCKk
+# Queen - Somebody To Love - HD Live - 1981 Montreal https://www.youtube.com/watch?v=aA2IRoPFIn0
+# Queen - Bohemian Rhapsody (Live at Rock Montreal, 1981) [HD] https://www.youtube.com/watch?v=N0dbGGvsjf8
+# radiohead - Creep https://www.youtube.com/watch?v=XFkzRNyygfk
+# Radiohead - Creep (Best Live Performance) https://www.youtube.com/watch?v=k3_RU30tEIE
+# The Cranberries - Zombie 1999 Live Video https://www.youtube.com/watch?v=8MuhFxaT7zo
+# This sadness of this darkness https://www.youtube.com/watch?v=9_FSnSQ82T0
+# 도시의 그림자 - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=BLPQySIh2Jk --start=00:12 --end=04:16 --volume=180
+# 도시의 그림자(Shadow of City) - 이 어둠의 이 슬픔 (1986) https://www.youtube.com/watch?v=LW14PKtNvws --start=#3 --end=#4
+# 노래얼_김옥희_이 어둠의 이 슬픔_고대 85학번 입학 30주년 기념 모교방문 축제 https://www.youtube.com/watch?v=cmNekU_svwY&list=RDcmNekU_svwY
+# 강지민 - 이 어둠의 이 슬픔 (도시의 그림자) https://www.youtube.com/watch?v=lg6IKzPdoes --volume=70
+# 심수봉 - 백만송이 장미 (1997년 6월 1일 이소라의 프로포즈) https://www.youtube.com/watch?v=z3Lkc8fEsww
+# 떼창 할 수 밖에 없는 심수봉 - 남자는 배 여자는 항구♬ [유희열의 스케치북/You Heeyeol's Sketchbook] 20191220 https://www.youtube.com/watch?v=uRU58V_59jk
+# 블랙홀(Black Hole) - 깊은 밤의 서정곡 https://www.youtube.com/watch?v=946hIajM-Hc
+#===== local music video file
+# Frozen2 - Into the Unknown /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#5 --end=20:06
+# Frozen2 - Show Yourself /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#15 --end=1:07:07
+# Frozen2 - The Next Right Thing /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=#17 --end=1:17:24
+# Frozen2 - Some things never change /mnt/data/Videos/Frozen 2 (2019)  [1080p x265 10bit FS93 Joy].mkv --start=09:13 --end=12:38
+# Moana - how far I'll go /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=#4 --end=18:45
+# Moana - I am Moana /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:20:54 --end=1:22:25
+# Moana - Where you are /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=07:45 --end=10:15
+# Moana - You're welcome /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=38:20 --end=41:04
+# Moana - shine /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=1:01:28 --end=1:04:45
+# Moana - Tulou Tagaoa /mnt/data/Videos/Moana (2016) 1080p 5.1 - 2.0 x264 Phun Psyz.mp4 --start=23:50 --end=26:00
+# Les.Miserables 2012 - Look down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=55 --end=5:26
+# Les.Miserables 2012 - I Dreamed A Dream /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=27:17 --end=31:51
+# Les.Miserables 2012 - The Confrontation /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=43:20 --end=45:10
+# Les.Miserables 2012 - Paris / Look Down /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:06:42 --end=1:09:36
+# Les.Miserables 2012 - On My Own /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:28:52 --end=1:32:00
+# Les.Miserables 2012 - Do You Hear The People Sing? /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=1:35:35 --end=1:37:44
+# Les.Miserables 2012 - Epilogue /mnt/data/Videos/Les.Miserables.2012.1080p.BluRay.x265-RARBG.mp4 --start=2:27:55 --end=2:29:40
+#===== ani-opening
+# Ghost in the shell 1995 - Original Soundtrack /mnt/data/Videos/Ghost.in.the.Shell.1995.JAPANESE.1080p.US.BluRay.H264.AAC-VXT.mp4 --start=03:56 --end=08:20
+# Neon Genesis Evangelion (A Cruel Angel's Thesis) Anime Intro Opening Theme HD BluRay (Best Quality) https://www.youtube.com/watch?v=nU21rCWkuJw
+# Read or Die Opening https://www.youtube.com/watch?v=jsBpraFks0Y
