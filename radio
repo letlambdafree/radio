@@ -56,8 +56,8 @@ LOCAL_MUSIC_EXT='\.(mp3|flac)$'
 SCRIPT_PATH=$(realpath "$g_arg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
 SCRIPT_NAME="${SCRIPT_PATH##*/}"
-LIST_DIR="$SCRIPT_DIR"/lists/
-COMPLETION_DIR="$SCRIPT_DIR"/completions/
+LISTS_DIR="$SCRIPT_DIR"/lists/
+COMPLETIONS_DIR="$SCRIPT_DIR"/completions/
 ARR_YOUTUBE_RESULT="$LISTS_DIR"/arr_youtube_result
 ENGLISH_RADIO_PATH="$LISTS_DIR"/english_radio
 KOREAN_RADIO_PATH="$LISTS_DIR"/korean_radio
@@ -89,8 +89,8 @@ URL_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                "$XXX_PATH")
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
 YT_PREFIX='https://www.youtube.com/watch?v='
-BASH_COMPLETION_PATH="$COMPLETION_DIR"/radio-completion.bash
-ZSH_COMPLETION_PATH="$COMPLETION_DIR"/radio-completion.zsh
+BASH_COMPLETION_PATH="$COMPLETIONS_DIR"/radio-completion.bash
+ZSH_COMPLETION_PATH="$COMPLETIONS_DIR"/radio-completion.zsh
 REPORT_PATH="$SCRIPT_DIR"/report
 REPORT_START_LINE='### ERROR REPORT'
 TEST_TIME=10 # secs
