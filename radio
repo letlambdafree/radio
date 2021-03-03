@@ -56,17 +56,19 @@ LOCAL_MUSIC_EXT='\.(mp3|flac)$'
 SCRIPT_PATH=$(realpath "$g_arg0") # test
 SCRIPT_DIR="${SCRIPT_PATH%/*}"
 SCRIPT_NAME="${SCRIPT_PATH##*/}"
-ARR_YOUTUBE_RESULT="$SCRIPT_DIR"/arr_youtube_result
-ENGLISH_RADIO_PATH="$SCRIPT_DIR"/english_radio
-KOREAN_RADIO_PATH="$SCRIPT_DIR"/korean_radio
-JAPANESE_RADIO_PATH="$SCRIPT_DIR"/japanese_radio
-LIVE_CAMERA_PATH="$SCRIPT_DIR"/live_camera
-LIVE_NEWS_PATH="$SCRIPT_DIR"/live_news
-LIVE_TV_PATH="$SCRIPT_DIR"/live_tv
-LOCAL_MUSIC_PATH="$SCRIPT_DIR"/local_music
-MUSIC_VIDEO_PATH="$SCRIPT_DIR"/music_video
-PLAY_LIST_PATH="$SCRIPT_DIR"/play_list
-XXX_PATH="$SCRIPT_DIR"/xxx # no public
+LIST_DIR="$SCRIPT_DIR"/lists/
+COMPLETION_DIR="$SCRIPT_DIR"/completions/
+ARR_YOUTUBE_RESULT="$LISTS_DIR"/arr_youtube_result
+ENGLISH_RADIO_PATH="$LISTS_DIR"/english_radio
+KOREAN_RADIO_PATH="$LISTS_DIR"/korean_radio
+JAPANESE_RADIO_PATH="$LISTS_DIR"/japanese_radio
+LIVE_CAMERA_PATH="$LISTS_DIR"/live_camera
+LIVE_NEWS_PATH="$LISTS_DIR"/live_news
+LIVE_TV_PATH="$LISTS_DIR"/live_tv
+LOCAL_MUSIC_PATH="$LISTS_DIR"/local_music
+MUSIC_VIDEO_PATH="$LISTS_DIR"/music_video
+PLAY_LIST_PATH="$LISTS_DIR"/play_list
+XXX_PATH="$LISTS_DIR"/xxx # no public
 #
 # last line need ^$ for cat
 #
@@ -87,8 +89,8 @@ URL_LIST=$(cat "$ENGLISH_RADIO_PATH" \
                "$XXX_PATH")
 NOTSODEEP_PATH="$HOME"/git/notsodeep/notsodeep
 YT_PREFIX='https://www.youtube.com/watch?v='
-BASH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.bash
-ZSH_COMPLETION_PATH="$SCRIPT_DIR"/radio-completion.zsh
+BASH_COMPLETION_PATH="$COMPLETION_DIR"/radio-completion.bash
+ZSH_COMPLETION_PATH="$COMPLETION_DIR"/radio-completion.zsh
 REPORT_PATH="$SCRIPT_DIR"/report
 REPORT_START_LINE='### ERROR REPORT'
 TEST_TIME=10 # secs
