@@ -49,12 +49,12 @@ SCRIPT_VERSION=0.2.0
 PS3='
 # 00 for all
 choose : '
-if [[ ${g_arg[0]} == --sound_only ]]; then
+if [[ ${g_arg[0]} == --only_audio ]]; then
     g_arg=( "${g_arg[@]:1}" )
-    PLAYER='mpv --vo=null' # sound only
-elif  [[ ${g_arg[0]} == --no_sound ]]; then
+    PLAYER='mpv --vo=null' # only audio
+elif  [[ ${g_arg[0]} == --no_audio ]]; then
     g_arg=( "${g_arg[@]:1}" )
-    PLAYER='mpv --no-audio' # no sound
+    PLAYER='mpv --no-audio' # no audio
 else
     PLAYER=mpv
 fi
