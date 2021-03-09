@@ -52,6 +52,9 @@ choose : '
 if [[ ${g_arg[0]} == --sound_only ]]; then
     g_arg=( "${g_arg[@]:1}" )
     PLAYER='mpv --vo=null' # sound only
+elif  [[ ${g_arg[0]} == --no_sound ]]; then
+    g_arg=( "${g_arg[@]:1}" )
+    PLAYER='mpv --no-audio' # no sound
 else
     PLAYER=mpv
 fi
