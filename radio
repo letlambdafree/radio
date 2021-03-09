@@ -49,7 +49,12 @@ SCRIPT_VERSION=0.2.0
 PS3='
 # 00 for all
 choose : '
-PLAYER=mpv
+if [[ ${g_arg[0]} == --sound_only ]]; then
+    g_arg=( "${g_arg[@]:1}" )
+    PLAYER='mpv --vo=null' # sound only
+else
+    PLAYER=mpv
+fi
 LOCAL_VIDEO_DIR=/mnt/data/Videos/
 LOCAL_MUSIC_DIR=/mnt/data/Music/
 LOCAL_MUSIC_EXT='\.(mp3|flac)$'
@@ -1557,6 +1562,9 @@ EOF
 # if you need these, use regex condition: [[  =~  ]]
 #
 # set -x
+
+
+
 case ${g_arg[0]:-} in
     ''             ) play_radio      && exit 0 ;;
     -a | --all     ) show_all        && exit 0 ;;
