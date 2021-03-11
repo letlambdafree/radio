@@ -42,6 +42,12 @@ __make_youtube_result() {
     return 0
 }
 
+__comp_2_audio() {
+    comp_list='--only_audio --no_audio'
+    COMPREPLY=( $(compgen -W "$comp_list" -- "$cur_arg") )
+    return 0
+}
+
 __comp_2_long() {
     comp_list='--all --group --local --xxx --youtube '
     comp_list+='--others --test --edit --version --help'
@@ -57,8 +63,9 @@ __comp_2_short() {
 
 __comp_2() {
     case "$cur_arg" in
-        --*     ) __comp_2_long  ;;
-        -* | '' ) __comp_2_short ;;
+        --only_audio | --no_audio ) __comp_2_audio ;; # don't work
+        --*                       ) __comp_2_long  ;;
+        -* | ''                   ) __comp_2_short ;;
     esac
     return 0
 }
